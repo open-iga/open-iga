@@ -1,0 +1,17 @@
+{
+  "name": "open-iga",
+  "version": "1.0.0",
+  "description": "An attempt to build open source IGA software",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "IGA"
+  ],
+  "author": "",
+  "license": "AGPL-3.0",
+  "packageManager": "pnpm@10.18.0",
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}
