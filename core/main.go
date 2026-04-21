@@ -21,7 +21,6 @@ const banner = "\n" +
 	"                                                           \n"
 
 func main() {
-
 	handler := slog.NewTextHandler(os.Stdout, nil)
 	logger := slog.New(handler)
 	fmt.Print(banner)
@@ -32,8 +31,5 @@ func main() {
 	runtimeApplication := application.NewApplication(appConfig, runtimeRemote, logger)
 
 	router := api.NewRouter(appConfig, runtimeApplication, logger)
-	if err := router.Start(); err != nil {
-		logger.Error("Failed to start API server", "error", err)
-		os.Exit(1)
-	}
+	router.Start()
 }

@@ -1,0 +1,38 @@
+# $schema=https://golangci-lint.run/jsonschema/golangci.v2.jsonschema.json
+version: 2
+
+run:
+  timeout: 5m
+
+formatters:
+  enable:
+    - goimports   # enforces import formatting
+    - gofumpt     # stricter formatting rules, catches subtle issues
+
+linters:
+  enable:
+    - errcheck    # catches unchecked errors
+    - govet       # reports suspicious constructs
+    - staticcheck # comprehensive static analysis, catches bugs and deprecations
+    - unused      # finds unused code
+    - ineffassign # detects assignments whose value is never used
+    - revive      # maintained replacement for golint
+    - gosec       # scans for common security issues
+    - wrapcheck   # ensures errors are wrapped with context before returning
+    - cyclop      # limits cyclomatic complexity
+
+  settings:
+    cyclop:
+      max-complexity: 10
+    funlen:
+      lines: 80
+      statements: 50
+    revive:
+      rules:
+        - name: exported # skip "comment on exported..." warnings
+          disabled: true
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - wrapcheck

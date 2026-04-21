@@ -1,7 +1,7 @@
 package api
 
 func (r *Router) setupRoutes() {
-	r.createHealthRouter()
-	r.createLoginRouter()
-	r.createLoginCallback()
+	r.addHealthRoute()
+	r.addLoginRoute()
+	r.addLoginCallbackRoute()
 }

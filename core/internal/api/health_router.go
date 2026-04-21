@@ -12,8 +12,8 @@ type Output struct {
 	}
 }
 
-func (r *Router) createHealthRouter() {
-	huma.Get(*r.api, "/health", func(_ context.Context, _ *struct{}) (*Output, error) {
+func (r *Router) addHealthRoute() {
+	huma.Get(r.api, "/health", func(_ context.Context, _ *struct{}) (*Output, error) {
 		resp := &Output{}
 		resp.Body.Message = "I'm Healthy!"
 		return resp, nil

@@ -49,10 +49,7 @@ func getEnvWithDefault[T EnvValue](key string, defaultValue T, converter ...func
 }
 
 func NewAppConfig() *AppConfig {
-	err := godotenv.Load(".env")
-	if err != nil {
-		panic("Error loading .env file")
-	}
+	_ = godotenv.Load(".env")
 
 	return &AppConfig{
 		Port: getEnvWithDefault("PORT", ":8080", func(val string) string { return val }),

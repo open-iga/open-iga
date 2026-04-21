@@ -34,13 +34,13 @@ type loginCallbackOutputBody struct {
 }
 
 type loginCallbackOutput struct {
-	Body loginCallbackOutputBody
+	Body   loginCallbackOutputBody
+	Status int
 }
 
-func (r *Router) createLoginRouter() {
-	huma.Get(*r.api, "/login/{provider}", func(ctx context.Context, l *loginInput) (*loginOutput, error) {
+func (r *Router) addLoginRoute() {
+	huma.Get(r.api, "/login/{provider}", func(ctx context.Context, l *loginInput) (*loginOutput, error) {
 		consentPageDetails, err := r.application.LoginService.GetConsentPageDetails(ctx, l.Provider)
-
 		if err != nil {
 			r.logger.Error("Failed to get consent page details", "error", err, "provider", l.Provider)
 			return nil, huma.Error500InternalServerError("failed to get consent page details", errors.New("failed to get consent page details"))
@@ -63,9 +63,8 @@ func (r *Router) createLoginRouter() {
 	})
 }
 
-func (r *Router) createLoginCallback() {
-	huma.Get(*r.api, "/login/{provider}/callback", func(ctx context.Context, i *loginCallbackInput) (*loginCallbackOutput, error) {
-
+func (r *Router) addLoginCallbackRoute() {
+	huma.Get(r.api, "/login/{provider}/callback", func(ctx context.Context, i *loginCallbackInput) (*loginCallbackOutput, error) {
 		if i.ExpectedState.Value != i.ActualState {
 			r.logger.Error("State mismatch in login callback", "expected", i.ExpectedState.Value, "actual", i.ActualState)
 			return nil, huma.Error422UnprocessableEntity("state mismatch", errors.New("state mismatch"))
@@ -77,12 +76,15 @@ func (r *Router) createLoginCallback() {
 			return nil, huma.Error500InternalServerError("failed to generate session", errors.New("failed to generate session"))
 		}
 
-		return &loginCallbackOutput{
+		resp := &loginCallbackOutput{
 			Body: loginCallbackOutputBody{
 				FirstName: session.FirstName,
 				LastName:  session.LastName,
 				Email:     session.Email,
 			},
-		}, nil
+		}
+		resp.Status = http.StatusCreated
+
+		return resp, nil
 	})
 }
