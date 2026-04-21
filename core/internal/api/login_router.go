@@ -56,7 +56,7 @@ func (r *Router) addLoginRoute() {
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 			MaxAge:   300,
-			Secure:   r.appConfig.IsDevelopment,
+			Secure:   true,
 		}
 
 		return resp, nil

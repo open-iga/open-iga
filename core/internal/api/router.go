@@ -32,9 +32,10 @@ func (r *Router) Start() {
 	r.setupRoutes()
 
 	addr := r.appConfig.Port
-	server := http.Server{
+	server := &http.Server{
 		Addr:              addr,
 		ReadHeaderTimeout: 3 * time.Second,
+		Handler:           r.router,
 	}
 
 	r.logger.Info("Starting server", "address", addr)
