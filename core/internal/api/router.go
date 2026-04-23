@@ -14,28 +14,42 @@ import (
 
 type Router struct {
 	api         huma.API
-	router      *http.ServeMux
+	serverMux   *http.ServeMux
 	logger      *slog.Logger
 	application *contract.RuntimeApplication
 	appConfig   *common.AppConfig
 }
 
-func NewRouter(appConfig *common.AppConfig, application *contract.RuntimeApplication, logger *slog.Logger) *Router {
-	router := http.NewServeMux()
+type Option func(*Router)
 
-	api := humago.New(router, huma.DefaultConfig("OpenIGA API", "1.0.0"))
-	return &Router{router: router, api: api, logger: logger, application: application, appConfig: appConfig}
+func WithApi(api huma.API) Option {
+	return func(router *Router) {
+		router.api = api
+	}
+}
+
+func NewRouter(appConfig *common.AppConfig, application *contract.RuntimeApplication, logger *slog.Logger, opts ...Option) *Router {
+	serveMux := http.NewServeMux()
+
+	api := humago.New(serveMux, huma.DefaultConfig("OpenIGA API", "1.0.0"))
+	router := &Router{serverMux: serveMux, api: api, logger: logger, application: application, appConfig: appConfig}
+
+	for _, opt := range opts {
+		opt(router)
+	}
+
+	logger.Debug("Setting up routes")
+	router.setupRoutes()
+
+	return router
 }
 
 func (r *Router) Start() {
-	r.logger.Debug("Setting up routes")
-	r.setupRoutes()
-
 	addr := r.appConfig.Port
 	server := &http.Server{
 		Addr:              addr,
 		ReadHeaderTimeout: 3 * time.Second,
-		Handler:           r.router,
+		Handler:           r.serverMux,
 	}
 
 	r.logger.Info("Starting server", "address", addr)

@@ -5,31 +5,29 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/open-iga/core/internal/common"
 	"github.com/open-iga/core/internal/contract"
 	"github.com/open-iga/core/internal/domain"
 )
 
 type LoginService struct {
-	appConfig *common.AppConfig
-	remote    *contract.RuntimeRemote
-	logger    *slog.Logger
+	oauth2Clients contract.Oauth2Clients
+	logger        *slog.Logger
 }
 
 var _ contract.LoginService = &LoginService{}
 
-func NewLoginService(appConfig *common.AppConfig, remotes *contract.RuntimeRemote, logger *slog.Logger) *LoginService {
-	return &LoginService{appConfig, remotes, logger}
+func NewLoginService(oauth2Clients contract.Oauth2Clients, logger *slog.Logger) *LoginService {
+	return &LoginService{oauth2Clients, logger}
 }
 
-func (l *LoginService) GetConsentPageDetails(ctx context.Context, provider string) (*contract.ConsentPageDetails, error) {
-	client, ok := l.remote.Oauth2Clients[contract.Provider(provider)]
+func (l *LoginService) GetConsentPageDetails(ctx context.Context, provider string) (*domain.ConsentDetails, error) {
+	client, ok := l.oauth2Clients[contract.Provider(provider)]
 
 	if !ok {
 		return nil, fmt.Errorf("unsupported provider: %s", provider)
 	}
 
-	consentPageDetails, err := client.GetConsentPageDetails(ctx)
+	consentPageDetails, err := client.GetConsentDetails(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get consent page details: %w", err)
 	}
@@ -38,7 +36,7 @@ func (l *LoginService) GetConsentPageDetails(ctx context.Context, provider strin
 }
 
 func (l *LoginService) GenerateSession(ctx context.Context, provider string, authCode string) (*domain.OauthUser, error) {
-	client, ok := l.remote.Oauth2Clients[contract.Provider(provider)]
+	client, ok := l.oauth2Clients[contract.Provider(provider)]
 
 	if !ok {
 		return nil, fmt.Errorf("unsupported provider: %s", provider)

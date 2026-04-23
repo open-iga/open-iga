@@ -8,8 +8,8 @@ import (
 	"github.com/open-iga/core/internal/contract"
 )
 
-func NewApplication(appConfig *common.AppConfig, remotes *contract.RuntimeRemote, logger *slog.Logger) *contract.RuntimeApplication {
+func NewApplication(_ *common.AppConfig, remotes *contract.RuntimeRemote, logger *slog.Logger) *contract.RuntimeApplication {
 	return &contract.RuntimeApplication{
-		LoginService: oauth.NewLoginService(appConfig, remotes, logger),
+		LoginService: oauth.NewLoginService(remotes.Oauth2Clients, logger),
 	}
 }

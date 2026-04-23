@@ -4,11 +4,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func assertPanicWithError(t *testing.T, errorMessage string) {
 	r := recover()
-	assert.Error(t, r.(error), errorMessage)
+	require.NotNil(t, r)
+
+	err, ok := r.(error)
+	require.Truef(t, ok, "expected error panic, got %T", r)
+	assert.EqualError(t, err, errorMessage)
 }
 
 func TestConfigManager(t *testing.T) {

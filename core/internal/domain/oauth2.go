@@ -6,6 +6,18 @@ type OauthUser struct {
 	LastName  string
 }
 
+type ConsentDetails struct {
+	AuthCodeURL string
+	State       string
+}
+
+func NewConsentDetails(authCodeUrl string, state string) *ConsentDetails {
+	return &ConsentDetails{
+		AuthCodeURL: authCodeUrl,
+		State:       state,
+	}
+}
+
 func NewOauthUser(firstName string, lastname string, email string) *OauthUser {
 	return &OauthUser{
 		Email:     email,

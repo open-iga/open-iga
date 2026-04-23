@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 
 	"github.com/open-iga/core/internal/common"
 	"github.com/open-iga/core/internal/contract"
@@ -14,21 +15,25 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-type (
-	GoogleOauth2Client struct {
-		config oauth2.Config
-		logger *slog.Logger
-	}
+type oauth2Config interface {
+	AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string
+	Exchange(ctx context.Context, code string, opts ...oauth2.AuthCodeOption) (*oauth2.Token, error)
+	Client(ctx context.Context, t *oauth2.Token) *http.Client
+}
 
-	googleOauth2UserinfoDto struct {
-		Email      string `json:"email"`
-		GivenName  string `json:"given_name"`
-		FamilyName string `json:"family_name"`
-	}
-)
+type GoogleOauth2Client struct {
+	config oauth2Config
+	logger *slog.Logger
+}
+
+type googleOauth2UserinfoDto struct {
+	Email      string `json:"email"`
+	GivenName  string `json:"given_name"`
+	FamilyName string `json:"family_name"`
+}
 
 // for type checking at compile time
-var _ contract.Client = &GoogleOauth2Client{}
+var _ contract.Oauth2ClientAdapter = &GoogleOauth2Client{}
 
 const (
 	googleOauth2UserInfoURL = "https://www.googleapis.com/oauth2/v2/userinfo"
@@ -36,7 +41,7 @@ const (
 
 // NewGoogleOauth2Client Creates a new GoogleOauth2Client with the given client ID and secret
 func NewGoogleOauth2Client(appConfig *common.AppConfig, logger *slog.Logger) *GoogleOauth2Client {
-	config := oauth2.Config{
+	config := &oauth2.Config{
 		ClientID:     appConfig.Oauth.Google.ClientId,
 		ClientSecret: appConfig.Oauth.Google.ClientSecret,
 		RedirectURL:  fmt.Sprintf("%s/login/google/callback", appConfig.HostUrl),
@@ -53,20 +58,15 @@ func NewGoogleOauth2Client(appConfig *common.AppConfig, logger *slog.Logger) *Go
 	}
 }
 
-// GetConsentPageDetails generates a random state and returns the URL for the Google consent page along with the state
-func (g *GoogleOauth2Client) GetConsentPageDetails(_ context.Context) (*contract.ConsentPageDetails, error) {
+func (g *GoogleOauth2Client) GetConsentDetails(_ context.Context) (*domain.ConsentDetails, error) {
 	state, err := common.GenerateHighEntropyID()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate state for consent page: %w", err)
 	}
 
-	return &contract.ConsentPageDetails{
-		AuthCodeURL: g.config.AuthCodeURL(state),
-		State:       state,
-	}, nil
+	return domain.NewConsentDetails(g.config.AuthCodeURL(state), state), nil
 }
 
-// FetchOauthUser exchanges the authorization code for an access token and then uses that token to fetch the user's profile information from Google
 func (g *GoogleOauth2Client) FetchOauthUser(ctx context.Context, code string) (*domain.OauthUser, error) {
 	token, err := g.config.Exchange(ctx, code)
 	if err != nil {
@@ -83,6 +83,10 @@ func (g *GoogleOauth2Client) FetchOauthUser(ctx context.Context, code string) (*
 			g.logger.Error("failed to close response body", "error", err)
 		}
 	}(resp.Body)
+
+	if resp.StatusCode < 200 || resp.StatusCode > 300 {
+		return nil, fmt.Errorf("unexpected status code from google for user info: %d", resp.StatusCode)
+	}
 
 	var userinfo googleOauth2UserinfoDto
 	if err := json.NewDecoder(resp.Body).Decode(&userinfo); err != nil {

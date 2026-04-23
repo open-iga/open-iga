@@ -15,7 +15,7 @@ func TestLoginRouter(t *testing.T) {
 	t.Run("returns 500 when consent page details results in error", func(t *testing.T) {
 		mockRouter := CreateMockRouter(t,
 			&contract.RuntimeApplication{
-				LoginService: &mockLoginService{nil, errors.New("consent error"), nil},
+				LoginService: &mockLoginService{err: errors.New("consent error")},
 			})
 
 		req := httptest.NewRequest(http.MethodGet, "/login/google", nil)
@@ -28,7 +28,7 @@ func TestLoginRouter(t *testing.T) {
 	t.Run("returns 422 when provider is unknown", func(t *testing.T) {
 		mockRouter := CreateMockRouter(t,
 			&contract.RuntimeApplication{
-				LoginService: &mockLoginService{nil, errors.New("consent error"), nil},
+				LoginService: &mockLoginService{err: errors.New("consent error")},
 			})
 
 		req := httptest.NewRequest(http.MethodGet, "/login/some-provider", nil)
@@ -41,10 +41,9 @@ func TestLoginRouter(t *testing.T) {
 	t.Run("returns 302 with correct Location and Set-Cookie headers when consent page details are returned successfully", func(t *testing.T) {
 		mockRouter := CreateMockRouter(t,
 			&contract.RuntimeApplication{
-				LoginService: &mockLoginService{&contract.ConsentPageDetails{
-					AuthCodeURL: "https://consent-page.com",
-					State:       "mock-state",
-				}, nil, nil},
+				LoginService: &mockLoginService{
+					consentDetails: domain.NewConsentDetails("https://consent-page.com", "mock-state"),
+				},
 			})
 
 		req := httptest.NewRequest(http.MethodGet, "/login/google", nil)
@@ -67,11 +66,7 @@ func TestLoginRouter(t *testing.T) {
 
 func TestLoginCallbackRouter(t *testing.T) {
 	t.Run("returns 422 when provider is unknown", func(t *testing.T) {
-		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{
-			consentDetails: nil,
-			error:          nil,
-			oauthUser:      nil,
-		}})
+		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{}})
 
 		req := httptest.NewRequest(http.MethodGet, "/login/some-provider/callback?code=auth-code&state=mock-state", nil)
 		req.AddCookie(&http.Cookie{Name: AuthStateCookieName, Value: "mock-state"})
@@ -82,11 +77,7 @@ func TestLoginCallbackRouter(t *testing.T) {
 	})
 
 	t.Run("returns 422 when code is missing in query param", func(t *testing.T) {
-		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{
-			consentDetails: nil,
-			error:          nil,
-			oauthUser:      nil,
-		}})
+		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{}})
 
 		req := httptest.NewRequest(http.MethodGet, "/login/google/callback?state=mock-state", nil)
 		req.AddCookie(&http.Cookie{Name: AuthStateCookieName, Value: "mock-state"})
@@ -97,11 +88,7 @@ func TestLoginCallbackRouter(t *testing.T) {
 	})
 
 	t.Run("returns 422 when state is missing in query param", func(t *testing.T) {
-		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{
-			consentDetails: nil,
-			error:          nil,
-			oauthUser:      nil,
-		}})
+		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{}})
 
 		req := httptest.NewRequest(http.MethodGet, "/login/google/callback?code=auth-code", nil)
 		req.AddCookie(&http.Cookie{Name: AuthStateCookieName, Value: "mock-state"})
@@ -111,12 +98,19 @@ func TestLoginCallbackRouter(t *testing.T) {
 		assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 	})
 
-	t.Run("return 422 when state cookie does not match with state query", func(t *testing.T) {
-		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{
-			consentDetails: nil,
-			error:          nil,
-			oauthUser:      nil,
-		}})
+	t.Run("returns 422 when state cookie is an empty string", func(t *testing.T) {
+		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{}})
+
+		req := httptest.NewRequest(http.MethodGet, "/login/google/callback?code=auth-code&state=mock-state", nil)
+		req.AddCookie(&http.Cookie{Name: AuthStateCookieName, Value: ""})
+		w := httptest.NewRecorder()
+		mockRouter.api.Adapter().ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+	})
+
+	t.Run("returns 422 when state cookie does not match with state query", func(t *testing.T) {
+		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{}})
 
 		req := httptest.NewRequest(http.MethodGet, "/login/google/callback?code=auth-code&state=mock-state", nil)
 		req.AddCookie(&http.Cookie{Name: AuthStateCookieName, Value: "some-other-state"})
@@ -128,9 +122,7 @@ func TestLoginCallbackRouter(t *testing.T) {
 
 	t.Run("returns 500 when login service returns an error", func(t *testing.T) {
 		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{
-			consentDetails: nil,
-			error:          errors.New("failed to generate session"),
-			oauthUser:      nil,
+			err: errors.New("failed to generate session"),
 		}})
 
 		req := httptest.NewRequest(http.MethodGet, "/login/google/callback?code=auth-code&state=mock-state", nil)
@@ -141,10 +133,8 @@ func TestLoginCallbackRouter(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
-	t.Run("returns 200 with user details when login is successful", func(t *testing.T) {
+	t.Run("returns 201 with user details when login is successful", func(t *testing.T) {
 		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{
-			consentDetails: nil,
-			error:          nil,
 			oauthUser: &domain.OauthUser{
 				Email:     "user@email.com",
 				FirstName: "firstname",

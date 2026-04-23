@@ -6,13 +6,8 @@ import (
 	"github.com/open-iga/core/internal/domain"
 )
 
-type ConsentPageDetails struct {
-	AuthCodeURL string
-	State       string
-}
-
 type LoginService interface {
-	GetConsentPageDetails(ctx context.Context, provider string) (*ConsentPageDetails, error)
+	GetConsentPageDetails(ctx context.Context, provider string) (*domain.ConsentDetails, error)
 	GenerateSession(ctx context.Context, provider string, authCode string) (*domain.OauthUser, error)
 }
 
