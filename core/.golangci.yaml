@@ -20,6 +20,7 @@ linters:
     - gosec       # scans for common security issues
     - wrapcheck   # ensures errors are wrapped with context before returning
     - cyclop      # limits cyclomatic complexity
+    - exhaustruct # if all structure fields are initialized
 
   settings:
     cyclop:

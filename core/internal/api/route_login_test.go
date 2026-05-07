@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/open-iga/core/internal/api/handler"
 	"github.com/open-iga/core/internal/contract"
 	"github.com/open-iga/core/internal/domain"
 	"github.com/stretchr/testify/assert"
@@ -13,7 +14,7 @@ import (
 
 func TestLoginRouter(t *testing.T) {
 	t.Run("returns 500 when consent page details results in error", func(t *testing.T) {
-		mockRouter := CreateMockRouter(t,
+		mockRouter := api(t,
 			&contract.RuntimeApplication{
 				LoginService: &mockLoginService{err: errors.New("consent error")},
 			})
@@ -56,7 +57,7 @@ func TestLoginRouter(t *testing.T) {
 		cookies := w.Result().Cookies()
 		assert.Len(t, cookies, 1)
 		cookie := cookies[0]
-		assert.Equal(t, AuthStateCookieName, cookie.Name)
+		assert.Equal(t, handler.AuthStateCookieName, cookie.Name)
 		assert.Equal(t, "mock-state", cookie.Value)
 		assert.True(t, cookie.HttpOnly)
 		assert.Equal(t, http.SameSiteLaxMode, cookie.SameSite)
@@ -69,7 +70,7 @@ func TestLoginCallbackRouter(t *testing.T) {
 		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{}})
 
 		req := httptest.NewRequest(http.MethodGet, "/login/some-provider/callback?code=auth-code&state=mock-state", nil)
-		req.AddCookie(&http.Cookie{Name: AuthStateCookieName, Value: "mock-state"})
+		req.AddCookie(&http.Cookie{Name: handler.AuthStateCookieName, Value: "mock-state"})
 		w := httptest.NewRecorder()
 		mockRouter.api.Adapter().ServeHTTP(w, req)
 
@@ -80,7 +81,7 @@ func TestLoginCallbackRouter(t *testing.T) {
 		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{}})
 
 		req := httptest.NewRequest(http.MethodGet, "/login/google/callback?state=mock-state", nil)
-		req.AddCookie(&http.Cookie{Name: AuthStateCookieName, Value: "mock-state"})
+		req.AddCookie(&http.Cookie{Name: handler.AuthStateCookieName, Value: "mock-state"})
 		w := httptest.NewRecorder()
 		mockRouter.api.Adapter().ServeHTTP(w, req)
 
@@ -91,7 +92,7 @@ func TestLoginCallbackRouter(t *testing.T) {
 		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{}})
 
 		req := httptest.NewRequest(http.MethodGet, "/login/google/callback?code=auth-code", nil)
-		req.AddCookie(&http.Cookie{Name: AuthStateCookieName, Value: "mock-state"})
+		req.AddCookie(&http.Cookie{Name: handler.AuthStateCookieName, Value: "mock-state"})
 		w := httptest.NewRecorder()
 		mockRouter.api.Adapter().ServeHTTP(w, req)
 
@@ -102,7 +103,7 @@ func TestLoginCallbackRouter(t *testing.T) {
 		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{}})
 
 		req := httptest.NewRequest(http.MethodGet, "/login/google/callback?code=auth-code&state=mock-state", nil)
-		req.AddCookie(&http.Cookie{Name: AuthStateCookieName, Value: ""})
+		req.AddCookie(&http.Cookie{Name: handler.AuthStateCookieName, Value: ""})
 		w := httptest.NewRecorder()
 		mockRouter.api.Adapter().ServeHTTP(w, req)
 
@@ -113,7 +114,7 @@ func TestLoginCallbackRouter(t *testing.T) {
 		mockRouter := CreateMockRouter(t, &contract.RuntimeApplication{LoginService: &mockLoginService{}})
 
 		req := httptest.NewRequest(http.MethodGet, "/login/google/callback?code=auth-code&state=mock-state", nil)
-		req.AddCookie(&http.Cookie{Name: AuthStateCookieName, Value: "some-other-state"})
+		req.AddCookie(&http.Cookie{Name: handler.AuthStateCookieName, Value: "some-other-state"})
 		w := httptest.NewRecorder()
 		mockRouter.api.Adapter().ServeHTTP(w, req)
 
@@ -126,7 +127,7 @@ func TestLoginCallbackRouter(t *testing.T) {
 		}})
 
 		req := httptest.NewRequest(http.MethodGet, "/login/google/callback?code=auth-code&state=mock-state", nil)
-		req.AddCookie(&http.Cookie{Name: AuthStateCookieName, Value: "mock-state"})
+		req.AddCookie(&http.Cookie{Name: handler.AuthStateCookieName, Value: "mock-state"})
 		w := httptest.NewRecorder()
 		mockRouter.api.Adapter().ServeHTTP(w, req)
 
@@ -143,7 +144,7 @@ func TestLoginCallbackRouter(t *testing.T) {
 		}})
 
 		req := httptest.NewRequest(http.MethodGet, "/login/google/callback?code=auth-code&state=mock-state", nil)
-		req.AddCookie(&http.Cookie{Name: AuthStateCookieName, Value: "mock-state"})
+		req.AddCookie(&http.Cookie{Name: handler.AuthStateCookieName, Value: "mock-state"})
 		w := httptest.NewRecorder()
 		mockRouter.api.Adapter().ServeHTTP(w, req)
 

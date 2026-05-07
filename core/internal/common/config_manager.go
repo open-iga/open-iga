@@ -8,22 +8,28 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type EnvValue interface {
+	~int | ~string | ~bool
+}
+
 type OauthConfig struct {
 	ClientId     string
 	ClientSecret string
 }
 
-type EnvValue interface {
-	~int | ~string | ~bool
+type Oauth struct {
+	Google OauthConfig
+}
+
+type Database struct {
+	URL string
 }
 
 type AppConfig struct {
-	Port          string
-	IsDevelopment bool
-	HostUrl       string
-	Oauth         struct {
-		Google OauthConfig
-	}
+	Port     string
+	HostUrl  string
+	Oauth    Oauth
+	Database Database
 }
 
 func mustEnv[T EnvValue](key string, converter func(val string) T) T {
@@ -35,7 +41,7 @@ func mustEnv[T EnvValue](key string, converter func(val string) T) T {
 	return converter(val)
 }
 
-func getEnvWithDefault[T EnvValue](key string, defaultValue T, converter ...func(val string) T) T {
+func envWithDefault[T EnvValue](key string, defaultValue T, converter ...func(val string) T) T {
 	val, ok := os.LookupEnv(key)
 	if !ok {
 		return defaultValue
@@ -52,7 +58,7 @@ func NewAppConfig() *AppConfig {
 	_ = godotenv.Load(".env")
 
 	return &AppConfig{
-		Port: getEnvWithDefault("PORT", ":8080", func(val string) string { return val }),
+		Port: envWithDefault("PORT", ":8080", func(val string) string { return val }),
 		HostUrl: mustEnv("HOST_URL", func(val string) string {
 			_, err := url.ParseRequestURI(val)
 			if err != nil {
@@ -61,10 +67,14 @@ func NewAppConfig() *AppConfig {
 
 			return val
 		}),
-		IsDevelopment: getEnvWithDefault("ENVIRONMENT", false, func(val string) bool { return val == "development" }),
-		Oauth: struct{ Google OauthConfig }{Google: OauthConfig{
-			ClientId:     mustEnv("GOOGLE_OAUTH_CLIENT_ID", func(val string) string { return val }),
-			ClientSecret: mustEnv("GOOGLE_OAUTH_CLIENT_SECRET", func(val string) string { return val }),
-		}},
+		Oauth: Oauth{
+			Google: OauthConfig{
+				ClientId:     mustEnv("GOOGLE_OAUTH_CLIENT_ID", func(val string) string { return val }),
+				ClientSecret: mustEnv("GOOGLE_OAUTH_CLIENT_SECRET", func(val string) string { return val }),
+			},
+		},
+		Database: Database{
+			URL: mustEnv("DATABASE_URL", func(val string) string { return val }),
+		},
 	}
 }

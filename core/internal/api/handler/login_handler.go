@@ -1,4 +1,4 @@
-package api
+package handler
 
 import (
 	"context"
@@ -9,8 +9,9 @@ import (
 )
 
 const AuthStateCookieName = "authState"
+const SessionCookieName = "sid"
 
-type loginOutput struct {
+type LoginOutput struct {
 	Status    int
 	Location  string       `header:"Location"`
 	SetCookie *http.Cookie `header:"Set-Cookie"`
@@ -27,25 +28,20 @@ type loginCallbackInput struct {
 	ExpectedState http.Cookie `cookie:"authState" doc:"State cookie for CSRF protection"`
 }
 
-type loginCallbackOutputBody struct {
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Email     string `json:"email"`
+type LoginCallbackOutput struct {
+	Location  string       `header:"Location"`
+	SetCookie *http.Cookie `header:"Set-Cookie"`
+	Status    int
 }
 
-type loginCallbackOutput struct {
-	Body   loginCallbackOutputBody
-	Status int
-}
-
-func (r *Router) loginHandler(ctx context.Context, l *loginInput) (*loginOutput, error) {
-	consentPageDetails, err := r.application.LoginService.GetConsentPageDetails(ctx, l.Provider)
+func (h *Handler) LoginHandler(ctx context.Context, l *loginInput) (*LoginOutput, error) {
+	consentPageDetails, err := h.application.LoginService.GetConsentPageDetails(ctx, l.Provider)
 	if err != nil {
-		r.logger.Error("Failed to get consent page details", "error", err, "provider", l.Provider)
+		h.logger.Error("Failed to get consent page details", "error", err, "provider", l.Provider)
 		return nil, huma.Error500InternalServerError("failed to get consent page details", errors.New("failed to get consent page details"))
 	}
 
-	resp := &loginOutput{
+	resp := &LoginOutput{
 		Status:   http.StatusFound,
 		Location: consentPageDetails.AuthCodeURL,
 	}
@@ -54,38 +50,43 @@ func (r *Router) loginHandler(ctx context.Context, l *loginInput) (*loginOutput,
 		Value:    consentPageDetails.State,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   300,
+		MaxAge:   20, // Valid for 20s
 		Secure:   true,
 	}
 
 	return resp, nil
 }
 
-func (r *Router) loginCallBackHandler(ctx context.Context, i *loginCallbackInput) (*loginCallbackOutput, error) {
+func (h *Handler) LoginCallBackHandler(ctx context.Context, i *loginCallbackInput) (*LoginCallbackOutput, error) {
 	if i.ExpectedState.Value == "" || i.ExpectedState.Value != i.ActualState {
-		r.logger.Error("State mismatch in login callback")
+		h.logger.Error("State mismatch in login callback")
 		return nil, huma.Error422UnprocessableEntity("state mismatch", errors.New("state mismatch"))
 	}
 
 	if i.Code == "" {
-		r.logger.Error("Received empty string for auth code in login callback")
+		h.logger.Error("Received empty string for auth code in login callback")
 		return nil, huma.Error422UnprocessableEntity("missing authcode", errors.New("missing authcode"))
 	}
 
-	session, err := r.application.LoginService.GenerateSession(ctx, i.Provider, i.Code)
+	session, err := h.application.LoginService.GenerateSession(ctx, i.Provider, i.Code)
 	if err != nil {
-		r.logger.Error("Failed to generate session", "error", err)
+		h.logger.Error("Failed to generate session", "error", err)
 		return nil, huma.Error500InternalServerError("failed to generate session", errors.New("failed to generate session"))
 	}
 
-	resp := &loginCallbackOutput{
-		Body: loginCallbackOutputBody{
-			FirstName: session.FirstName,
-			LastName:  session.LastName,
-			Email:     session.Email,
+	resp := &LoginCallbackOutput{
+		Location: "/",
+		SetCookie: &http.Cookie{
+			Name:     SessionCookieName,
+			Value:    session.SessionId,
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+			Path:     "/",
+			MaxAge:   session.ValidityInSeconds(),
+			Secure:   true,
 		},
+		Status: http.StatusFound,
 	}
-	resp.Status = http.StatusCreated
 
 	return resp, nil
 }

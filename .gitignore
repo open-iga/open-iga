@@ -3,3 +3,4 @@
 **/tmp
 core/.env
 **/coverage.out
+**/.DS_Store

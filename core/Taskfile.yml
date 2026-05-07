@@ -1,0 +1,23 @@
+version: 3
+
+
+tasks:
+  dev:
+    cmds:
+      - air
+  test:
+    cmds:
+      - go test ./...
+  pretty:
+    cmds:
+      - gofumpt -l -w .
+  migration-generate:
+    cmds:
+      - go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1 create -ext sql -dir internal/repository/migrations -seq {{.NAME}}
+  sqlc-generate:
+    preconditions:
+      - sh: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+        msg: "Failed to install sqlc@v1.31.1"
+    cmds:
+      - sqlc generate
+      - echo "SQLC generation completed ✨"

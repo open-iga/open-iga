@@ -9,6 +9,7 @@ import (
 	"github.com/open-iga/core/internal/application"
 	"github.com/open-iga/core/internal/common"
 	"github.com/open-iga/core/internal/remote"
+	"github.com/open-iga/core/internal/repository"
 )
 
 const banner = "\n" +
@@ -27,9 +28,14 @@ func main() {
 
 	appConfig := common.NewAppConfig()
 
-	runtimeRemote := remote.NewRemote(appConfig, logger)
-	runtimeApplication := application.NewApplication(appConfig, runtimeRemote, logger)
+	runtimeRepository, err := repository.NewRepository(appConfig, logger)
 
-	router := api.NewRouter(appConfig, runtimeApplication, logger)
+	if err != nil {
+		panic(err)
+	}
+	runtimeRemote := remote.NewRemote(appConfig, logger)
+	runtimeApplication := application.NewApplication(appConfig, logger, runtimeRemote, runtimeRepository)
+
+	router := api.NewRouter(appConfig, logger, runtimeApplication)
 	router.Start()
 }
