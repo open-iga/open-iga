@@ -1,0 +1,28 @@
+get:
+    operationId: authDetails
+    description: To initiate the authentication process with the specified OAuth provider. Provides the URL for the consent page and sets a state cookie for CSRF protection
+    parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+              $ref: '../schemas/oauth-providers.yml'
+    responses:
+        '200':
+            description: Consent URL returned
+            headers:
+                Set-Cookie:
+                    description: CSRF state cookie
+                    schema:
+                        type: string
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            authCodeUrl:
+                                type: string
+                                format: uri
+                        required: [authCodeUrl]
+        '500':
+            $ref: '../components/responses/internal-server-error.yml'

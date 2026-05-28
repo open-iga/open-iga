@@ -1,0 +1,9 @@
+get:
+    operationId: health
+    description: health status of the service
+    responses:
+        200:
+            content:
+                text/plain:
+                    schema:
+                        type: string

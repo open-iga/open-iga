@@ -24,12 +24,18 @@ type Oauth struct {
 type Database struct {
 	URL string
 }
+type Redirect struct {
+	Home               string
+	SignIn             string
+	GoogleAuthCallback string
+}
 
 type AppConfig struct {
 	Port     string
 	HostUrl  string
 	Oauth    Oauth
 	Database Database
+	Redirect Redirect
 }
 
 func mustEnv[T EnvValue](key string, converter func(val string) T) T {
@@ -75,6 +81,11 @@ func NewAppConfig() *AppConfig {
 		},
 		Database: Database{
 			URL: mustEnv("DATABASE_URL", func(val string) string { return val }),
+		},
+		Redirect: Redirect{
+			Home:               "/",
+			SignIn:             "/auth/sign-in",
+			GoogleAuthCallback: "/auth/google/callback",
 		},
 	}
 }

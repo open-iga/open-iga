@@ -1,0 +1,15 @@
+version: 3
+
+includes:
+    core:
+        taskfile: ./core/Taskfile.yml
+        dir: ./core
+    console:
+        taskfile: ./console/taskfile.yml
+        dir: ./console
+
+tasks:
+    dev:
+        deps: [core:dev, console:dev]
+    setup:
+        deps: [core:setup, console:setup]

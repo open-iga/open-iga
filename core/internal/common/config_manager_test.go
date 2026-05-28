@@ -46,9 +46,8 @@ func TestConfigManager(t *testing.T) {
 		config := NewAppConfig()
 
 		assert.Equal(t, &AppConfig{
-			Port:          ":8080",
-			IsDevelopment: false,
-			HostUrl:       "http://localhost:8080",
+			Port:    ":8080",
+			HostUrl: "http://localhost:8080",
 			Oauth: struct{ Google OauthConfig }{
 				Google: OauthConfig{
 					ClientId:     "dummy-client-id",

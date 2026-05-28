@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 
 	"github.com/open-iga/core/internal/api"
@@ -37,5 +38,9 @@ func main() {
 	runtimeApplication := application.NewApplication(appConfig, logger, runtimeRemote, runtimeRepository)
 
 	router := api.NewRouter(appConfig, logger, runtimeApplication)
-	router.Start()
+
+	err = http.ListenAndServe(appConfig.Port, router)
+	if err != nil {
+		panic(err)
+	}
 }

@@ -1,0 +1,10 @@
+version: 3
+
+tasks:
+    setup:
+        dir: ..
+        cmds:
+            - pnpm install
+    dev:
+        cmds:
+            - pnpm run dev

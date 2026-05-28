@@ -2,10 +2,10 @@ package application
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
-	"github.com/olekukonko/errors"
 	"github.com/open-iga/core/internal/contract"
 	"github.com/open-iga/core/internal/domain"
 )
@@ -62,19 +62,19 @@ func (l *LoginService) GenerateSession(ctx context.Context, provider string, aut
 	}
 
 	session, err := l.repository.SessionRepository.FindActiveSessionByIdentityId(ctx, identity.Id)
-	if err != nil && !errors.Is(err, domain.NoActiveSession) {
-		return nil, fmt.Errorf("failed to find active session: %w", err)
-	}
-
-	if !session.IsExpired() {
+	if session != nil && !session.IsExpired() {
 		return session, nil
 	}
 
-	if session.IsExpired() {
+	if session != nil && session.IsExpired() {
 		_, err := l.repository.SessionRepository.DeactivateByIdentityId(ctx, identity.Id)
 		if err != nil {
 			return nil, fmt.Errorf("failed to deactivate active session %w", err)
 		}
+	}
+
+	if err != nil && !errors.Is(err, domain.NoActiveSession) {
+		return nil, fmt.Errorf("failed to find active session: %w", err)
 	}
 
 	session, err = l.repository.SessionRepository.Create(ctx, identity)

@@ -44,7 +44,7 @@ func NewGoogleOauth2Client(appConfig *common.AppConfig, logger *slog.Logger) *Go
 	config := &oauth2.Config{
 		ClientID:     appConfig.Oauth.Google.ClientId,
 		ClientSecret: appConfig.Oauth.Google.ClientSecret,
-		RedirectURL:  fmt.Sprintf("%s/api/login/google/callback", appConfig.HostUrl),
+		RedirectURL:  appConfig.HostUrl + appConfig.Redirect.GoogleAuthCallback,
 		Scopes: []string{
 			"https://www.googleapis.com/auth/userinfo.profile",
 			"https://www.googleapis.com/auth/userinfo.email",

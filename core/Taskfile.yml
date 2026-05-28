@@ -1,23 +1,32 @@
 version: 3
 
-
 tasks:
-  dev:
-    cmds:
-      - air
-  test:
-    cmds:
-      - go test ./...
-  pretty:
-    cmds:
-      - gofumpt -l -w .
-  migration-generate:
-    cmds:
-      - go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1 create -ext sql -dir internal/repository/migrations -seq {{.NAME}}
-  sqlc-generate:
-    preconditions:
-      - sh: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
-        msg: "Failed to install sqlc@v1.31.1"
-    cmds:
-      - sqlc generate
-      - echo "SQLC generation completed ✨"
+    dev:
+        cmds:
+            - air
+    generate:migration:
+        preconditions:
+            - sh: test -n "{{.NAME}}"
+              msg: 'NAME is required. Usage: task migration:generate NAME=<migration_name>'
+        cmds:
+            - go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1 create -ext sql -dir internal/repository/migrations -seq {{.NAME}}
+    generate:sqlc:
+        preconditions:
+            - sh: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+              msg: 'Failed to install sqlc@v1.31.1'
+        cmds:
+            - sqlc generate
+            - echo "SQLC generation completed ✨"
+    generate:oapi-codegen:
+        dir: ..
+        cmds:
+            - oapi-codegen -config core/oapi-codegen.yaml openapi-spec/openapi.yml
+    pretty:
+        cmds:
+            - gofumpt -l -w .
+    setup:
+        cmds:
+            - go get
+    test:
+        cmds:
+            - go test ./...

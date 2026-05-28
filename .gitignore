@@ -1,6 +1,8 @@
 /.idea/
 **/*.iml
 **/tmp
-core/.env
+**/.env
+**/dist
 **/coverage.out
 **/.DS_Store
+node_modules
