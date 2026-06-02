@@ -48,6 +48,10 @@ func (s *SessionRepository) Create(ctx context.Context, identity *domain.Identit
 func (s *SessionRepository) FindBySessionId(ctx context.Context, sessionId string) (*domain.Identity, *domain.Session, error) {
 	sessionDetails, err := s.queries.FindBySessionId(ctx, sessionId)
 
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil, domain.SessionNotFound
+	}
+
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get active session %w", err)
 	}
@@ -59,7 +63,7 @@ func (s *SessionRepository) DeactivateBySessionId(ctx context.Context, sessionId
 	session, err := s.queries.DeactivateBySessionId(ctx, sessionId)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to get deactivate session %w", err)
+		return nil, fmt.Errorf("failed to deactivate session %w", err)
 	}
 
 	return session.ToDomain(), nil

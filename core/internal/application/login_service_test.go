@@ -3,82 +3,227 @@ package application
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"testing"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/open-iga/core/internal/contract"
 	"github.com/open-iga/core/internal/domain"
+	"github.com/open-iga/core/internal/testutil"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
+
+func setupLoginServiceWithMocks(t *testing.T) (*LoginService, *testutil.MockOauth2ClientAdapter, *testutil.MockSessionRepository, *testutil.MockIdentityRepository) {
+	t.Helper()
+
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+
+	sessionRepoMock := testutil.NewMockSessionRepository(ctrl)
+	identityRepoMock := testutil.NewMockIdentityRepository(ctrl)
+	oauth2Client := testutil.NewMockOauth2ClientAdapter(ctrl)
+
+	loginService := NewLoginService(
+		contract.Oauth2Clients{contract.Google: oauth2Client},
+		testutil.NewTestLogger(),
+		sessionRepoMock, identityRepoMock,
+	)
+
+	return loginService, oauth2Client, sessionRepoMock, identityRepoMock
+}
 
 func TestLoginService_GetConsentPageDetails(t *testing.T) {
 	t.Run("returns error when the provider is unsupported", func(t *testing.T) {
-		l := NewLoginService(contract.Oauth2Clients{
-			contract.Google: &MockOauth2ClientAdapter{},
-		}, slog.Default())
+		loginService, _, _, _ := setupLoginServiceWithMocks(t)
 
-		consentDetails, err := l.GetConsentPageDetails(context.TODO(), "some-provider")
+		consentDetails, err := loginService.GetConsentPageDetails(context.TODO(), "unknown-provider")
 
-		assert.EqualError(t, err, "unsupported provider: some-provider")
 		assert.Nil(t, consentDetails)
+		assert.ErrorContains(t, err, "unsupported provider")
 	})
 
-	t.Run("returns error when the provider returns an error", func(t *testing.T) {
-		l := NewLoginService(contract.Oauth2Clients{
-			contract.Google: &MockOauth2ClientAdapter{error: errors.New("failed to generate state")},
-		}, slog.Default())
+	t.Run("returns error when client fails to generate consent page details", func(t *testing.T) {
+		loginService, oauth2ClientMock, _, _ := setupLoginServiceWithMocks(t)
+		oauth2ClientMock.EXPECT().GetConsentDetails(gomock.Any()).Return(nil, errors.New("failed to generate"))
 
-		consentDetails, err := l.GetConsentPageDetails(context.TODO(), "google")
+		consentDetails, err := loginService.GetConsentPageDetails(context.TODO(), "google")
 
-		assert.EqualError(t, err, "failed to get consent page details: failed to generate state")
 		assert.Nil(t, consentDetails)
+		assert.ErrorContains(t, err, "failed to generate")
 	})
 
-	t.Run("returns consent page details for a supported provider", func(t *testing.T) {
-		mockConsentDetails := &domain.ConsentDetails{AuthCodeURL: "auth-code-url", State: "state"}
-		l := NewLoginService(contract.Oauth2Clients{
-			contract.Google: &MockOauth2ClientAdapter{consentDetails: mockConsentDetails},
-		}, slog.Default())
+	t.Run("returns consent page details", func(t *testing.T) {
+		loginService, oauth2ClientMock, _, _ := setupLoginServiceWithMocks(t)
+		oauth2ClientMock.EXPECT().GetConsentDetails(gomock.Any()).Return(&domain.ConsentDetails{
+			AuthCodeURL: "auth-code-url",
+			State:       "state",
+		}, nil)
 
-		consentDetails, err := l.GetConsentPageDetails(context.TODO(), "google")
+		consentDetails, err := loginService.GetConsentPageDetails(context.TODO(), "google")
 
 		assert.Nil(t, err)
-		assert.Equal(t, mockConsentDetails, consentDetails)
+		assert.Equal(t, "auth-code-url", consentDetails.AuthCodeURL)
+		assert.Equal(t, "state", consentDetails.State)
 	})
 }
 
 func TestLoginService_GenerateSession(t *testing.T) {
 	t.Run("returns error when the provider is unsupported", func(t *testing.T) {
-		l := NewLoginService(contract.Oauth2Clients{
-			contract.Google: &MockOauth2ClientAdapter{},
-		}, slog.Default())
+		loginService, _, _, _ := setupLoginServiceWithMocks(t)
 
-		oauthUser, err := l.GenerateSession(context.TODO(), "some-provider", "")
+		consentDetails, err := loginService.GenerateSession(context.TODO(), "unknown-provider", "code")
 
-		assert.EqualError(t, err, "unsupported provider: some-provider")
-		assert.Nil(t, oauthUser)
-	})
-
-	t.Run("returns error when the provider returns an error", func(t *testing.T) {
-		l := NewLoginService(contract.Oauth2Clients{
-			contract.Google: &MockOauth2ClientAdapter{error: errors.New("request failed")},
-		}, slog.Default())
-
-		consentDetails, err := l.GenerateSession(context.TODO(), "google", "auth-code")
-
-		assert.EqualError(t, err, "failed to fetch oauth user: request failed")
 		assert.Nil(t, consentDetails)
+		assert.ErrorContains(t, err, "unsupported provider")
 	})
 
-	t.Run("returns session details for a supported provider", func(t *testing.T) {
-		mockOauthUser := domain.NewOauthUser("firstname", "lastname", "name@email.com")
-		l := NewLoginService(contract.Oauth2Clients{
-			contract.Google: &MockOauth2ClientAdapter{oauthUser: mockOauthUser},
-		}, slog.Default())
+	t.Run("returns error when provider client returns an error during user details fetch", func(t *testing.T) {
+		loginService, oauth2ClientMock, _, _ := setupLoginServiceWithMocks(t)
+		oauth2ClientMock.EXPECT().FetchOauthUser(gomock.Any(), "code").Return(nil, errors.New("failed to fetch user"))
 
-		consentDetails, err := l.GenerateSession(context.TODO(), "google", "auth-code")
+		consentDetails, err := loginService.GenerateSession(context.TODO(), "google", "code")
 
-		assert.Nil(t, err)
-		assert.Equal(t, mockOauthUser, consentDetails)
+		assert.Nil(t, consentDetails)
+		assert.ErrorContains(t, err, "failed to fetch user")
+	})
+
+	t.Run("returns error when persisting/fetching user details fail", func(t *testing.T) {
+		loginService, oauth2ClientMock, _, identityRepoMock := setupLoginServiceWithMocks(t)
+		oauth2ClientMock.EXPECT().FetchOauthUser(gomock.Any(), "code").Return(
+			&domain.OauthUser{
+				Email:     "user@gmail.com",
+				FirstName: "firstname",
+				LastName:  "lastname",
+			},
+			nil,
+		)
+		identityRepoMock.EXPECT().FindOrCreate(gomock.Any(), gomock.Any()).Return(nil, errors.New("failed to fetch user"))
+
+		consentDetails, err := loginService.GenerateSession(context.TODO(), "google", "code")
+
+		assert.Nil(t, consentDetails)
+		assert.ErrorContains(t, err, "failed to fetch user")
+	})
+
+	t.Run("returns error when the session finder results in non-active session error", func(t *testing.T) {
+		loginService, oauth2ClientMock, sessionRepoMock, identityRepoMock := setupLoginServiceWithMocks(t)
+		oauth2ClientMock.EXPECT().FetchOauthUser(gomock.Any(), "code").Return(
+			&domain.OauthUser{Email: "user@gmail.com", FirstName: "firstname", LastName: "lastname"},
+			nil,
+		)
+		identity := &domain.Identity{Id: uuid.New()}
+		identityRepoMock.EXPECT().FindOrCreate(gomock.Any(), gomock.Any()).Return(identity, nil)
+		sessionRepoMock.EXPECT().FindActiveSessionByIdentityId(gomock.Any(), identity.Id).Return(nil, errors.New("db down"))
+
+		session, err := loginService.GenerateSession(context.TODO(), "google", "code")
+
+		assert.Nil(t, session)
+		assert.ErrorContains(t, err, "db down")
+	})
+
+	t.Run("returns the active session if it is not expired", func(t *testing.T) {
+		loginService, oauth2ClientMock, sessionRepoMock, identityRepoMock := setupLoginServiceWithMocks(t)
+		oauth2ClientMock.EXPECT().FetchOauthUser(gomock.Any(), "code").Return(
+			&domain.OauthUser{Email: "user@gmail.com", FirstName: "firstname", LastName: "lastname"},
+			nil,
+		)
+		identity := &domain.Identity{Id: uuid.New()}
+		identityRepoMock.EXPECT().FindOrCreate(gomock.Any(), gomock.Any()).Return(identity, nil)
+		existingSession := &domain.Session{SessionId: "sid-1", ExpiresAt: time.Now().UTC().Add(time.Hour)}
+		sessionRepoMock.EXPECT().FindActiveSessionByIdentityId(gomock.Any(), identity.Id).Return(existingSession, nil)
+
+		session, err := loginService.GenerateSession(context.TODO(), "google", "code")
+
+		assert.NoError(t, err)
+		assert.Equal(t, existingSession, session)
+	})
+
+	t.Run("deactivates and returns a new session if the existing session is expired", func(t *testing.T) {
+		loginService, oauth2ClientMock, sessionRepoMock, identityRepoMock := setupLoginServiceWithMocks(t)
+		oauth2ClientMock.EXPECT().FetchOauthUser(gomock.Any(), "code").Return(
+			&domain.OauthUser{Email: "user@gmail.com", FirstName: "firstname", LastName: "lastname"},
+			nil,
+		)
+		identity := &domain.Identity{Id: uuid.New()}
+		identityRepoMock.EXPECT().FindOrCreate(gomock.Any(), gomock.Any()).Return(identity, nil)
+		existingSession := &domain.Session{SessionId: "sid-1", ExpiresAt: time.Now().UTC().Add(-time.Hour)}
+		sessionRepoMock.EXPECT().FindActiveSessionByIdentityId(gomock.Any(), identity.Id).Return(existingSession, nil)
+		sessionRepoMock.EXPECT().DeactivateByIdentityId(gomock.Any(), identity.Id).Return(existingSession, nil)
+		newSession := &domain.Session{SessionId: "sid-2", ExpiresAt: time.Now().UTC().Add(time.Hour)}
+		sessionRepoMock.EXPECT().Create(gomock.Any(), identity).Return(newSession, nil)
+
+		session, err := loginService.GenerateSession(context.TODO(), "google", "code")
+
+		assert.NoError(t, err)
+		assert.Equal(t, newSession, session)
+	})
+
+	t.Run("returns a new session when there are no active sessions yet", func(t *testing.T) {
+		loginService, oauth2ClientMock, sessionRepoMock, identityRepoMock := setupLoginServiceWithMocks(t)
+		oauth2ClientMock.EXPECT().FetchOauthUser(gomock.Any(), "code").Return(
+			&domain.OauthUser{Email: "user@gmail.com", FirstName: "firstname", LastName: "lastname"},
+			nil,
+		)
+		identity := &domain.Identity{Id: uuid.New()}
+		identityRepoMock.EXPECT().FindOrCreate(gomock.Any(), gomock.Any()).Return(identity, nil)
+		sessionRepoMock.EXPECT().FindActiveSessionByIdentityId(gomock.Any(), identity.Id).Return(nil, domain.NoActiveSession)
+		newSession := &domain.Session{SessionId: "sid-2", ExpiresAt: time.Now().UTC().Add(time.Hour)}
+		sessionRepoMock.EXPECT().Create(gomock.Any(), identity).Return(newSession, nil)
+
+		session, err := loginService.GenerateSession(context.TODO(), "google", "code")
+
+		assert.NoError(t, err)
+		assert.Equal(t, newSession, session)
+	})
+}
+
+func TestLoginService_ValidateSession(t *testing.T) {
+	t.Run("returns session not found if there are not session for a session ID", func(t *testing.T) {
+		loginService, _, sessionRepoMock, _ := setupLoginServiceWithMocks(t)
+		sessionRepoMock.EXPECT().FindBySessionId(gomock.Any(), "sid-1").Return(nil, nil, domain.SessionNotFound)
+
+		identity, session, err := loginService.ValidateSession(context.TODO(), "sid-1")
+
+		assert.Nil(t, identity)
+		assert.Nil(t, session)
+		assert.ErrorIs(t, err, domain.SessionNotFound)
+	})
+	t.Run("returns inactive session when an old session id is used", func(t *testing.T) {
+		loginService, _, sessionRepoMock, _ := setupLoginServiceWithMocks(t)
+		identity := &domain.Identity{}
+		session := &domain.Session{Active: false}
+		sessionRepoMock.EXPECT().FindBySessionId(gomock.Any(), "sid-1").Return(identity, session, nil)
+
+		gotIdentity, gotSession, err := loginService.ValidateSession(context.TODO(), "sid-1")
+
+		assert.Nil(t, gotIdentity)
+		assert.Nil(t, gotSession)
+		assert.ErrorIs(t, err, domain.InactiveSession)
+	})
+	t.Run("returns identity and session if the session is not expired", func(t *testing.T) {
+		loginService, _, sessionRepoMock, _ := setupLoginServiceWithMocks(t)
+		identity := &domain.Identity{}
+		session := &domain.Session{Active: true, ExpiresAt: time.Now().UTC().Add(time.Hour)}
+		sessionRepoMock.EXPECT().FindBySessionId(gomock.Any(), "sid-1").Return(identity, session, nil)
+
+		gotIdentity, gotSession, err := loginService.ValidateSession(context.TODO(), "sid-1")
+
+		assert.NoError(t, err)
+		assert.Equal(t, identity, gotIdentity)
+		assert.Equal(t, session, gotSession)
+	})
+	t.Run("expires the session and returns the expired session error when an active session is expired", func(t *testing.T) {
+		loginService, _, sessionRepoMock, _ := setupLoginServiceWithMocks(t)
+		identity := &domain.Identity{}
+		session := &domain.Session{Active: true, ExpiresAt: time.Now().UTC().Add(-time.Hour)}
+		sessionRepoMock.EXPECT().FindBySessionId(gomock.Any(), "sid-1").Return(identity, session, nil)
+		sessionRepoMock.EXPECT().DeactivateBySessionId(gomock.Any(), "sid-1").Return(session, nil)
+
+		gotIdentity, gotSession, err := loginService.ValidateSession(context.TODO(), "sid-1")
+
+		assert.Nil(t, gotIdentity)
+		assert.Nil(t, gotSession)
+		assert.ErrorIs(t, err, domain.ExpiredSession)
 	})
 }

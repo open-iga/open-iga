@@ -11,15 +11,16 @@ import (
 )
 
 type LoginService struct {
-	oauth2Clients contract.Oauth2Clients
-	logger        *slog.Logger
-	repository    *contract.Repository
+	oauth2Clients      contract.Oauth2Clients
+	logger             *slog.Logger
+	sessionRepository  contract.SessionRepository
+	identityRepository contract.IdentityRepository
 }
 
 var _ contract.LoginService = &LoginService{}
 
-func NewLoginService(oauth2Clients contract.Oauth2Clients, logger *slog.Logger, repository *contract.Repository) *LoginService {
-	return &LoginService{oauth2Clients, logger, repository}
+func NewLoginService(oauth2Clients contract.Oauth2Clients, logger *slog.Logger, sessionRepository contract.SessionRepository, identityRepository contract.IdentityRepository) *LoginService {
+	return &LoginService{oauth2Clients, logger, sessionRepository, identityRepository}
 }
 
 func (l *LoginService) GetConsentPageDetails(ctx context.Context, provider string) (*domain.ConsentDetails, error) {
@@ -53,33 +54,34 @@ func (l *LoginService) GenerateSession(ctx context.Context, provider string, aut
 
 	oauthUser, err := client.FetchOauthUser(ctx, authCode)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch oauth user: %w", err)
+		return nil, fmt.Errorf("generate session: %w", err)
 	}
 
-	identity, err := l.repository.IdentityRepository.FindOrCreate(ctx, oauthUser)
+	identity, err := l.identityRepository.FindOrCreate(ctx, oauthUser)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find or create identity %w", err)
+		return nil, fmt.Errorf("generate session: %w", err)
 	}
 
-	session, err := l.repository.SessionRepository.FindActiveSessionByIdentityId(ctx, identity.Id)
+	session, err := l.sessionRepository.FindActiveSessionByIdentityId(ctx, identity.Id)
+
+	if err != nil && !errors.Is(err, domain.NoActiveSession) {
+		return nil, fmt.Errorf("generate session: %w", err)
+	}
+
 	if session != nil && !session.IsExpired() {
 		return session, nil
 	}
 
 	if session != nil && session.IsExpired() {
-		_, err := l.repository.SessionRepository.DeactivateByIdentityId(ctx, identity.Id)
+		_, err := l.sessionRepository.DeactivateByIdentityId(ctx, identity.Id)
 		if err != nil {
-			return nil, fmt.Errorf("failed to deactivate active session %w", err)
+			return nil, fmt.Errorf("generate session: %w", err)
 		}
 	}
 
-	if err != nil && !errors.Is(err, domain.NoActiveSession) {
-		return nil, fmt.Errorf("failed to find active session: %w", err)
-	}
-
-	session, err = l.repository.SessionRepository.Create(ctx, identity)
+	session, err = l.sessionRepository.Create(ctx, identity)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create session %w", err)
+		return nil, fmt.Errorf("generate session: %w", err)
 	}
 
 	return session, nil
@@ -92,10 +94,14 @@ func (l *LoginService) GenerateSession(ctx context.Context, provider string, aut
 // 3. ExpiredSession: when the session is expired, in this case the session will be deactivated and user needs to login again to get a new session
 // 4. FailedToExpireSession: when there is an error while expiring the session, in this case user needs to login again to get a new session
 func (l *LoginService) ValidateSession(ctx context.Context, sessionId string) (*domain.Identity, *domain.Session, error) {
-	identity, session, err := l.repository.SessionRepository.FindBySessionId(ctx, sessionId)
+	identity, session, err := l.sessionRepository.FindBySessionId(ctx, sessionId)
+
+	if err != nil && errors.Is(err, domain.SessionNotFound) {
+		return nil, nil, domain.SessionNotFound
+	}
 
 	if err != nil {
-		return nil, nil, domain.SessionNotFound
+		return nil, nil, fmt.Errorf("validate session: %w", err)
 	}
 
 	if !session.Active {
@@ -106,10 +112,10 @@ func (l *LoginService) ValidateSession(ctx context.Context, sessionId string) (*
 		return identity, session, nil
 	}
 
-	l.logger.Debug("expired session", sessionId)
-	_, err = l.repository.SessionRepository.DeactivateBySessionId(ctx, sessionId)
+	l.logger.Debug("expired session", "sessionId", sessionId)
+	_, err = l.sessionRepository.DeactivateBySessionId(ctx, sessionId)
 	if err != nil {
-		l.logger.Error("failed to deactivate the session id", sessionId, "error", err)
+		l.logger.Error("failed to deactivate session", "sessionId", sessionId, "error", err.Error())
 		return nil, nil, domain.FailedToExpireSession
 	}
 

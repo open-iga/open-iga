@@ -3,7 +3,7 @@ version: 3
 tasks:
     dev:
         cmds:
-            - air
+            - go tool air
     generate:migration:
         preconditions:
             - sh: test -n "{{.NAME}}"
@@ -15,18 +15,28 @@ tasks:
             - sh: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
               msg: 'Failed to install sqlc@v1.31.1'
         cmds:
-            - sqlc generate
+            - go tool sqlc generate
             - echo "SQLC generation completed ✨"
     generate:oapi-codegen:
         dir: ..
         cmds:
             - oapi-codegen -config core/oapi-codegen.yaml openapi-spec/openapi.yml
+    generate:test-mocks:
+        cmds:
+            - go tool mockgen -source=internal/contract/runtime_application.go -destination=internal/testutil/runtime_application_mock.go -package=testutil
+            - go tool mockgen -source=internal/contract/runtime_remote.go -destination=internal/testutil/runtime_remote_mock.go -package=testutil
+            - go tool mockgen -source=internal/contract/runtime_repository.go -destination=internal/testutil/runtime_repository_mock.go -package=testutil
     pretty:
         cmds:
             - gofumpt -l -w .
     setup:
         cmds:
             - go get
+            - task: generate:test-mocks
+            - task: generate:sqlc
     test:
+        deps:
+            - task: generate:test-mocks
+            - task: generate:sqlc
         cmds:
             - go test ./...

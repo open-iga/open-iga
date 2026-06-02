@@ -10,6 +10,6 @@ includes:
 
 tasks:
     dev:
-        deps: [core:dev, console:dev]
+        deps: [task: core:dev, task: console:dev]
     setup:
-        deps: [core:setup, console:setup]
+        deps: [task: core:setup, task: console:setup]

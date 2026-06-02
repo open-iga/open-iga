@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/open-iga/core/internal/api/generated"
@@ -14,8 +15,10 @@ func (h *Handler) AuthDetails(ctx context.Context, request generated.AuthDetails
 	provider := string(request.Provider)
 	consentPageDetails, err := h.application.LoginService.GetConsentPageDetails(ctx, provider)
 	if err != nil {
-		h.logger.Error("Failed to get consent page details", "error", err, "provider", provider)
-		return generated.AuthDetails500JSONResponse{Message: "failed to get consent page details"}, nil
+		errDetails := fmt.Errorf("auth handler: %w", err)
+
+		h.logger.Error(errDetails.Error())
+		return generated.AuthDetails500JSONResponse{Message: errDetails.Error()}, nil
 	}
 
 	authStateCookie := http.Cookie{
@@ -42,21 +45,27 @@ func (h *Handler) AuthDetails(ctx context.Context, request generated.AuthDetails
 }
 
 func (h *Handler) AuthCallback(ctx context.Context, request generated.AuthCallbackRequestObject) (generated.AuthCallbackResponseObject, error) {
+	if request.Params.AuthState == nil {
+		return generated.AuthCallback422JSONResponse{Message: "missing state cookie"}, nil
+	}
+
 	authState := *request.Params.AuthState
 	if authState == "" {
-		h.logger.Error("Received empty string for auth code in login callback")
-		return generated.AuthCallback500JSONResponse{Message: "received empty auth code"}, nil
+		h.logger.Error("Received empty string for auth code in auth callback")
+		return generated.AuthCallback422JSONResponse{Message: "empty state cookie"}, nil
 	}
 
 	if request.Params.State != authState {
-		h.logger.Error("State mismatch in login callback")
-		return generated.AuthCallback422JSONResponse{Message: "state mismatch in login callback"}, nil
+		h.logger.Error("State mismatch in auth callback", "provider", request.Provider)
+		return generated.AuthCallback422JSONResponse{Message: "state mismatch"}, nil
 	}
 
 	session, err := h.application.LoginService.GenerateSession(ctx, string(request.Provider), request.Params.Code)
 	if err != nil {
-		h.logger.Error("Failed to generate session", "error", err)
-		return generated.AuthCallback500JSONResponse{Message: "failed to generate session"}, nil
+		errDetails := fmt.Errorf("auth callback handler: %w", err)
+
+		h.logger.Error(errDetails.Error())
+		return generated.AuthCallback500JSONResponse{Message: errDetails.Error()}, nil
 	}
 
 	cookie := http.Cookie{
@@ -68,8 +77,6 @@ func (h *Handler) AuthCallback(ctx context.Context, request generated.AuthCallba
 		MaxAge:   session.ValidityInSeconds(),
 		Secure:   true,
 	}
-	cookieStr := cookie.String()
-
 	return generated.AuthCallback201JSONResponse{
 		Body: struct {
 			Redirect string `json:"redirect"`
@@ -77,7 +84,7 @@ func (h *Handler) AuthCallback(ctx context.Context, request generated.AuthCallba
 			Redirect: h.appConfig.Redirect.Home,
 		},
 		Headers: generated.AuthCallback201ResponseHeaders{
-			SetCookie: &cookieStr,
+			SetCookie: new(cookie.String()),
 		},
 	}, nil
 }

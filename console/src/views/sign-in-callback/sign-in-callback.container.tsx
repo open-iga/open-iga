@@ -20,7 +20,12 @@ const SignInCallback = ({ state, code, provider }: SignInCallbackProps) => {
         onSuccess: ({ data }) => {
             if (data?.redirect) {
                 globalThis.location.href = data.redirect;
+            } else {
+                console.error('Something went wrong in onSuccess...');
             }
+        },
+        onError: () => {
+            console.error('Something went wrong...');
         },
     });
 
@@ -45,5 +50,5 @@ export const SignInCallbackContainer = () => {
         return <div>Invalid provider</div>;
     }
 
-    return <SignInCallback code={code} provider={provider as SupportedOauthProvider} state={state} />;
+    return <SignInCallback code={code} provider={'hello' as SupportedOauthProvider} state={state} />;
 };
