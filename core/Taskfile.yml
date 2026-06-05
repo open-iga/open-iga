@@ -26,6 +26,9 @@ tasks:
             - go tool mockgen -source=internal/contract/runtime_application.go -destination=internal/testutil/runtime_application_mock.go -package=testutil
             - go tool mockgen -source=internal/contract/runtime_remote.go -destination=internal/testutil/runtime_remote_mock.go -package=testutil
             - go tool mockgen -source=internal/contract/runtime_repository.go -destination=internal/testutil/runtime_repository_mock.go -package=testutil
+    lint:
+        cmds:
+            - golangci-lint run
     pretty:
         cmds:
             - gofumpt -l -w .
@@ -37,6 +40,5 @@ tasks:
     test:
         deps:
             - task: generate:test-mocks
-            - task: generate:sqlc
         cmds:
-            - go test ./...
+            - go test -v ./...

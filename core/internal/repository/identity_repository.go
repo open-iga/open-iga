@@ -30,7 +30,6 @@ func (i *IdentityRepository) FindOrCreate(ctx context.Context, user *domain.Oaut
 		Type:      db.IdentityTypeUser,
 		Email:     user.Email,
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert / update the identity %w", err)
 	}

@@ -8,8 +8,10 @@ import (
 	"github.com/open-iga/core/internal/api/generated"
 )
 
-const AuthStateCookieName = "authState"
-const SessionCookieName = "sid"
+const (
+	AuthStateCookieName = "authState"
+	SessionCookieName   = "sid"
+)
 
 func (h *Handler) AuthDetails(ctx context.Context, request generated.AuthDetailsRequestObject) (generated.AuthDetailsResponseObject, error) {
 	provider := string(request.Provider)

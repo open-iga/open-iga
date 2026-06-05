@@ -24,7 +24,7 @@ func setupRouterWithMockLoginService(t *testing.T) (*chi.Mux, *testutil.MockLogi
 	loginServiceMock := testutil.NewMockLoginService(ctrl)
 	applicationMock := &contract.RuntimeApplication{LoginService: loginServiceMock}
 
-	handler := NewHandler(testutil.NewTestAppConfig(t), testutil.NewTestLogger(), applicationMock)
+	handler := NewHandler(testutil.NewTestAppConfig(), testutil.NewTestLogger(), applicationMock)
 
 	router := testutil.NewMockRouter(handler)
 
@@ -32,7 +32,6 @@ func setupRouterWithMockLoginService(t *testing.T) (*chi.Mux, *testutil.MockLogi
 }
 
 func TestHandler_AuthDetails(t *testing.T) {
-
 	t.Run("returns 400 when provider is invalid", func(t *testing.T) {
 		router, _ := setupRouterWithMockLoginService(t)
 

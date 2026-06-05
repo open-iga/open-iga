@@ -15,7 +15,6 @@ func NewRouter(appConfig *common.AppConfig, logger *slog.Logger, application *co
 	reqHandler := handler.NewHandler(appConfig, logger, application)
 
 	spec, err := generated.GetSpec()
-
 	if err != nil {
 		panic(err)
 	}

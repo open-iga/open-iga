@@ -29,8 +29,7 @@ func main() {
 
 	appConfig := common.NewAppConfig()
 
-	runtimeRepository, err := repository.NewRepository(appConfig, logger)
-
+	runtimeRepository, _, err := repository.NewRepository(appConfig, logger)
 	if err != nil {
 		panic(err)
 	}
