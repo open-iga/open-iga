@@ -8,11 +8,11 @@ import (
 )
 
 var (
-	NoActiveSession       = errors.New("no active session")
-	SessionNotFound       = errors.New("no session found")
-	InactiveSession       = errors.New("inactive session")
-	FailedToExpireSession = errors.New("failed to expire session")
-	ExpiredSession        = errors.New("expired session")
+	ErrNoActiveSession       = errors.New("no active session")
+	ErrSessionNotFound       = errors.New("no session found")
+	ErrInactiveSession       = errors.New("inactive session")
+	ErrFailedToExpireSession = errors.New("failed to expire session")
+	ErrExpiredSession        = errors.New("expired session")
 )
 
 type Session struct {

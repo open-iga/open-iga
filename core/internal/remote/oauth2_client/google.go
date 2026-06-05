@@ -33,7 +33,7 @@ type googleOauth2UserinfoDto struct {
 }
 
 // for type checking at compile time
-var _ contract.Oauth2ClientAdapter = &GoogleOauth2Client{}
+var _ contract.Oauth2ClientAdapter = (*GoogleOauth2Client)(nil)
 
 const (
 	googleOauth2UserInfoURL = "https://www.googleapis.com/oauth2/v2/userinfo"

@@ -17,7 +17,7 @@ type LoginService struct {
 	identityRepository contract.IdentityRepository
 }
 
-var _ contract.LoginService = &LoginService{}
+var _ contract.LoginService = (*LoginService)(nil)
 
 func NewLoginService(oauth2Clients contract.Oauth2Clients, logger *slog.Logger, sessionRepository contract.SessionRepository, identityRepository contract.IdentityRepository) *LoginService {
 	return &LoginService{oauth2Clients, logger, sessionRepository, identityRepository}
@@ -62,9 +62,12 @@ func (l *LoginService) GenerateSession(ctx context.Context, provider string, aut
 		return nil, fmt.Errorf("generate session: %w", err)
 	}
 
-	session, err := l.sessionRepository.FindActiveSessionByIdentityId(ctx, identity.Id)
+	return l.createSession(ctx, identity)
+}
 
-	if err != nil && !errors.Is(err, domain.NoActiveSession) {
+func (l *LoginService) createSession(ctx context.Context, identity *domain.Identity) (*domain.Session, error) {
+	session, err := l.sessionRepository.FindActiveSessionByIdentityId(ctx, identity.Id)
+	if err != nil && !errors.Is(err, domain.ErrNoActiveSession) {
 		return nil, fmt.Errorf("generate session: %w", err)
 	}
 
@@ -96,8 +99,8 @@ func (l *LoginService) GenerateSession(ctx context.Context, provider string, aut
 func (l *LoginService) ValidateSession(ctx context.Context, sessionId string) (*domain.Identity, *domain.Session, error) {
 	identity, session, err := l.sessionRepository.FindBySessionId(ctx, sessionId)
 
-	if err != nil && errors.Is(err, domain.SessionNotFound) {
-		return nil, nil, domain.SessionNotFound
+	if err != nil && errors.Is(err, domain.ErrSessionNotFound) {
+		return nil, nil, domain.ErrSessionNotFound
 	}
 
 	if err != nil {
@@ -105,7 +108,7 @@ func (l *LoginService) ValidateSession(ctx context.Context, sessionId string) (*
 	}
 
 	if !session.Active {
-		return nil, nil, domain.InactiveSession
+		return nil, nil, domain.ErrInactiveSession
 	}
 
 	if !session.IsExpired() {
@@ -116,8 +119,8 @@ func (l *LoginService) ValidateSession(ctx context.Context, sessionId string) (*
 	_, err = l.sessionRepository.DeactivateBySessionId(ctx, sessionId)
 	if err != nil {
 		l.logger.Error("failed to deactivate session", "sessionId", sessionId, "error", err.Error())
-		return nil, nil, domain.FailedToExpireSession
+		return nil, nil, domain.ErrFailedToExpireSession
 	}
 
-	return nil, nil, domain.ExpiredSession
+	return nil, nil, domain.ErrExpiredSession
 }

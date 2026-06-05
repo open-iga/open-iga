@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/open-iga/core/internal/api"
 	"github.com/open-iga/core/internal/application"
@@ -38,7 +39,16 @@ func main() {
 
 	router := api.NewRouter(appConfig, logger, runtimeApplication)
 
-	err = http.ListenAndServe(appConfig.Port, router)
+	server := &http.Server{
+		Addr:    appConfig.Port,
+		Handler: router,
+		// Below timeouts are arbitrary
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+	err = server.ListenAndServe()
 	if err != nil {
 		panic(err)
 	}

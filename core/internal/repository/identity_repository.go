@@ -16,7 +16,7 @@ type IdentityRepository struct {
 	logger  *slog.Logger
 }
 
-var _ contract.IdentityRepository = &IdentityRepository{}
+var _ contract.IdentityRepository = (*IdentityRepository)(nil)
 
 func NewIdentityRepository(queries *db.Queries, logger *slog.Logger) *IdentityRepository {
 	return &IdentityRepository{queries, logger}

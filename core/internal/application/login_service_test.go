@@ -167,7 +167,7 @@ func TestLoginService_GenerateSession(t *testing.T) {
 		)
 		identity := &domain.Identity{Id: uuid.New()}
 		identityRepoMock.EXPECT().FindOrCreate(gomock.Any(), gomock.Any()).Return(identity, nil)
-		sessionRepoMock.EXPECT().FindActiveSessionByIdentityId(gomock.Any(), identity.Id).Return(nil, domain.NoActiveSession)
+		sessionRepoMock.EXPECT().FindActiveSessionByIdentityId(gomock.Any(), identity.Id).Return(nil, domain.ErrNoActiveSession)
 		newSession := &domain.Session{SessionId: "sid-2", ExpiresAt: time.Now().UTC().Add(time.Hour)}
 		sessionRepoMock.EXPECT().Create(gomock.Any(), identity).Return(newSession, nil)
 
@@ -181,13 +181,13 @@ func TestLoginService_GenerateSession(t *testing.T) {
 func TestLoginService_ValidateSession(t *testing.T) {
 	t.Run("returns session not found if there are not session for a session ID", func(t *testing.T) {
 		loginService, _, sessionRepoMock, _ := setupLoginServiceWithMocks(t)
-		sessionRepoMock.EXPECT().FindBySessionId(gomock.Any(), "sid-1").Return(nil, nil, domain.SessionNotFound)
+		sessionRepoMock.EXPECT().FindBySessionId(gomock.Any(), "sid-1").Return(nil, nil, domain.ErrSessionNotFound)
 
 		identity, session, err := loginService.ValidateSession(context.TODO(), "sid-1")
 
 		assert.Nil(t, identity)
 		assert.Nil(t, session)
-		assert.ErrorIs(t, err, domain.SessionNotFound)
+		assert.ErrorIs(t, err, domain.ErrSessionNotFound)
 	})
 	t.Run("returns inactive session when an old session id is used", func(t *testing.T) {
 		loginService, _, sessionRepoMock, _ := setupLoginServiceWithMocks(t)
@@ -199,7 +199,7 @@ func TestLoginService_ValidateSession(t *testing.T) {
 
 		assert.Nil(t, gotIdentity)
 		assert.Nil(t, gotSession)
-		assert.ErrorIs(t, err, domain.InactiveSession)
+		assert.ErrorIs(t, err, domain.ErrInactiveSession)
 	})
 	t.Run("returns identity and session if the session is not expired", func(t *testing.T) {
 		loginService, _, sessionRepoMock, _ := setupLoginServiceWithMocks(t)
@@ -224,6 +224,6 @@ func TestLoginService_ValidateSession(t *testing.T) {
 
 		assert.Nil(t, gotIdentity)
 		assert.Nil(t, gotSession)
-		assert.ErrorIs(t, err, domain.ExpiredSession)
+		assert.ErrorIs(t, err, domain.ErrExpiredSession)
 	})
 }

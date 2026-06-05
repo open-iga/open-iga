@@ -15,7 +15,7 @@ type Handler struct {
 	appConfig   *common.AppConfig
 }
 
-var _ generated.StrictServerInterface = &Handler{}
+var _ generated.StrictServerInterface = (*Handler)(nil)
 
 func NewHandler(appConfig *common.AppConfig, logger *slog.Logger, application *contract.RuntimeApplication) *Handler {
 	return &Handler{logger, application, appConfig}

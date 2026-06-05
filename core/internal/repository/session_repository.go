@@ -19,7 +19,7 @@ type SessionRepository struct {
 	logger  *slog.Logger
 }
 
-var _ contract.SessionRepository = &SessionRepository{}
+var _ contract.SessionRepository = (*SessionRepository)(nil)
 
 func NewSessionRepository(queries *db.Queries, logger *slog.Logger) *SessionRepository {
 	return &SessionRepository{queries, logger}
@@ -47,7 +47,7 @@ func (s *SessionRepository) FindBySessionId(ctx context.Context, sessionId strin
 	sessionDetails, err := s.queries.FindBySessionId(ctx, sessionId)
 
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
-		return nil, nil, domain.SessionNotFound
+		return nil, nil, domain.ErrSessionNotFound
 	}
 
 	if err != nil {
@@ -79,7 +79,7 @@ func (s *SessionRepository) FindActiveSessionByIdentityId(ctx context.Context, i
 	session, err := s.queries.FindActiveSessionByIdentityId(ctx, identityId)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, domain.NoActiveSession
+		return nil, domain.ErrNoActiveSession
 	}
 
 	if err != nil {

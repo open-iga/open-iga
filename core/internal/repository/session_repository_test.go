@@ -65,7 +65,7 @@ func TestSessionRepository_FindBySessionId(t *testing.T) {
 
 		assert.Nil(t, s)
 		assert.Nil(t, i)
-		assert.Equal(t, err, domain.SessionNotFound)
+		assert.Equal(t, err, domain.ErrSessionNotFound)
 	})
 
 	t.Run("finds session by id", func(t *testing.T) {
@@ -155,7 +155,7 @@ func TestSessionRepository_FindActiveSessionByIdentityId(t *testing.T) {
 		session, err := repository.SessionRepository.FindActiveSessionByIdentityId(context.Background(), identity.Id)
 
 		assert.Nil(t, session)
-		assert.Equal(t, domain.NoActiveSession, err)
+		assert.Equal(t, domain.ErrNoActiveSession, err)
 	})
 
 	t.Run("finds session by id", func(t *testing.T) {
