@@ -1,0 +1,4 @@
+description: Supported Oauth Providers
+type: string
+enum:
+    - google

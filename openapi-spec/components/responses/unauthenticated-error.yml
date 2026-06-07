@@ -1,0 +1,13 @@
+description: Unauthenticated
+content:
+    application/json:
+        schema:
+            type: object
+            properties:
+                message:
+                    type: string
+                redirect:
+                    type: string
+            required:
+                - message
+                - redirect

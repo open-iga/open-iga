@@ -18,10 +18,10 @@ func NewConsentDetails(authCodeUrl string, state string) *ConsentDetails {
 	}
 }
 
-func NewOauthUser(firstName string, lastname string, email string) *OauthUser {
+func NewOauthUser(firstName string, lastName string, email string) *OauthUser {
 	return &OauthUser{
 		Email:     email,
 		FirstName: firstName,
-		LastName:  lastname,
+		LastName:  lastName,
 	}
 }

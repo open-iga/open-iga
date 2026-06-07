@@ -1,0 +1,48 @@
+post:
+    operationId: authCallback
+    description: Callback endpoint for handling OAuth provider responses after user authentication. Creates a session and sets the session id cookie with redirect path
+    parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+              $ref: '../schemas/oauth-providers.yml'
+        - name: code
+          in: query
+          required: true
+          description: Authorization code from OAuth provider
+          schema:
+              type: string
+        - name: state
+          in: query
+          required: true
+          description: State cookie for CSRF protection
+          schema:
+              type: string
+        - name: authState
+          in: cookie
+          required: false
+          description: CSRF state cookie
+          schema:
+              type: string
+    responses:
+        '201':
+            description: Creates session and set session cookie
+            headers:
+                Set-Cookie:
+                    description: Session cookie
+                    schema:
+                        type: string
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            redirect:
+                                type: string
+                        required:
+                            - redirect
+        '422':
+            $ref: '../components/responses/unprocessable-entity-error.yml'
+        '500':
+            $ref: '../components/responses/internal-server-error.yml'

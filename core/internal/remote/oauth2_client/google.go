@@ -33,7 +33,7 @@ type googleOauth2UserinfoDto struct {
 }
 
 // for type checking at compile time
-var _ contract.Oauth2ClientAdapter = &GoogleOauth2Client{}
+var _ contract.Oauth2ClientAdapter = (*GoogleOauth2Client)(nil)
 
 const (
 	googleOauth2UserInfoURL = "https://www.googleapis.com/oauth2/v2/userinfo"
@@ -44,7 +44,7 @@ func NewGoogleOauth2Client(appConfig *common.AppConfig, logger *slog.Logger) *Go
 	config := &oauth2.Config{
 		ClientID:     appConfig.Oauth.Google.ClientId,
 		ClientSecret: appConfig.Oauth.Google.ClientSecret,
-		RedirectURL:  fmt.Sprintf("%s/login/google/callback", appConfig.HostUrl),
+		RedirectURL:  appConfig.HostUrl + appConfig.Redirect.GoogleAuthCallback,
 		Scopes: []string{
 			"https://www.googleapis.com/auth/userinfo.profile",
 			"https://www.googleapis.com/auth/userinfo.email",

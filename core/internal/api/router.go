@@ -1,57 +1,29 @@
 package api
 
 import (
-	"log"
 	"log/slog"
-	"net/http"
-	"time"
 
-	"github.com/danielgtaylor/huma/v2"
-	"github.com/danielgtaylor/huma/v2/adapters/humago"
+	"github.com/go-chi/chi/v5"
+	middleware "github.com/oapi-codegen/nethttp-middleware"
+	"github.com/open-iga/core/internal/api/generated"
+	"github.com/open-iga/core/internal/api/handler"
 	"github.com/open-iga/core/internal/common"
 	"github.com/open-iga/core/internal/contract"
 )
 
-type Router struct {
-	api         huma.API
-	serverMux   *http.ServeMux
-	logger      *slog.Logger
-	application *contract.RuntimeApplication
-	appConfig   *common.AppConfig
-}
+func NewRouter(appConfig *common.AppConfig, logger *slog.Logger, application *contract.RuntimeApplication) *chi.Mux {
+	reqHandler := handler.NewHandler(appConfig, logger, application)
 
-type Option func(*Router)
-
-func WithApi(api huma.API) Option {
-	return func(router *Router) {
-		router.api = api
-	}
-}
-
-func NewRouter(appConfig *common.AppConfig, application *contract.RuntimeApplication, logger *slog.Logger, opts ...Option) *Router {
-	serveMux := http.NewServeMux()
-
-	api := humago.New(serveMux, huma.DefaultConfig("OpenIGA API", "1.0.0"))
-	router := &Router{serverMux: serveMux, api: api, logger: logger, application: application, appConfig: appConfig}
-
-	for _, opt := range opts {
-		opt(router)
+	spec, err := generated.GetSpec()
+	if err != nil {
+		panic(err)
 	}
 
-	logger.Debug("Setting up routes")
-	router.setupRoutes()
+	router := chi.NewRouter()
+
+	router.Use(middleware.OapiRequestValidator(spec))
+	serverInterface := generated.NewStrictHandler(reqHandler, nil)
+	generated.HandlerFromMux(serverInterface, router)
 
 	return router
-}
-
-func (r *Router) Start() {
-	addr := r.appConfig.Port
-	server := &http.Server{
-		Addr:              addr,
-		ReadHeaderTimeout: 3 * time.Second,
-		Handler:           r.serverMux,
-	}
-
-	r.logger.Info("Starting server", "address", addr)
-	log.Fatal(server.ListenAndServe())
 }

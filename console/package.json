@@ -1,0 +1,28 @@
+{
+  "name": "console",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "generate:openapi-fetch": "npx openapi-typescript ../openapi-spec/openapi.yml -o src/openapi/schema.d.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "openapi-fetch": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@tanstack/router-plugin": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "openapi-typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}

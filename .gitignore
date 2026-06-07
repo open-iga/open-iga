@@ -1,5 +1,11 @@
 /.idea/
 **/*.iml
 **/tmp
-core/.env
+**/.env
+.env
+.env.*
+!.env.example
+**/dist
 **/coverage.out
+**/.DS_Store
+node_modules

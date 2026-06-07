@@ -23,5 +23,5 @@ type Oauth2ClientAdapter interface {
 type Oauth2Clients map[Provider]Oauth2ClientAdapter
 
 type RuntimeRemote struct {
-	Oauth2Clients
+	Oauth2Clients Oauth2Clients
 }

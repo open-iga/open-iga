@@ -3,12 +3,15 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/open-iga/core/internal/api"
 	"github.com/open-iga/core/internal/application"
 	"github.com/open-iga/core/internal/common"
 	"github.com/open-iga/core/internal/remote"
+	"github.com/open-iga/core/internal/repository"
 )
 
 const banner = "\n" +
@@ -27,9 +30,38 @@ func main() {
 
 	appConfig := common.NewAppConfig()
 
+	runtimeRepository, conn, err := repository.NewRepository(appConfig, logger)
+	if err != nil {
+		panic(err)
+	}
 	runtimeRemote := remote.NewRemote(appConfig, logger)
-	runtimeApplication := application.NewApplication(appConfig, runtimeRemote, logger)
+	runtimeApplication := application.NewApplication(appConfig, logger, runtimeRemote, runtimeRepository)
 
-	router := api.NewRouter(appConfig, runtimeApplication, logger)
-	router.Start()
+	router := api.NewRouter(appConfig, logger, runtimeApplication)
+
+	server := &http.Server{
+		Addr:    appConfig.Port,
+		Handler: router,
+		// Below timeouts are arbitrary
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+	defer func() {
+		logger.Info("Gracefully shutting down")
+		conn.Close()
+		logger.Info("Closed DB connection")
+		err = server.Close()
+		if err != nil {
+			logger.Error("Error closing server")
+		} else {
+			logger.Info("Server shutdown gracefully")
+		}
+	}()
+
+	err = server.ListenAndServe()
+	if err != nil {
+		panic(err)
+	}
 }
