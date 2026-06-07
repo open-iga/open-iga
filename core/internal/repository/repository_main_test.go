@@ -19,19 +19,23 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
+	var code int
 
 	pgContainer, err := setupDB(ctx)
-	defer teardownDB(ctx, pgContainer)
+	defer func() {
+		teardownDB(ctx, pgContainer)
+		os.Exit(code)
+	}()
 
 	if err != nil {
 		fmt.Printf("Error setting up postgres container: %v\n", err)
-		os.Exit(1)
+		code = 1
 	}
 
 	pgConnString, err := pgContainer.ConnectionString(ctx)
 	if err != nil {
 		fmt.Printf("Error getting connection string: %v\n", err)
-		os.Exit(1)
+		code = 1
 	}
 
 	repository, conn, err = NewRepository(
@@ -40,10 +44,10 @@ func TestMain(m *testing.M) {
 	)
 	if err != nil {
 		fmt.Printf("Error creating repository: %v\n", err)
-		os.Exit(1)
+		code = 1
 	}
 
-	os.Exit(m.Run())
+	code = m.Run()
 }
 
 func setupDB(ctx context.Context) (*postgres.PostgresContainer, error) {
