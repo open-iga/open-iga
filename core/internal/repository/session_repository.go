@@ -26,6 +26,10 @@ func NewSessionRepository(queries *db.Queries, logger *slog.Logger) *SessionRepo
 }
 
 func (s *SessionRepository) Create(ctx context.Context, identity *domain.Identity) (*domain.Session, error) {
+	if identity == nil {
+		return nil, errors.New("identity is nil")
+	}
+
 	identitySession, err := identity.GenerateSession()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate session %w", err)
@@ -59,6 +63,11 @@ func (s *SessionRepository) FindBySessionId(ctx context.Context, sessionId strin
 
 func (s *SessionRepository) DeactivateBySessionId(ctx context.Context, sessionId string) (*domain.Session, error) {
 	session, err := s.queries.DeactivateBySessionId(ctx, sessionId)
+
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		return nil, domain.ErrSessionNotFound
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to deactivate session %w", err)
 	}
@@ -68,6 +77,11 @@ func (s *SessionRepository) DeactivateBySessionId(ctx context.Context, sessionId
 
 func (s *SessionRepository) DeactivateByIdentityId(ctx context.Context, identityId uuid.UUID) (*domain.Session, error) {
 	session, err := s.queries.DeactivateByIdentityId(ctx, identityId)
+
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		return nil, domain.ErrSessionNotFound
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get deactivate session %w", err)
 	}

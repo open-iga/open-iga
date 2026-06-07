@@ -30,7 +30,7 @@ func main() {
 
 	appConfig := common.NewAppConfig()
 
-	runtimeRepository, _, err := repository.NewRepository(appConfig, logger)
+	runtimeRepository, conn, err := repository.NewRepository(appConfig, logger)
 	if err != nil {
 		panic(err)
 	}
@@ -48,6 +48,18 @@ func main() {
 		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
+	defer func() {
+		logger.Info("Gracefully shutting down")
+		conn.Close()
+		logger.Info("Closed DB connection")
+		err = server.Close()
+		if err != nil {
+			logger.Error("Error closing server")
+		} else {
+			logger.Info("Server shutdown gracefully")
+		}
+	}()
+
 	err = server.ListenAndServe()
 	if err != nil {
 		panic(err)

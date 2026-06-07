@@ -5,7 +5,7 @@ includes:
         taskfile: ./core/Taskfile.yml
         dir: ./core
     console:
-        taskfile: ./console/taskfile.yml
+        taskfile: ./console/Taskfile.yml
         dir: ./console
 
 tasks:

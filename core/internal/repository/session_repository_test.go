@@ -16,14 +16,26 @@ var (
 
 func SetupIdentity(t *testing.T) {
 	t.Helper()
-	identity, _ = repository.IdentityRepository.FindOrCreate(t.Context(), new(mockOauthUser))
+	var err error
+	identity, err = repository.IdentityRepository.FindOrCreate(t.Context(), &mockOauthUser)
+	if err != nil {
+		t.Fatalf("failed to setup identity: %v", err)
+	}
+
 	t.Cleanup(func() {
-		conn.Exec(t.Context(), "DELETE FROM identity where email = $1", mockOauthUser.Email)
+		_, _ = conn.Exec(t.Context(), "DELETE FROM identity where email = $1", mockOauthUser.Email)
 	})
 }
 
 func TestSessionRepository_Create(t *testing.T) {
-	t.Run("generates session from identity and save it in ", func(t *testing.T) {
+	t.Run("returns error if user is nil", func(t *testing.T) {
+		session, err := repository.SessionRepository.Create(context.Background(), nil)
+
+		assert.Nil(t, session)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("generates session from identity", func(t *testing.T) {
 		SetupIdentity(t)
 		session, err := repository.SessionRepository.Create(context.Background(), identity)
 

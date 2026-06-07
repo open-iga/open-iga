@@ -79,6 +79,7 @@ func (h *Handler) AuthCallback(ctx context.Context, request generated.AuthCallba
 		MaxAge:   session.ValidityInSeconds(),
 		Secure:   true,
 	}
+	cookieStr := cookie.String()
 	return generated.AuthCallback201JSONResponse{
 		Body: struct {
 			Redirect string `json:"redirect"`
@@ -86,7 +87,7 @@ func (h *Handler) AuthCallback(ctx context.Context, request generated.AuthCallba
 			Redirect: h.appConfig.Redirect.Home,
 		},
 		Headers: generated.AuthCallback201ResponseHeaders{
-			SetCookie: new(cookie.String()),
+			SetCookie: &cookieStr,
 		},
 	}, nil
 }

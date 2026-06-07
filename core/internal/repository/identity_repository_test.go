@@ -10,10 +10,27 @@ import (
 )
 
 func TestIdentityRepository_FindOrCreate(t *testing.T) {
+	t.Run("returns error if user is nil", func(t *testing.T) {
+		identity, err := repository.IdentityRepository.FindOrCreate(context.TODO(), nil)
+
+		assert.Nil(t, identity)
+		assert.EqualError(t, err, "user is nil")
+	})
+
+	t.Run("returns error if email is empty", func(t *testing.T) {
+		emptyUser := testutil.NewOauthUser()
+		emptyUser.Email = ""
+
+		identity, err := repository.IdentityRepository.FindOrCreate(context.TODO(), &emptyUser)
+
+		assert.Nil(t, identity)
+		assert.EqualError(t, err, "email is empty")
+	})
+
 	t.Run("should insert identity if email already exists", func(t *testing.T) {
 		mockOauthUser := testutil.NewOauthUser()
 
-		identity, err := repository.IdentityRepository.FindOrCreate(context.TODO(), new(mockOauthUser))
+		identity, err := repository.IdentityRepository.FindOrCreate(context.TODO(), &mockOauthUser)
 
 		assert.Nil(t, err)
 
@@ -30,7 +47,7 @@ func TestIdentityRepository_FindOrCreate(t *testing.T) {
 	t.Run("should not insert identity if email already exists", func(t *testing.T) {
 		mockOauthUser := testutil.NewOauthUser()
 
-		identity, err := repository.IdentityRepository.FindOrCreate(context.TODO(), new(mockOauthUser))
+		identity, err := repository.IdentityRepository.FindOrCreate(context.TODO(), &mockOauthUser)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, identity)
@@ -38,15 +55,16 @@ func TestIdentityRepository_FindOrCreate(t *testing.T) {
 			_, _ = conn.Exec(context.Background(), "DELETE FROM identity WHERE email = $1", identity.Email)
 		})
 
-		upsertedIdentity, upsertingErr := repository.IdentityRepository.FindOrCreate(context.TODO(), new(mockOauthUser))
+		upsertedIdentity, upsertingErr := repository.IdentityRepository.FindOrCreate(context.TODO(), &mockOauthUser)
 
 		assert.Nil(t, upsertingErr)
 		assert.Equal(t, identity, upsertedIdentity)
 
 		rows, err := conn.Query(context.Background(), "SELECT * FROM identity WHERE email = $1", identity.Email)
-		defer rows.Close()
 
 		assert.Nil(t, err)
+		defer rows.Close()
+
 		count := 0
 		for rows.Next() {
 			count++

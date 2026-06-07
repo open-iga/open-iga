@@ -25,5 +25,5 @@ RETURNING *;
 -- name: DeactivateByIdentityId :one
 UPDATE session
 SET active = FALSE
-WHERE identity_id = $1
+WHERE identity_id = $1 AND active = TRUE
 RETURNING *;

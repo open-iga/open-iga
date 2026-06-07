@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -23,6 +24,14 @@ func NewIdentityRepository(queries *db.Queries, logger *slog.Logger) *IdentityRe
 }
 
 func (i *IdentityRepository) FindOrCreate(ctx context.Context, user *domain.OauthUser) (*domain.Identity, error) {
+	if user == nil {
+		return nil, errors.New("user is nil")
+	}
+
+	if user.Email == "" {
+		return nil, errors.New("email is empty")
+	}
+
 	identity, err := i.queries.UpsertIdentity(ctx, db.UpsertIdentityParams{
 		// accept empty string as oauth server can return empty string based on the privacy policy
 		FirstName: pgtype.Text{String: user.FirstName, Valid: true},

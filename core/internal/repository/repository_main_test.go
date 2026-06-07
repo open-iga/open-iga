@@ -21,6 +21,8 @@ func TestMain(m *testing.M) {
 	ctx := context.Background()
 
 	pgContainer, err := setupDB(ctx)
+	defer teardownDB(ctx, pgContainer)
+
 	if err != nil {
 		fmt.Printf("Error setting up postgres container: %v\n", err)
 		os.Exit(1)
@@ -41,10 +43,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	exitCode := m.Run()
-
-	teardownDB(ctx, pgContainer)
-	os.Exit(exitCode)
+	os.Exit(m.Run())
 }
 
 func setupDB(ctx context.Context) (*postgres.PostgresContainer, error) {

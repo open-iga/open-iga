@@ -9,7 +9,7 @@ tasks:
             - sh: test -n "{{.NAME}}"
               msg: 'NAME is required. Usage: task migration:generate NAME=<migration_name>'
         cmds:
-            - go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1 create -ext sql -dir internal/repository/migrations -seq {{.NAME}}
+            - go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1 create -ext sql -dir internal/repository/sql/migrations -seq {{.NAME}}
     generate:sqlc:
         preconditions:
             - sh: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1

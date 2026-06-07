@@ -37,6 +37,7 @@ func NewRepository(appConfig *common.AppConfig, logger *slog.Logger) (*contract.
 
 	err = runMigration(conn)
 	if err != nil {
+		conn.Close()
 		return nil, nil, fmt.Errorf("error running migration %w", err)
 	}
 

@@ -118,7 +118,7 @@ func (l *LoginService) ValidateSession(ctx context.Context, sessionId string) (*
 	l.logger.Debug("expired session", "sessionId", sessionId)
 	_, err = l.sessionRepository.DeactivateBySessionId(ctx, sessionId)
 	if err != nil {
-		l.logger.Error("failed to deactivate session", "sessionId", sessionId, "error", err.Error())
+		l.logger.Error("failed to deactivate session", "sessionIdPrefix", sessionId[:8], "error", err.Error())
 		return nil, nil, domain.ErrFailedToExpireSession
 	}
 

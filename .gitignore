@@ -2,6 +2,9 @@
 **/*.iml
 **/tmp
 **/.env
+.env
+.env.*
+!.env.example
 **/dist
 **/coverage.out
 **/.DS_Store
