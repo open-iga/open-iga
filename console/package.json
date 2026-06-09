@@ -7,21 +7,35 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "generate:openapi-fetch": "npx openapi-typescript ../openapi-spec/openapi.yml -o src/openapi/schema.d.ts"
+    "generate:openapi-fetch": "npx openapi-typescript ../openapi-spec/openapi.yml -o src/utils/openapi/schema.d.ts"
   },
   "dependencies": {
+    "@base-ui/react": "catalog:",
+    "@fontsource-variable/inter": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "i18next": "catalog:",
+    "lucide-react": "catalog:",
     "openapi-fetch": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "react-i18next": "catalog:",
+    "react-markdown": "catalog:",
+    "sonner": "catalog:"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "catalog:",
     "@tanstack/router-plugin": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "openapi-typescript": "catalog:",
+    "shadcn": "catalog:",
+    "tailwind-merge": "catalog:",
+    "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
   }

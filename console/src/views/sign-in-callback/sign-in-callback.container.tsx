@@ -1,9 +1,12 @@
-import { SignInContainer, supportedProviders } from '../sign-in';
 import { Route } from '../../routes/auth/$provider/callback.tsx';
-import { useMutation } from '@tanstack/react-query';
-import { fetchClient } from '../../openapi/client.ts';
-import { useEffect, useRef } from 'react';
 import type { SupportedOauthProvider } from '../types';
+import { isSupportedOauthProvider } from '@/views/sign-in/sign-in.utils.ts';
+import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from '@tanstack/react-router';
+import { useSignInCallback } from '@/views/sign-in-callback/hooks/use-sign-in-callback.ts';
+import { SignIn } from '@/components/sign-in.tsx';
+import { useEffect } from 'react';
 
 type SignInCallbackProps = {
     state: string;
@@ -12,43 +15,25 @@ type SignInCallbackProps = {
 };
 
 const SignInCallback = ({ state, code, provider }: SignInCallbackProps) => {
-    const { mutate } = useMutation({
-        mutationFn: () =>
-            fetchClient.POST('/api/v1/auth/{provider}/callback', {
-                params: { path: { provider }, query: { code, state } },
-            }),
-        onSuccess: ({ data }) => {
-            if (data?.redirect) {
-                globalThis.location.href = data.redirect;
-            } else {
-                console.error('Something went wrong in onSuccess...');
-            }
-        },
-        onError: () => {
-            console.error('Something went wrong...');
-        },
-    });
+    const { mutate } = useSignInCallback({ state, code, provider });
 
-    const called = useRef(false);
     useEffect(() => {
-        if (called.current) {
-            return;
-        }
-
-        called.current = true;
         mutate();
     }, []);
 
-    return <SignInContainer disableAll />;
+    return <SignIn disableProviderSelection={true} providerToHighlight={provider} />;
 };
 
 export const SignInCallbackContainer = () => {
     const { provider } = Route.useParams();
     const { code, state } = Route.useSearch();
+    const { t } = useTranslation();
+    const navigate = useNavigate();
 
-    if (!supportedProviders.includes(provider as (typeof supportedProviders)[number])) {
-        return <div>Invalid provider</div>;
+    if (!isSupportedOauthProvider(provider)) {
+        toast.error(t('auth.provider.invalidProvider'));
+        return navigate({ to: '/auth/sign-in' });
     }
 
-    return <SignInCallback code={code} provider={'hello' as SupportedOauthProvider} state={state} />;
+    return <SignInCallback code={code} provider={provider} state={state} />;
 };

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { SignInCallbackContainer } from '../../../views/sign-in-callback';
+import { SignInCallbackContainer } from '@/views/sign-in-callback';
 
 export const Route = createFileRoute('/auth/$provider/callback')({
     component: SignInCallbackContainer,

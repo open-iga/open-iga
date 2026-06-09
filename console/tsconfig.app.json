@@ -23,7 +23,11 @@
         "erasableSyntaxOnly": true,
         "noFallthroughCasesInSwitch": true,
 
-        "noUncheckedIndexedAccess": true
+        "noUncheckedIndexedAccess": true,
+
+        "paths": {
+            "@/*": ["./src/*"]
+        }
     },
     "include": ["src"]
 }
