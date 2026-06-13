@@ -1,1 +1,1 @@
-export { SignInContainer, supportedProviders } from './sign-in.container.tsx';
+export { SignInContainer } from './sign-in.container.tsx';

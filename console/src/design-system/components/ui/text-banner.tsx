@@ -1,0 +1,30 @@
+import { cn } from '@/design-system/lib/utils';
+
+const bannerPrefix = `
+ ██████╗ ██████╗ ███████╗███╗   ██╗
+██╔═══██╗██╔══██╗██╔════╝████╗  ██║
+██║   ██║██████╔╝█████╗  ██╔██╗ ██║
+██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║
+╚██████╔╝██║     ███████╗██║ ╚████║
+ ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝ 
+`;
+
+const bannerSuffix = `
+██╗ ██████╗  █████╗ 
+██║██╔════╝ ██╔══██╗
+██║██║  ███╗███████║
+██║██║   ██║██╔══██║
+██║╚██████╔╝██║  ██║
+╚═╝ ╚═════╝ ╚═╝  ╚═╝
+`;
+
+interface TextBannerProps {
+    className?: string;
+}
+
+export const TextBanner = ({ className }: TextBannerProps) => (
+    <div className={cn('flex items-center justify-center', className)}>
+        <pre className="text-[8px] sm:text-[10px] md:text-xs text-primary">{bannerPrefix}</pre>
+        <pre className="text-[8px] sm:text-[10px] md:text-xs">{bannerSuffix}</pre>
+    </div>
+);
