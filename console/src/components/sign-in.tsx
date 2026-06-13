@@ -22,10 +22,10 @@ type SignInProps =
           disableProviderSelection: false;
           onProviderSelection: (providerSelection: SupportedOauthProvider) => void;
       }
-    | { disableProviderSelection: true; providerToHighlight: SupportedOauthProvider };
+    | { disableProviderSelection: true; providerToHighlight?: SupportedOauthProvider };
 
 const Link: Components['a'] = ({ children, href }) => (
-    <a href={href} target="_blank" className="underline text-primary">
+    <a href={href} target="_blank" rel="noopener noreferrer" className="underline text-primary">
         {children}
     </a>
 );

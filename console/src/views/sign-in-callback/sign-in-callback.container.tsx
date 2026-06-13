@@ -30,9 +30,15 @@ export const SignInCallbackContainer = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
 
+    useEffect(() => {
+        if (!isSupportedOauthProvider(provider)) {
+            toast.error(t('auth.provider.invalidProvider'));
+            navigate({ to: '/auth/sign-in' }).catch(() => {});
+        }
+    }, [provider, navigate, t]);
+
     if (!isSupportedOauthProvider(provider)) {
-        toast.error(t('auth.provider.invalidProvider'));
-        return navigate({ to: '/auth/sign-in' });
+        return null;
     }
 
     return <SignInCallback code={code} provider={provider} state={state} />;

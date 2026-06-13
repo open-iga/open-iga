@@ -19,7 +19,6 @@ export const GoogleIcon = ({
         strokeLinecap="round"
         strokeLinejoin="round"
         className={className}
-        aria-disabled
         {...props}
     >
         <path

@@ -1,7 +1,7 @@
 import { defineConfig } from 'oxfmt';
 
 export default defineConfig({
-    ignorePatterns: ['**/package.json'],
+    ignorePatterns: ['**/package.json', "core/**"],
     printWidth: 120,
     tabWidth: 4,
     useTabs: false,

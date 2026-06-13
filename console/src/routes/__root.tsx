@@ -21,9 +21,9 @@ const RootLayout = () => (
                 }}
                 toastOptions={{
                     classNames: {
-                        toast: '!bg-popover !border-border',
-                        title: '!text-popover-foreground',
-                        description: '!text-popover-foreground',
+                        toast: 'bg-popover! border-border!',
+                        title: 'text-popover-foreground!',
+                        description: 'text-popover-foreground!',
                     },
                 }}
                 visibleToasts={10}

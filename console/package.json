@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "generate:openapi-fetch": "npx openapi-typescript ../openapi-spec/openapi.yml -o src/utils/openapi/schema.d.ts"
+    "generate:openapi-fetch": "npx openapi-typescript ../openapi-spec/openapi.yml -o src/utils/openapi/schema.d.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@base-ui/react": "catalog:",
@@ -23,20 +24,24 @@
     "react-dom": "catalog:",
     "react-i18next": "catalog:",
     "react-markdown": "catalog:",
-    "sonner": "catalog:"
+    "sonner": "catalog:",
+    "vite": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
+    "@msw/source": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/router-plugin": "catalog:",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "msw": "catalog:",
+    "openapi-msw": "catalog:",
     "openapi-typescript": "catalog:",
     "shadcn": "catalog:",
     "tailwind-merge": "catalog:",
     "tailwindcss": "catalog:",
-    "tw-animate-css": "catalog:",
-    "vite": "catalog:",
-    "vitest": "catalog:"
+    "tw-animate-css": "catalog:"
   }
 }
