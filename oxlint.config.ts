@@ -1,12 +1,42 @@
 import { defineConfig } from 'oxlint';
 
 export default defineConfig({
+    plugins: ['jsx-a11y'],
     options: {
         typeAware: true,
     },
     rules: {
         'oxc/no-barrel-file': 'error',
         'no-unused-vars': 'error',
+        'jsx_a11y/anchor-is-valid': 'error',
+        'jsx_a11y/alt-text': 'error',
+        'jsx_a11y/anchor-has-content': 'error',
+        'jsx_a11y/heading-has-content': 'error',
+        'jsx_a11y/aria-unsupported-elements': 'error',
+        'jsx_a11y/mouse-events-have-key-events': 'error',
+        'jsx_a11y/click-events-have-key-events': 'error',
+        'jsx_a11y/aria-role': 'error',
+        'jsx_a11y/aria-props': 'error',
+        'jsx_a11y/scope': 'error',
+        'jsx_a11y/anchor-ambiguous-text': 'error',
+        'jsx_a11y/aria-activedescendant-has-tabindex': 'error',
+        'jsx_a11y/autocomplete-valid': 'error',
+        'jsx_a11y/html-has-lang': 'error',
+        'jsx_a11y/iframe-has-title': 'error',
+        'jsx_a11y/img-redundant-alt': 'error',
+        'jsx_a11y/label-has-associated-control': 'error',
+        'jsx_a11y/lang': 'error',
+        'jsx_a11y/media-has-caption': 'error',
+        'jsx_a11y/no-aria-hidden-on-focusable': 'error',
+        'jsx_a11y/no-autofocus': 'error',
+        'jsx_a11y/no-distracting-elements': 'error',
+        'jsx_a11y/no-noninteractive-tabindex': 'error',
+        'jsx_a11y/no-redundant-roles': 'error',
+        'jsx_a11y/no-static-element-interactions': 'error',
+        'jsx_a11y/prefer-tag-over-role': 'error',
+        'jsx_a11y/role-has-required-aria-props': 'error',
+        'jsx_a11y/role-supports-aria-props': 'error',
+        'jsx_a11y/tabindex-no-positive': 'error',
     },
     overrides: [
         {

@@ -1,19 +1,30 @@
 {
-  "auth": {
-    "provider": {
-      "google": "Continue with Google",
-      "moreProviders": "Stay tuned for more providers...",
-      "invalidProvider": "Invalid provider. Make sure to select one of the supported providers"
+    "auth": {
+        "provider": {
+            "google": "Continue with Google",
+            "moreProviders": "Stay tuned for more providers...",
+            "invalidProvider": "Invalid provider. Make sure to select one of the supported providers"
+        },
+        "login": {
+            "title": "Login to continue",
+            "description": "SSO only · no passwords stored",
+            "error": "Failed to Login",
+            "noErrorDetails": "Something went wrong",
+            "authCallbackError": "Failed to create a session."
+        },
+        "logout": {
+            "label": "Logout",
+            "error": "Failed to logout",
+            "pending": {
+                "title": "Logging out",
+                "description": "Invalidating the session"
+            }
+        }
     },
-    "signIn": {
-      "title": "Sign In to continue",
-      "description": "SSO only · no passwords stored",
-      "error": "Failed to Sign In",
-      "noErrorDetails": "Something went wrong",
-      "authCallbackError": "Failed to create a session."
+    "termsOfUse": {
+        "description": "This software is licensed under the terms described [here](https://github.com/open-iga/open-iga/blob/main/LICENSE).\n By using, modifying, or distributing it, you agree to comply with that license."
+    },
+    "error": {
+        "generic": "Something went wrong!"
     }
-  },
-  "termsOfUse": {
-    "description": "This software is licensed under the terms described [here](https://github.com/open-iga/open-iga/blob/main/LICENSE).\n By using, modifying, or distributing it, you agree to comply with that license."
-  }
 }

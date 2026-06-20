@@ -14,7 +14,7 @@ const ErrorComponent = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        toast.error(t('auth.signIn.authCallbackError'));
+        toast.error(t('auth.login.authCallbackError'));
         navigate({ to: '/auth/sign-in' }).catch(() => {});
     }, []);
 

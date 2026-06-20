@@ -6,7 +6,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/design-system/components/ui/card.tsx';
-import { TextBanner } from '@/design-system/components/ui/text-banner.tsx';
 import { supportedProviders } from '@/views/sign-in/sign-in.utils.ts';
 import { Button } from '@/design-system/components/ui/button.tsx';
 import { cn } from '@/design-system/lib/utils.ts';
@@ -16,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import type { SupportedOauthProvider } from '@/views/types';
 import { useCallback } from 'react';
 import { Spinner } from '@/design-system/components/ui/spinner.tsx';
+import { Logo } from '@/design-system/components/icons/logo.tsx';
 
 type SignInProps =
     | {
@@ -44,11 +44,15 @@ export const SignIn = (args: SignInProps) => {
         <div className="h-screen w-full flex items-center justify-center px-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center pb-5">
-                    <CardTitle>
-                        <TextBanner className="pb-10" />
-                        <h1 className="text-2xl tracking-tighter text-balance">{t('auth.signIn.title')}</h1>
+                    <CardTitle className="justify-self-center">
+                        <Logo width={230} height={100} />
                     </CardTitle>
-                    <CardDescription>{t('auth.signIn.description')}</CardDescription>
+                    <CardDescription>
+                        <h1 className="text-2xl tracking-tighter text-foreground text-balance">
+                            {t('auth.login.title')}
+                        </h1>
+                        {t('auth.login.description')}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-4 text-center">
                     {supportedProviders.map((provider) => (

@@ -13,16 +13,22 @@ export const useSignIn = () => {
                 params: { path: { provider } },
             }),
         onSuccess: ({ data, error, response }) => {
-            if (data?.authCodeUrl) {
+            if (data && 'authCodeUrl' in data) {
                 globalThis.location.href = data.authCodeUrl;
-            } else {
-                toast.error(t('auth.signIn.error'), {
-                    description: `${response.status}: ${error?.message ?? t('auth.signIn.noErrorDetails')}`,
-                });
+                return;
             }
+
+            if (data && 'redirect' in data) {
+                globalThis.location.href = data.redirect;
+                return;
+            }
+
+            toast.error(t('auth.login.error'), {
+                description: `${response.status}: ${error?.message ?? t('auth.login.noErrorDetails')}`,
+            });
         },
         onError: (error) => {
-            toast.error(t('auth.signIn.error'), { description: error.message });
+            toast.error(t('auth.login.error'), { description: error.message });
         },
     });
 };
