@@ -17,6 +17,9 @@ export const useLogout = () => {
                 toast.error(t('auth.logout.error'), { description: response.statusText });
             }
         },
+        onError: ({ message }) => {
+            toast.error(t('auth.logout.error'), { description: message });
+        },
     });
 
     return { logout };
