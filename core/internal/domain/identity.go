@@ -15,7 +15,7 @@ type Identity struct {
 	Email     string
 }
 
-const sessionValidity = 10 * time.Minute
+const sessionValidity = 10 * time.Hour
 
 type IdentitySession struct {
 	SessionId string

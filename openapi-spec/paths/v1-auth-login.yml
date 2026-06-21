@@ -9,7 +9,17 @@ get:
               $ref: '../schemas/oauth-providers.yml'
     responses:
         '200':
-            description: Consent URL returned
+            description: Session already exists, redirect directly
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            redirect:
+                                type: string
+                        required: [redirect]
+        '201':
+            description: New auth flow initiated, consent URL and state cookie set
             headers:
                 Set-Cookie:
                     description: CSRF state cookie

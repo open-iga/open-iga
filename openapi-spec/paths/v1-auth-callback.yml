@@ -26,6 +26,17 @@ post:
           schema:
               type: string
     responses:
+        '200':
+            description: Returns the session if the session already exists
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            redirect:
+                                type: string
+                        required:
+                            - redirect
         '201':
             description: Creates session and set session cookie
             headers:

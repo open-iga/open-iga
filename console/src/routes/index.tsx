@@ -1,9 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-
-const Index = () => {
-    return <h3>Home!</h3>;
-};
+import { HomeContainer } from '@/views/home/home.container.tsx';
 
 export const Route = createFileRoute('/')({
-    component: Index,
+    component: HomeContainer,
 });

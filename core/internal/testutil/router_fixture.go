@@ -2,12 +2,15 @@ package testutil
 
 import (
 	"log/slog"
+	"net/http"
 	"os"
 
 	"github.com/go-chi/chi/v5"
-	middleware "github.com/oapi-codegen/nethttp-middleware"
+	codegenMiddleware "github.com/oapi-codegen/nethttp-middleware"
 	"github.com/open-iga/core/internal/api/generated"
+	"github.com/open-iga/core/internal/api/middleware"
 	"github.com/open-iga/core/internal/common"
+	"github.com/open-iga/core/internal/domain"
 )
 
 type TestConfig struct {
@@ -47,11 +50,21 @@ func NewTestAppConfig(overWriteFn ...func(config *common.AppConfig)) *common.App
 	return config
 }
 
-func NewMockRouter(ssi generated.StrictServerInterface) *chi.Mux {
+func WithIdentitySetterMiddleware(identity *domain.Identity) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := middleware.WithIdentity(r.Context(), identity)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+func NewMockRouter(ssi generated.StrictServerInterface, middlewares ...func(handler http.Handler) http.Handler) *chi.Mux {
 	spec, _ := generated.GetSpec()
 
 	router := chi.NewRouter()
-	router.Use(middleware.OapiRequestValidator(spec))
+	router.Use(middlewares...)
+	router.Use(codegenMiddleware.OapiRequestValidator(spec))
 	serverInterface := generated.NewStrictHandler(ssi, nil)
 	generated.HandlerFromMux(serverInterface, router)
 

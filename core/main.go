@@ -24,7 +24,9 @@ const banner = "\n" +
 	"                                                           \n"
 
 func main() {
-	handler := slog.NewTextHandler(os.Stdout, nil)
+	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})
 	logger := slog.New(handler)
 	fmt.Print(banner)
 

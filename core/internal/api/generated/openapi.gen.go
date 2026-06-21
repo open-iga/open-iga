@@ -75,11 +75,17 @@ type ServerInterface interface {
 	// (GET /api/health)
 	Health(w http.ResponseWriter, r *http.Request)
 
+	// (POST /api/v1/auth/logout)
+	Logout(w http.ResponseWriter, r *http.Request)
+
 	// (GET /api/v1/auth/{provider})
 	AuthDetails(w http.ResponseWriter, r *http.Request, provider AuthDetailsParamsProvider)
 
 	// (POST /api/v1/auth/{provider}/callback)
 	AuthCallback(w http.ResponseWriter, r *http.Request, provider AuthCallbackParamsProvider, params AuthCallbackParams)
+
+	// (GET /api/v1/users)
+	GetUserDetails(w http.ResponseWriter, r *http.Request)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -91,6 +97,11 @@ func (_ Unimplemented) Health(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (POST /api/v1/auth/logout)
+func (_ Unimplemented) Logout(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /api/v1/auth/{provider})
 func (_ Unimplemented) AuthDetails(w http.ResponseWriter, r *http.Request, provider AuthDetailsParamsProvider) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -98,6 +109,11 @@ func (_ Unimplemented) AuthDetails(w http.ResponseWriter, r *http.Request, provi
 
 // (POST /api/v1/auth/{provider}/callback)
 func (_ Unimplemented) AuthCallback(w http.ResponseWriter, r *http.Request, provider AuthCallbackParamsProvider, params AuthCallbackParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/users)
+func (_ Unimplemented) GetUserDetails(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -115,6 +131,20 @@ func (siw *ServerInterfaceWrapper) Health(w http.ResponseWriter, r *http.Request
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.Health(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// Logout operation middleware
+func (siw *ServerInterfaceWrapper) Logout(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Logout(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -211,6 +241,20 @@ func (siw *ServerInterfaceWrapper) AuthCallback(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AuthCallback(w, r, provider, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUserDetails operation middleware
+func (siw *ServerInterfaceWrapper) GetUserDetails(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUserDetails(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -337,10 +381,16 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/health", wrapper.Health)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/auth/logout", wrapper.Logout)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/auth/{provider}", wrapper.AuthDetails)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/auth/{provider}/callback", wrapper.AuthCallback)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/users", wrapper.GetUserDetails)
 	})
 
 	return r
@@ -364,6 +414,78 @@ func (response Health200TextResponse) VisitHealthResponse(w http.ResponseWriter)
 	return err
 }
 
+type LogoutRequestObject struct {
+}
+
+type LogoutResponseObject interface {
+	VisitLogoutResponse(w http.ResponseWriter) error
+}
+
+type Logout200JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response Logout200JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type Logout400JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response Logout400JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type Logout401JSONResponse struct {
+	Message  string `json:"message"`
+	Redirect string `json:"redirect"`
+}
+
+func (response Logout401JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type Logout500JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response Logout500JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type AuthDetailsRequestObject struct {
 	Provider AuthDetailsParamsProvider `json:"provider"`
 }
@@ -372,18 +494,34 @@ type AuthDetailsResponseObject interface {
 	VisitAuthDetailsResponse(w http.ResponseWriter) error
 }
 
-type AuthDetails200ResponseHeaders struct {
-	SetCookie *string
-}
-
 type AuthDetails200JSONResponse struct {
-	Body struct {
-		AuthCodeUrl string `json:"authCodeUrl"`
-	}
-	Headers AuthDetails200ResponseHeaders
+	Redirect string `json:"redirect"`
 }
 
 func (response AuthDetails200JSONResponse) VisitAuthDetailsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AuthDetails201ResponseHeaders struct {
+	SetCookie *string
+}
+
+type AuthDetails201JSONResponse struct {
+	Body struct {
+		AuthCodeUrl string `json:"authCodeUrl"`
+	}
+	Headers AuthDetails201ResponseHeaders
+}
+
+func (response AuthDetails201JSONResponse) VisitAuthDetailsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -393,7 +531,7 @@ func (response AuthDetails200JSONResponse) VisitAuthDetailsResponse(w http.Respo
 	if response.Headers.SetCookie != nil {
 		w.Header().Set("Set-Cookie", fmt.Sprint(*response.Headers.SetCookie))
 	}
-	w.WriteHeader(200)
+	w.WriteHeader(201)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -421,6 +559,22 @@ type AuthCallbackRequestObject struct {
 
 type AuthCallbackResponseObject interface {
 	VisitAuthCallbackResponse(w http.ResponseWriter) error
+}
+
+type AuthCallback200JSONResponse struct {
+	Redirect string `json:"redirect"`
+}
+
+func (response AuthCallback200JSONResponse) VisitAuthCallbackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type AuthCallback201ResponseHeaders struct {
@@ -481,17 +635,82 @@ func (response AuthCallback500JSONResponse) VisitAuthCallbackResponse(w http.Res
 	return err
 }
 
+type GetUserDetailsRequestObject struct {
+}
+
+type GetUserDetailsResponseObject interface {
+	VisitGetUserDetailsResponse(w http.ResponseWriter) error
+}
+
+type GetUserDetails200JSONResponse struct {
+	Email     string `json:"email"`
+	FirstName string `json:"firstName"`
+	Id        string `json:"id"`
+	LastName  string `json:"lastName"`
+}
+
+func (response GetUserDetails200JSONResponse) VisitGetUserDetailsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUserDetails401JSONResponse struct {
+	Message  string `json:"message"`
+	Redirect string `json:"redirect"`
+}
+
+func (response GetUserDetails401JSONResponse) VisitGetUserDetailsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUserDetails500JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response GetUserDetails500JSONResponse) VisitGetUserDetailsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
 	// (GET /api/health)
 	Health(ctx context.Context, request HealthRequestObject) (HealthResponseObject, error)
 
+	// (POST /api/v1/auth/logout)
+	Logout(ctx context.Context, request LogoutRequestObject) (LogoutResponseObject, error)
+
 	// (GET /api/v1/auth/{provider})
 	AuthDetails(ctx context.Context, request AuthDetailsRequestObject) (AuthDetailsResponseObject, error)
 
 	// (POST /api/v1/auth/{provider}/callback)
 	AuthCallback(ctx context.Context, request AuthCallbackRequestObject) (AuthCallbackResponseObject, error)
+
+	// (GET /api/v1/users)
+	GetUserDetails(ctx context.Context, request GetUserDetailsRequestObject) (GetUserDetailsResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -540,6 +759,30 @@ func (sh *strictHandler) Health(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(HealthResponseObject); ok {
 		if err := validResponse.VisitHealthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// Logout operation middleware
+func (sh *strictHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	var request LogoutRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.Logout(ctx, request.(LogoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "Logout")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(LogoutResponseObject); ok {
+		if err := validResponse.VisitLogoutResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -600,25 +843,52 @@ func (sh *strictHandler) AuthCallback(w http.ResponseWriter, r *http.Request, pr
 	}
 }
 
+// GetUserDetails operation middleware
+func (sh *strictHandler) GetUserDetails(w http.ResponseWriter, r *http.Request) {
+	var request GetUserDetailsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUserDetails(ctx, request.(GetUserDetailsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUserDetails")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetUserDetailsResponseObject); ok {
+		if err := validResponse.VisitGetUserDetailsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
 // Stored as a slice of fixed-width chunks rather than one concatenated
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"zFZNb9tGEP0ri2mPK1F204tugfploECKqD4FgbEmR+Im5O5mdujWNfjfi1l+SCFlyWlQtLf9GM68fe/N",
-	"SE+Q+zp4h44jrJ+AMAbvIqbN4epuPL+zjpGcqRYR6QFpgUSeumjH6FiWJoTK5oatd9mH6J2cxbzE2sgq",
-	"kA9IbLsiNcZo9ihLfgwIa4hM1u2hbTUQfmosYQHrd2Pgez0E+vsPmDO0EllgzMkGKQlruOlBqm0CqTqQ",
-	"rT79pMYF8rmkv69wgY4tP/4/33V7jFT9mJCmhB2KeAAU77xpuFwE8g+2QEpXnyfbNiF4YizUGwlVv42h",
-	"GtA1tYDbe7+vjrGNj2g1WLfz87QbX1WYy0b5nUJXBG8dR7XzpN4EdDc/vwYNbLmSfIeTB6TYZbharpYr",
-	"UcsHdCZYWMN3y9XyFWgIhsv0lMwEm5VoKi5lu0eeI+muVWTDTRQwXKIS29ocIWWnpOVNAWv4pculP2+B",
-	"69Vq4gHGPzkLlbET9Wf8tImjhPPhKhOGs6dBjfZZzL97ZZ1laxgTXPlOHNm5TvXyqz8sl91zAuZ2Z0XE",
-	"1yLiUGE5yBlT2O3bX5MAss7ldY5VMHtUxhUqIkdlEk9y6z9aTMGb7dufJCF3cs4ok4I/IBtbxSQNmRo5",
-	"We3dEwg/SS7Q4Ewt3AzY4LgBmBrURzx+S7iDNXyTHVo16y2dPWfttn1/Ubcv6V1Jv/EF3lIl252n2jCs",
-	"oSEL+kI7H3/7kpbe9GqIQoTckMMCtHh36Not8mKTVDnRbCLRsXCgz3pSw/cdM6doHhnMvmDyn7V5lpuq",
-	"ujf5x8SxjycMv+kjxkmRrFcaV1TW7SeuViMaZXaMpJqINOmRpdoQGsZkaYwyUw4u7yZAd2iLweypmwgL",
-	"S5hLXyTTzr0+QP2vza6nHAo4T/avbkbkvkC1I19PyAPd4fzUID0egEr4WZAzv89+SC4PjlOFk22/rvIp",
-	"+6dS466vJRxu+3rP559PkauvmCKDoS7/BRgjXzQwendPvD3ux6e/cIRsp9+dnx+vrq//4fw48zfrX5pL",
-	"bft3AAAA//8=",
+	"1FdBc9s2E/0rGHzfERJl173ollFb1zOZpGPFp0zGAxNLCQkEIMDSjuvhf+8sIFKURNmqE7f1SQQJ7L5d",
+	"vPcAPfDSrbyzYDHy6QMPEL2zEdJg8+m6e399I9UowNcaIo4gBBfyTItgkR6l90aXErWzxefoLL2L5RJW",
+	"kp58cB4C6pxgBTHKBdAj3nvgUx4xaLvgTSM4JdEBFJ9+7CZ+Eu1Ed/MZSuQNzVQQy6A9peRTfmV9cCUt",
+	"uDHAfrWo8Z43YrgabRGClWYUIdxC+G9WdLEGyeYJJMsgD5VUW1njEiwSZlAvWBJVpHQg1EfX21tz3GZu",
+	"FfNI0b1NH0Ha9NdEz0asUcQNoHjtqPiRD+5WKwjp03awee29CwiKvaep7I9uquBg6xWBWzi3MH1sXRGN",
+	"4NpWbj/szBkDJQ2YqxhY5Z22GFnlAnvvwV6cv+GCo0ZD8TZvbiHEHOFkPBlPaLecByu95lP+03gyPuOC",
+	"e4nLVEohvS6WIA0uabgA3EeSP7OIEutIYHAJjLSqS+IS7VbaywvFp/z3HEtsu9jpZLLDAYRvWHgj9c7u",
+	"7/WnST1KOG9PCupwYdzC1SmKd3EA8AfH8hRWBbdidYTAZFm62uIe3rc51pN4X5azuciznPX/ASo+5f8r",
+	"NiorOnTFkQdCCnfyzHDD9tUI/vOzEQ6b/MDmPrRSaw4S8oNj2mrUEiFxsQeW5LLWNrvTuMxc9VDqSpNC",
+	"35BC2wzjVqsxTbu6fJvURc8lobbIvFwAk1axCBiZTCKgr+6LhjR5Nr/8jQJi1uoevyjhL4BSm5h0F+QK",
+	"MPnIxwdO5E9a5IJbuSKmtNh4nykYahA9ug31f+1XxSHfappPP5Tkxx87f+uwmUMk+2LSBJDqnsE3HTEK",
+	"1gZh+cek68RpZvgzK6AGzZyCq2BoWLmwksinvA6aiydq6q89pqx3cJdoyirj7jr2KtERjciXeNYnWARy",
+	"piXI9uSZA45m6dvAgUFM7C/n4lFf/YfVXJTSmBtZfjns27P1jO60SwpbSquMtosd8bIODZMVQljb/JYV",
+	"jNksgERIym2J1Yo5n2L5pVZty5NpdGRba3Nf0i3Uf1vTYreHBM4F/We2wtIpyIfgdvO4yDi/1hDuN0Bp",
+	"+qMg90Sxdxl62h+HEifafl/mIfqnVN1onYt6OF/nOxz/VZjlJWAd7A6Vq63hto9+v2m+UCWtTndU2o27",
+	"TTzSDOe76x53wrPT02dflQ7+6XlxhyXHiwdvSee99mmV7VF1N5FtSzsHvIoQNheVH8h9WEltBv+5VjpE",
+	"fJdUOfBVq8HXRh5cs0PATfjeKrHGk+If9V+x37fXc6tumr8CAAD//w==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

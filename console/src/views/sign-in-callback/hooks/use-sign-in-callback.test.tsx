@@ -65,8 +65,8 @@ describe('useSignInCallback', () => {
         result.current.mutate();
         await waitFor(() => expect(mockedToastError).toHaveBeenCalled());
 
-        expect(mockedToastError).toHaveBeenCalledWith('auth.signIn.error', {
-            description: '500: auth.signIn.noErrorDetails',
+        expect(mockedToastError).toHaveBeenCalledWith('auth.login.error', {
+            description: '500: auth.login.noErrorDetails',
         });
         expect(navigateMock).toHaveBeenCalledWith({ to: '/auth/sign-in' });
         expect(globalThis.location.href).toBe('');

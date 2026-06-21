@@ -38,6 +38,7 @@ linters:
                 - github.com/golang-migrate/migrate/v4/database/pgx/v5.Config
                 - github.com/jackc/pgx/v5/pgtype.Timestamptz
                 - net/http.Server
+                - log/slog.HandlerOptions
     exclusions:
         rules:
             - path: (.*_test\.go|.*internal/testutil/.*)

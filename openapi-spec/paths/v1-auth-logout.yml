@@ -1,0 +1,18 @@
+post:
+    operationId: logout
+    description: To logout from user account
+    responses:
+        200:
+            content:
+                application/json:
+                    schema:
+                        properties:
+                            message:
+                                type: string
+                        required: ['message']
+        400:
+            $ref: '../components/responses/bad-request-error.yml'
+        401:
+            $ref: '../components/responses/unauthenticated-error.yml'
+        500:
+            $ref: '../components/responses/internal-server-error.yml'

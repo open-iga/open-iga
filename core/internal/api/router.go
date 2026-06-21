@@ -4,14 +4,16 @@ import (
 	"log/slog"
 
 	"github.com/go-chi/chi/v5"
-	middleware "github.com/oapi-codegen/nethttp-middleware"
+	codegenMiddleware "github.com/oapi-codegen/nethttp-middleware"
 	"github.com/open-iga/core/internal/api/generated"
 	"github.com/open-iga/core/internal/api/handler"
+	"github.com/open-iga/core/internal/api/middleware"
 	"github.com/open-iga/core/internal/common"
 	"github.com/open-iga/core/internal/contract"
 )
 
 func NewRouter(appConfig *common.AppConfig, logger *slog.Logger, application *contract.RuntimeApplication) *chi.Mux {
+	reqMiddleware := middleware.NewMiddleware(appConfig, logger, application)
 	reqHandler := handler.NewHandler(appConfig, logger, application)
 
 	spec, err := generated.GetSpec()
@@ -21,7 +23,8 @@ func NewRouter(appConfig *common.AppConfig, logger *slog.Logger, application *co
 
 	router := chi.NewRouter()
 
-	router.Use(middleware.OapiRequestValidator(spec))
+	router.Use(codegenMiddleware.OapiRequestValidator(spec))
+	router.Use(reqMiddleware.AuthMiddleware)
 	serverInterface := generated.NewStrictHandler(reqHandler, nil)
 	generated.HandlerFromMux(serverInterface, router)
 

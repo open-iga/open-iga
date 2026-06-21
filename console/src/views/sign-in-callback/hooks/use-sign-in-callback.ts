@@ -24,15 +24,15 @@ export const useSignInCallback = ({ state, provider, code }: UseSignInCallbackAr
             if (data?.redirect) {
                 globalThis.location.href = data.redirect;
             } else {
-                toast.error(t('auth.signIn.error'), {
-                    description: `${response.status}: ${error?.message ?? t('auth.signIn.noErrorDetails')}`,
+                toast.error(t('auth.login.error'), {
+                    description: `${response.status}: ${error?.message ?? t('auth.login.noErrorDetails')}`,
                 });
 
                 await navigate({ to: '/auth/sign-in' });
             }
         },
         onError: async (error) => {
-            toast.error(t('auth.signIn.error'), {
+            toast.error(t('auth.login.error'), {
                 description: error.message,
             });
 

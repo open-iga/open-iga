@@ -2,15 +2,14 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/open-iga/core/internal/api/generated"
-)
-
-const (
-	AuthStateCookieName = "authState"
-	SessionCookieName   = "sid"
+	"github.com/open-iga/core/internal/api/middleware"
+	"github.com/open-iga/core/internal/common"
+	"github.com/open-iga/core/internal/domain"
 )
 
 func (h *Handler) AuthDetails(ctx context.Context, request generated.AuthDetailsRequestObject) (generated.AuthDetailsResponseObject, error) {
@@ -24,7 +23,7 @@ func (h *Handler) AuthDetails(ctx context.Context, request generated.AuthDetails
 	}
 
 	authStateCookie := http.Cookie{
-		Name:     AuthStateCookieName,
+		Name:     common.AuthStateCookieName,
 		Value:    consentPageDetails.State,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
@@ -32,16 +31,14 @@ func (h *Handler) AuthDetails(ctx context.Context, request generated.AuthDetails
 		MaxAge:   20, // Valid for only 20s
 		Secure:   true,
 	}
-	cookieStr := authStateCookie.String()
-
-	return generated.AuthDetails200JSONResponse{
+	return generated.AuthDetails201JSONResponse{
 		Body: struct {
 			AuthCodeUrl string `json:"authCodeUrl"`
 		}{
 			AuthCodeUrl: consentPageDetails.AuthCodeURL,
 		},
-		Headers: generated.AuthDetails200ResponseHeaders{
-			SetCookie: &cookieStr,
+		Headers: generated.AuthDetails201ResponseHeaders{
+			SetCookie: new(authStateCookie.String()),
 		},
 	}, nil
 }
@@ -71,7 +68,7 @@ func (h *Handler) AuthCallback(ctx context.Context, request generated.AuthCallba
 	}
 
 	cookie := http.Cookie{
-		Name:     SessionCookieName,
+		Name:     common.SessionCookieName,
 		Value:    session.SessionId,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
@@ -79,7 +76,6 @@ func (h *Handler) AuthCallback(ctx context.Context, request generated.AuthCallba
 		MaxAge:   session.ValidityInSeconds(),
 		Secure:   true,
 	}
-	cookieStr := cookie.String()
 	return generated.AuthCallback201JSONResponse{
 		Body: struct {
 			Redirect string `json:"redirect"`
@@ -87,7 +83,25 @@ func (h *Handler) AuthCallback(ctx context.Context, request generated.AuthCallba
 			Redirect: h.appConfig.Redirect.Home,
 		},
 		Headers: generated.AuthCallback201ResponseHeaders{
-			SetCookie: &cookieStr,
+			SetCookie: new(cookie.String()),
 		},
 	}, nil
+}
+
+func (h *Handler) Logout(ctx context.Context, _ generated.LogoutRequestObject) (generated.LogoutResponseObject, error) {
+	session, err := middleware.GetSession(ctx)
+	if err != nil {
+		return generated.Logout500JSONResponse{Message: err.Error()}, nil
+	}
+
+	err = h.application.LoginService.DeactivateSession(ctx, session.SessionId)
+	if err != nil && errors.Is(err, domain.ErrSessionNotFound) {
+		return generated.Logout400JSONResponse{Message: "session not found"}, nil
+	}
+
+	if err != nil {
+		return generated.Logout500JSONResponse{Message: err.Error()}, nil
+	}
+
+	return generated.Logout200JSONResponse{Message: "Session deactivated"}, nil
 }

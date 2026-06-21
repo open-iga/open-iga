@@ -124,3 +124,15 @@ func (l *LoginService) ValidateSession(ctx context.Context, sessionId string) (*
 
 	return nil, nil, domain.ErrExpiredSession
 }
+
+func (l *LoginService) DeactivateSession(ctx context.Context, sessionId string) error {
+	_, err := l.sessionRepository.DeactivateBySessionId(ctx, sessionId)
+	if err != nil && !errors.Is(err, domain.ErrSessionNotFound) {
+		return domain.ErrSessionNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("deactivate session: %w", err)
+	}
+
+	return nil
+}

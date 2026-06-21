@@ -55,6 +55,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description To logout from user account */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get session id user details */
+        get: operations["getUserDetails"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -85,6 +119,29 @@ export interface components {
             content: {
                 "application/json": {
                     message: string;
+                };
+            };
+        };
+        /** @description Unprocessable Entity */
+        "bad-request-error": {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    message: string;
+                };
+            };
+        };
+        /** @description Unauthenticated */
+        "unauthenticated-error": {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    message: string;
+                    redirect: string;
                 };
             };
         };
@@ -126,8 +183,19 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Consent URL returned */
+            /** @description Session already exists, redirect directly */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        redirect: string;
+                    };
+                };
+            };
+            /** @description New auth flow initiated, consent URL and state cookie set */
+            201: {
                 headers: {
                     /** @description CSRF state cookie */
                     "Set-Cookie"?: string;
@@ -162,6 +230,17 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Returns the session if the session already exists */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        redirect: string;
+                    };
+                };
+            };
             /** @description Creates session and set session cookie */
             201: {
                 headers: {
@@ -176,6 +255,57 @@ export interface operations {
                 };
             };
             422: components["responses"]["unprocessable-entity-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            400: components["responses"]["bad-request-error"];
+            401: components["responses"]["unauthenticated-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
+    getUserDetails: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User details */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        firstName: string;
+                        lastName: string;
+                        email: string;
+                        id: string;
+                    };
+                };
+            };
+            401: components["responses"]["unauthenticated-error"];
             500: components["responses"]["internal-server-error"];
         };
     };

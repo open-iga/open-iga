@@ -227,3 +227,24 @@ func TestLoginService_ValidateSession(t *testing.T) {
 		assert.ErrorIs(t, err, domain.ErrExpiredSession)
 	})
 }
+
+func TestLoginService_DeactivateSession(t *testing.T) {
+	t.Run("returns session not found if the session id is missing", func(t *testing.T) {
+		loginService, _, sessionRepoMock, _ := setupLoginServiceWithMocks(t)
+		sessionRepoMock.EXPECT().DeactivateBySessionId(gomock.Any(), "sid-1").Return(nil, domain.ErrSessionNotFound)
+
+		err := loginService.DeactivateSession(context.TODO(), "sid-1")
+
+		assert.ErrorIs(t, err, domain.ErrSessionNotFound)
+	})
+
+	t.Run("deactivates the session if session id exists", func(t *testing.T) {
+		loginService, _, sessionRepoMock, _ := setupLoginServiceWithMocks(t)
+		session := &domain.Session{SessionId: "sid-1"}
+		sessionRepoMock.EXPECT().DeactivateBySessionId(gomock.Any(), "sid-1").Return(session, nil)
+
+		err := loginService.DeactivateSession(context.TODO(), "sid-1")
+
+		assert.NoError(t, err)
+	})
+}
