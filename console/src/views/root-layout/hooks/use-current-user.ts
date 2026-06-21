@@ -11,7 +11,7 @@ export const useCurrentUser = () => {
         isPending,
         isError,
         error,
-        firstName: data?.data?.firstName ?? 'FirstName',
-        lastName: data?.data?.lastName ?? 'LastName',
+        firstName: data?.data?.firstName || 'FirstName',
+        lastName: data?.data?.lastName || 'LastName',
     };
 };

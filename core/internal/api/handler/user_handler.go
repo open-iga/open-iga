@@ -9,7 +9,6 @@ import (
 
 func (h *Handler) GetUserDetails(ctx context.Context, _ generated.GetUserDetailsRequestObject) (generated.GetUserDetailsResponseObject, error) {
 	identity, err := middleware.GetIdentity(ctx)
-
 	if err != nil {
 		return generated.GetUserDetails500JSONResponse{Message: err.Error()}, nil
 	}

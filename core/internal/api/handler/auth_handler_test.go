@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/open-iga/core/internal/common"
 	"github.com/open-iga/core/internal/contract"
 	"github.com/open-iga/core/internal/domain"
 	"github.com/open-iga/core/internal/testutil"
@@ -68,7 +69,7 @@ func TestHandler_AuthDetails(t *testing.T) {
 
 		cookieInRec := rec.Header().Get("Set-Cookie")
 		expectedCookie := http.Cookie{
-			Name:     AuthStateCookieName,
+			Name:     common.AuthStateCookieName,
 			Value:    "state-cookie",
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
@@ -77,7 +78,7 @@ func TestHandler_AuthDetails(t *testing.T) {
 			Secure:   true,
 		}
 
-		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Equal(t, http.StatusCreated, rec.Code)
 		assert.Equal(t, expectedCookie.String(), cookieInRec)
 		assert.JSONEq(t, `{"authCodeUrl": "https://auth-code-url.com"}`, rec.Body.String())
 	})
@@ -99,7 +100,7 @@ func TestHandler_AuthCallback(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/google/callback?state=state", nil)
 		req.AddCookie(&http.Cookie{
-			Name:  AuthStateCookieName,
+			Name:  common.AuthStateCookieName,
 			Value: "",
 		})
 
@@ -114,7 +115,7 @@ func TestHandler_AuthCallback(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/google/callback?code=code", nil)
 		req.AddCookie(&http.Cookie{
-			Name:  AuthStateCookieName,
+			Name:  common.AuthStateCookieName,
 			Value: "",
 		})
 
@@ -140,7 +141,7 @@ func TestHandler_AuthCallback(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/google/callback?code=code&state=state", nil)
 		req.AddCookie(&http.Cookie{
-			Name:  AuthStateCookieName,
+			Name:  common.AuthStateCookieName,
 			Value: "",
 		})
 
@@ -156,7 +157,7 @@ func TestHandler_AuthCallback(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/google/callback?code=code&state=state", nil)
 		req.AddCookie(&http.Cookie{
-			Name:  AuthStateCookieName,
+			Name:  common.AuthStateCookieName,
 			Value: "invalid-state",
 		})
 
@@ -173,7 +174,7 @@ func TestHandler_AuthCallback(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/google/callback?code=code&state=state", nil)
 		req.AddCookie(&http.Cookie{
-			Name:  AuthStateCookieName,
+			Name:  common.AuthStateCookieName,
 			Value: "state",
 		})
 
@@ -192,7 +193,7 @@ func TestHandler_AuthCallback(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/google/callback?code=code&state=state", nil)
 		req.AddCookie(&http.Cookie{
-			Name:  AuthStateCookieName,
+			Name:  common.AuthStateCookieName,
 			Value: "state",
 		})
 

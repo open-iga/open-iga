@@ -1,10 +1,3 @@
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/design-system/components/ui/dialog.tsx';
 import { useTranslation } from 'react-i18next';
 import {
     SidebarFooter,
@@ -20,17 +13,17 @@ import {
 } from '@/design-system/components/ui/dropdown-menu.tsx';
 import { Avatar, AvatarFallback } from '@/design-system/components/ui/avatar.tsx';
 import { ChevronsUpDown, LogOut } from 'lucide-react';
-import { Spinner } from '@/design-system/components/ui/spinner.tsx';
+import { useNavigate } from '@tanstack/react-router';
 
 interface AppSidebarFooterProps {
     firstName: string;
     lastName: string;
-    onLogout: () => void;
-    isLogoutPending: boolean;
 }
 
-export const AppSidebarFooter = ({ firstName, lastName, onLogout, isLogoutPending }: AppSidebarFooterProps) => {
+export const AppSidebarFooter = ({ firstName, lastName }: AppSidebarFooterProps) => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const logout = () => navigate({ to: '/auth/logout' });
 
     return (
         <SidebarFooter>
@@ -51,7 +44,7 @@ export const AppSidebarFooter = ({ firstName, lastName, onLogout, isLogoutPendin
                             }
                         />
                         <DropdownMenuContent side="top">
-                            <DropdownMenuItem className="cursor-pointer" onClick={onLogout}>
+                            <DropdownMenuItem className="cursor-pointer" onClick={logout}>
                                 <LogOut />
                                 {t('auth.logout.label')}
                             </DropdownMenuItem>
@@ -59,16 +52,6 @@ export const AppSidebarFooter = ({ firstName, lastName, onLogout, isLogoutPendin
                     </DropdownMenu>
                 </SidebarMenuItem>
             </SidebarMenu>
-            <Dialog open={isLogoutPending}>
-                <DialogContent showCloseButton={false}>
-                    <DialogHeader>
-                        <DialogTitle>{t('auth.logout.pending.title')}</DialogTitle>
-                        <DialogDescription className="flex">
-                            {t('auth.logout.pending.description')} <Spinner className="ml-2" />
-                        </DialogDescription>
-                    </DialogHeader>
-                </DialogContent>
-            </Dialog>
         </SidebarFooter>
     );
 };

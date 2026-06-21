@@ -45,7 +45,7 @@ export const SignIn = (args: SignInProps) => {
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center pb-5">
                     <CardTitle className="justify-self-center">
-                        <Logo width={230} height={100} />
+                        <Logo width={200} height={80} />
                     </CardTitle>
                     <CardDescription>
                         <h1 className="text-2xl tracking-tighter text-foreground text-balance">

@@ -10,6 +10,7 @@ import { Input } from '@/design-system/components/ui/input';
 import { Separator } from '@/design-system/components/ui/separator';
 import { Skeleton } from '@/design-system/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/ui/tooltip';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/design-system/components/ui/sheet';
 import { PanelLeftIcon } from 'lucide-react';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
@@ -94,7 +95,7 @@ export const SidebarProvider = ({
 
     // We add a state so that we can do data-state="expanded" or "collapsed".
     // This makes it easier to style the sidebar with Tailwind classes.
-    const state = open ? 'expanded' : 'collapsed';
+    const state = open || openMobile ? 'expanded' : 'collapsed';
 
     const contextValue = React.useMemo<SidebarContextProps>(
         () => ({
@@ -144,7 +145,7 @@ export const Sidebar = ({
     variant?: 'sidebar' | 'floating' | 'inset';
     collapsible?: 'offcanvas' | 'icon' | 'none';
 }) => {
-    const { state } = useSidebar();
+    const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
 
     if (collapsible === 'none') {
         return (
@@ -155,6 +156,27 @@ export const Sidebar = ({
             >
                 {children}
             </div>
+        );
+    }
+
+    if (isMobile) {
+        return (
+            <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+                <SheetContent
+                    data-sidebar="sidebar"
+                    data-slot="sidebar"
+                    data-mobile="true"
+                    className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+                    style={{ width: SIDEBAR_WIDTH, maxWidth: SIDEBAR_WIDTH }}
+                    side={side}
+                >
+                    <SheetHeader className="sr-only">
+                        <SheetTitle>Sidebar</SheetTitle>
+                        <SheetDescription>Displays the mobile sidebar.</SheetDescription>
+                    </SheetHeader>
+                    <div className="flex h-full w-full flex-col">{children}</div>
+                </SheetContent>
+            </Sheet>
         );
     }
 

@@ -8,7 +8,7 @@ export const useLogout = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
 
-    const { mutate: logout, isPending } = useMutation({
+    const { mutate: logout } = useMutation({
         mutationFn: () => fetchClient.POST('/api/v1/auth/logout'),
         onSuccess: ({ data, response }) => {
             if (data?.message) {
@@ -19,5 +19,5 @@ export const useLogout = () => {
         },
     });
 
-    return { logout, isPending };
+    return { logout };
 };

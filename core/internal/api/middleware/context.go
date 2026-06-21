@@ -7,9 +7,11 @@ import (
 	"github.com/open-iga/core/internal/domain"
 )
 
+type contextKey string
+
 const (
-	IdentityContextKey = "identity"
-	SessionContextKey  = "session"
+	IdentityContextKey contextKey = "identity"
+	SessionContextKey  contextKey = "session"
 )
 
 func WithIdentity(ctx context.Context, identity *domain.Identity) context.Context {

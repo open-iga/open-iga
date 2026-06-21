@@ -11,8 +11,10 @@ import (
 
 var NoAuthPath = []string{"/api/health"}
 
-const AuthEndpointPrefix = "/api/v1/auth"
-const AuthCallbackEndpointPrefix = "/callback"
+const (
+	AuthEndpointPrefix         = "/api/v1/auth"
+	AuthCallbackEndpointPrefix = "/callback"
+)
 
 func isRequestToAuthEndpoint(r *http.Request) bool {
 	if strings.HasPrefix(r.URL.Path, AuthEndpointPrefix) && r.Method == http.MethodGet {
@@ -84,12 +86,13 @@ func (m *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 
 		// if the user already has a valid session and requests to login again; redirect to home page
 		if err == nil && isRequestToAuthEndpoint(r) {
-			m.redirectResponseToSignIn(w)
+			m.logger.Debug("user already validated. redirecting to home")
+			m.redirectResponseToHomePage(w)
+			return
 		}
 
 		ctx := WithIdentity(r.Context(), identity)
 		ctx = WithSession(ctx, session)
-		r = r.WithContext(ctx)
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

@@ -130,6 +130,9 @@ func (l *LoginService) DeactivateSession(ctx context.Context, sessionId string) 
 	if err != nil && !errors.Is(err, domain.ErrSessionNotFound) {
 		return domain.ErrSessionNotFound
 	}
+	if err != nil {
+		return fmt.Errorf("deactivate session: %w", err)
+	}
 
-	return err
+	return nil
 }

@@ -41,6 +41,20 @@ func (m *MockLoginService) EXPECT() *MockLoginServiceMockRecorder {
 	return m.recorder
 }
 
+// DeactivateSession mocks base method.
+func (m *MockLoginService) DeactivateSession(ctx context.Context, sessionId string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeactivateSession", ctx, sessionId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeactivateSession indicates an expected call of DeactivateSession.
+func (mr *MockLoginServiceMockRecorder) DeactivateSession(ctx, sessionId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateSession", reflect.TypeOf((*MockLoginService)(nil).DeactivateSession), ctx, sessionId)
+}
+
 // GenerateSession mocks base method.
 func (m *MockLoginService) GenerateSession(ctx context.Context, provider, authCode string) (*domain.Session, error) {
 	m.ctrl.T.Helper()

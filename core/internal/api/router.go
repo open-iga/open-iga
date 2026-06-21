@@ -13,7 +13,6 @@ import (
 )
 
 func NewRouter(appConfig *common.AppConfig, logger *slog.Logger, application *contract.RuntimeApplication) *chi.Mux {
-
 	reqMiddleware := middleware.NewMiddleware(appConfig, logger, application)
 	reqHandler := handler.NewHandler(appConfig, logger, application)
 

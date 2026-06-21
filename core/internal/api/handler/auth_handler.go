@@ -90,7 +90,6 @@ func (h *Handler) AuthCallback(ctx context.Context, request generated.AuthCallba
 
 func (h *Handler) Logout(ctx context.Context, _ generated.LogoutRequestObject) (generated.LogoutResponseObject, error) {
 	session, err := middleware.GetSession(ctx)
-
 	if err != nil {
 		return generated.Logout500JSONResponse{Message: err.Error()}, nil
 	}

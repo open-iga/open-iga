@@ -13,11 +13,9 @@ import { Construction } from 'lucide-react';
 interface AppSidebarProps {
     firstName: string;
     lastName: string;
-    onLogout: () => void;
-    isLogoutPending: boolean;
 }
 
-export const AppSidebar = ({ firstName, lastName, onLogout, isLogoutPending }: AppSidebarProps) => {
+export const AppSidebar = ({ firstName, lastName }: AppSidebarProps) => {
     return (
         <Sidebar>
             <SidebarHeader className="flex flex-row items-center">
@@ -32,12 +30,7 @@ export const AppSidebar = ({ firstName, lastName, onLogout, isLogoutPending }: A
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarContent>
-            <AppSidebarFooter
-                firstName={firstName}
-                lastName={lastName}
-                onLogout={onLogout}
-                isLogoutPending={isLogoutPending}
-            />
+            <AppSidebarFooter firstName={firstName} lastName={lastName} />
         </Sidebar>
     );
 };
