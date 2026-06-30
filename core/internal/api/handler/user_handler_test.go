@@ -14,24 +14,24 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func setupRouterWithIdentity(t *testing.T, identity *domain.Identity) (*chi.Mux, *testutil.MockLoginService) {
+func setupRouterWithIdentity(t *testing.T, identity *domain.Identity) (*chi.Mux, *testutil.MockAuthService) {
 	t.Helper()
 
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
-	loginServiceMock := testutil.NewMockLoginService(ctrl)
-	applicationMock := &contract.RuntimeApplication{LoginService: loginServiceMock}
+	authServiceMock := testutil.NewMockAuthService(ctrl)
+	applicationMock := &contract.RuntimeApplication{AuthService: authServiceMock}
 	handler := NewHandler(testutil.NewTestAppConfig(), testutil.NewTestLogger(), applicationMock)
 
 	router := testutil.NewMockRouter(handler, testutil.WithIdentitySetterMiddleware(identity))
 
-	return router, loginServiceMock
+	return router, authServiceMock
 }
 
 func TestHandler_GetUserDetails(t *testing.T) {
 	t.Run("return internal server error when identity is missing in context", func(t *testing.T) {
-		router, _ := setupRouterWithMockLoginService(t)
+		router, _ := setupRouterWithMockAuthService(t)
 
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/users", nil)
 		rec := httptest.NewRecorder()

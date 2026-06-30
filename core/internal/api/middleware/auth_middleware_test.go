@@ -15,18 +15,18 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func setupMiddlewareWithMocks(t *testing.T) (*middleware.Middleware, *testutil.MockLoginService) {
+func setupMiddlewareWithMocks(t *testing.T) (*middleware.Middleware, *testutil.MockAuthService) {
 	t.Helper()
 
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
-	loginServiceMock := testutil.NewMockLoginService(ctrl)
-	applicationMock := &contract.RuntimeApplication{LoginService: loginServiceMock}
+	authServiceMock := testutil.NewMockAuthService(ctrl)
+	applicationMock := &contract.RuntimeApplication{AuthService: authServiceMock}
 
 	m := middleware.NewMiddleware(testutil.NewTestAppConfig(), testutil.NewTestLogger(), applicationMock)
 
-	return m, loginServiceMock
+	return m, authServiceMock
 }
 
 func mockHandlerWithOkResponse() http.Handler {
@@ -48,8 +48,8 @@ func TestMiddleware_AuthMiddleware(t *testing.T) {
 	})
 
 	t.Run("redirects to signin page if the session is invalid on non-auth routes", func(t *testing.T) {
-		m, loginServiceMock := setupMiddlewareWithMocks(t)
-		loginServiceMock.EXPECT().ValidateSession(gomock.Any(), "sid-1").Return(nil, nil, errors.New("invalid session"))
+		m, authServiceMock := setupMiddlewareWithMocks(t)
+		authServiceMock.EXPECT().ValidateSession(gomock.Any(), "sid-1").Return(nil, nil, errors.New("invalid session"))
 
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/users", nil)
 		req.AddCookie(&http.Cookie{Name: common.SessionCookieName, Value: "sid-1"})
@@ -71,8 +71,8 @@ func TestMiddleware_AuthMiddleware(t *testing.T) {
 	})
 
 	t.Run("allows the request if the session is invalid on auth routes", func(t *testing.T) {
-		m, loginServiceMock := setupMiddlewareWithMocks(t)
-		loginServiceMock.EXPECT().ValidateSession(gomock.Any(), "sid-1").Return(nil, nil, errors.New("invalid session"))
+		m, authServiceMock := setupMiddlewareWithMocks(t)
+		authServiceMock.EXPECT().ValidateSession(gomock.Any(), "sid-1").Return(nil, nil, errors.New("invalid session"))
 
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/google", nil)
 		req.AddCookie(&http.Cookie{Name: common.SessionCookieName, Value: "sid-1"})
@@ -83,10 +83,10 @@ func TestMiddleware_AuthMiddleware(t *testing.T) {
 	})
 
 	t.Run("redirects to home when a request with valid session is requested to auth routes", func(t *testing.T) {
-		m, loginServiceMock := setupMiddlewareWithMocks(t)
+		m, authServiceMock := setupMiddlewareWithMocks(t)
 		identity := testutil.NewIdentity()
 		session := &domain.Session{SessionId: "sid-1"}
-		loginServiceMock.EXPECT().ValidateSession(gomock.Any(), "sid-1").Return(&identity, session, nil)
+		authServiceMock.EXPECT().ValidateSession(gomock.Any(), "sid-1").Return(&identity, session, nil)
 
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/google", nil)
 		req.AddCookie(&http.Cookie{Name: common.SessionCookieName, Value: "sid-1"})

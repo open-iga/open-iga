@@ -1,5 +1,7 @@
-DROP TABLE IF EXISTS identity;
+-- There are other tables that references identity; so cascade here
+DROP TABLE IF EXISTS identity CASCADE;
 DROP TABLE IF EXISTS session;
+DROP TABLE IF EXISTS schema_migrations;
 DROP TYPE IF EXISTS identity_type;
 DROP INDEX IF EXISTS idx_identity_email;
 DROP INDEX IF EXISTS idx_unique_session;

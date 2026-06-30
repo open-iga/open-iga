@@ -17,32 +17,32 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockLoginService is a mock of LoginService interface.
-type MockLoginService struct {
+// MockAuthService is a mock of AuthService interface.
+type MockAuthService struct {
 	ctrl     *gomock.Controller
-	recorder *MockLoginServiceMockRecorder
+	recorder *MockAuthServiceMockRecorder
 	isgomock struct{}
 }
 
-// MockLoginServiceMockRecorder is the mock recorder for MockLoginService.
-type MockLoginServiceMockRecorder struct {
-	mock *MockLoginService
+// MockAuthServiceMockRecorder is the mock recorder for MockAuthService.
+type MockAuthServiceMockRecorder struct {
+	mock *MockAuthService
 }
 
-// NewMockLoginService creates a new mock instance.
-func NewMockLoginService(ctrl *gomock.Controller) *MockLoginService {
-	mock := &MockLoginService{ctrl: ctrl}
-	mock.recorder = &MockLoginServiceMockRecorder{mock}
+// NewMockAuthService creates a new mock instance.
+func NewMockAuthService(ctrl *gomock.Controller) *MockAuthService {
+	mock := &MockAuthService{ctrl: ctrl}
+	mock.recorder = &MockAuthServiceMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockLoginService) EXPECT() *MockLoginServiceMockRecorder {
+func (m *MockAuthService) EXPECT() *MockAuthServiceMockRecorder {
 	return m.recorder
 }
 
 // DeactivateSession mocks base method.
-func (m *MockLoginService) DeactivateSession(ctx context.Context, sessionId string) error {
+func (m *MockAuthService) DeactivateSession(ctx context.Context, sessionId string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeactivateSession", ctx, sessionId)
 	ret0, _ := ret[0].(error)
@@ -50,13 +50,13 @@ func (m *MockLoginService) DeactivateSession(ctx context.Context, sessionId stri
 }
 
 // DeactivateSession indicates an expected call of DeactivateSession.
-func (mr *MockLoginServiceMockRecorder) DeactivateSession(ctx, sessionId any) *gomock.Call {
+func (mr *MockAuthServiceMockRecorder) DeactivateSession(ctx, sessionId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateSession", reflect.TypeOf((*MockLoginService)(nil).DeactivateSession), ctx, sessionId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateSession", reflect.TypeOf((*MockAuthService)(nil).DeactivateSession), ctx, sessionId)
 }
 
 // GenerateSession mocks base method.
-func (m *MockLoginService) GenerateSession(ctx context.Context, provider, authCode string) (*domain.Session, error) {
+func (m *MockAuthService) GenerateSession(ctx context.Context, provider, authCode string) (*domain.Session, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GenerateSession", ctx, provider, authCode)
 	ret0, _ := ret[0].(*domain.Session)
@@ -65,13 +65,13 @@ func (m *MockLoginService) GenerateSession(ctx context.Context, provider, authCo
 }
 
 // GenerateSession indicates an expected call of GenerateSession.
-func (mr *MockLoginServiceMockRecorder) GenerateSession(ctx, provider, authCode any) *gomock.Call {
+func (mr *MockAuthServiceMockRecorder) GenerateSession(ctx, provider, authCode any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateSession", reflect.TypeOf((*MockLoginService)(nil).GenerateSession), ctx, provider, authCode)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateSession", reflect.TypeOf((*MockAuthService)(nil).GenerateSession), ctx, provider, authCode)
 }
 
 // GetConsentPageDetails mocks base method.
-func (m *MockLoginService) GetConsentPageDetails(ctx context.Context, provider string) (*domain.ConsentDetails, error) {
+func (m *MockAuthService) GetConsentPageDetails(ctx context.Context, provider string) (*domain.ConsentDetails, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConsentPageDetails", ctx, provider)
 	ret0, _ := ret[0].(*domain.ConsentDetails)
@@ -80,13 +80,13 @@ func (m *MockLoginService) GetConsentPageDetails(ctx context.Context, provider s
 }
 
 // GetConsentPageDetails indicates an expected call of GetConsentPageDetails.
-func (mr *MockLoginServiceMockRecorder) GetConsentPageDetails(ctx, provider any) *gomock.Call {
+func (mr *MockAuthServiceMockRecorder) GetConsentPageDetails(ctx, provider any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConsentPageDetails", reflect.TypeOf((*MockLoginService)(nil).GetConsentPageDetails), ctx, provider)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConsentPageDetails", reflect.TypeOf((*MockAuthService)(nil).GetConsentPageDetails), ctx, provider)
 }
 
 // ValidateSession mocks base method.
-func (m *MockLoginService) ValidateSession(ctx context.Context, sessionId string) (*domain.Identity, *domain.Session, error) {
+func (m *MockAuthService) ValidateSession(ctx context.Context, sessionId string) (*domain.Identity, *domain.Session, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ValidateSession", ctx, sessionId)
 	ret0, _ := ret[0].(*domain.Identity)
@@ -96,7 +96,7 @@ func (m *MockLoginService) ValidateSession(ctx context.Context, sessionId string
 }
 
 // ValidateSession indicates an expected call of ValidateSession.
-func (mr *MockLoginServiceMockRecorder) ValidateSession(ctx, sessionId any) *gomock.Call {
+func (mr *MockAuthServiceMockRecorder) ValidateSession(ctx, sessionId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateSession", reflect.TypeOf((*MockLoginService)(nil).ValidateSession), ctx, sessionId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateSession", reflect.TypeOf((*MockAuthService)(nil).ValidateSession), ctx, sessionId)
 }

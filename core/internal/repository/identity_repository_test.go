@@ -11,7 +11,7 @@ import (
 
 func TestIdentityRepository_FindOrCreate(t *testing.T) {
 	t.Run("returns error if user is nil", func(t *testing.T) {
-		identity, err := repository.IdentityRepository.FindOrCreate(context.TODO(), nil)
+		identity, err := repository.IdentityRepository.FindOrCreateWithDefaultRole(context.TODO(), nil)
 
 		assert.Nil(t, identity)
 		assert.EqualError(t, err, "user is nil")
@@ -21,7 +21,7 @@ func TestIdentityRepository_FindOrCreate(t *testing.T) {
 		emptyUser := testutil.NewOauthUser()
 		emptyUser.Email = ""
 
-		identity, err := repository.IdentityRepository.FindOrCreate(context.TODO(), &emptyUser)
+		identity, err := repository.IdentityRepository.FindOrCreateWithDefaultRole(context.TODO(), &emptyUser)
 
 		assert.Nil(t, identity)
 		assert.EqualError(t, err, "email is empty")
@@ -30,7 +30,7 @@ func TestIdentityRepository_FindOrCreate(t *testing.T) {
 	t.Run("should insert identity if email already exists", func(t *testing.T) {
 		mockOauthUser := testutil.NewOauthUser()
 
-		identity, err := repository.IdentityRepository.FindOrCreate(context.TODO(), &mockOauthUser)
+		identity, err := repository.IdentityRepository.FindOrCreateWithDefaultRole(context.TODO(), &mockOauthUser)
 
 		assert.Nil(t, err)
 
@@ -47,7 +47,7 @@ func TestIdentityRepository_FindOrCreate(t *testing.T) {
 	t.Run("should not insert identity if email already exists", func(t *testing.T) {
 		mockOauthUser := testutil.NewOauthUser()
 
-		identity, err := repository.IdentityRepository.FindOrCreate(context.TODO(), &mockOauthUser)
+		identity, err := repository.IdentityRepository.FindOrCreateWithDefaultRole(context.TODO(), &mockOauthUser)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, identity)
@@ -55,7 +55,7 @@ func TestIdentityRepository_FindOrCreate(t *testing.T) {
 			_, _ = conn.Exec(context.Background(), "DELETE FROM identity WHERE email = $1", identity.Email)
 		})
 
-		upsertedIdentity, upsertingErr := repository.IdentityRepository.FindOrCreate(context.TODO(), &mockOauthUser)
+		upsertedIdentity, upsertingErr := repository.IdentityRepository.FindOrCreateWithDefaultRole(context.TODO(), &mockOauthUser)
 
 		assert.Nil(t, upsertingErr)
 		assert.Equal(t, identity, upsertedIdentity)

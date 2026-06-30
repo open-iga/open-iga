@@ -14,7 +14,7 @@ import (
 
 func (h *Handler) AuthDetails(ctx context.Context, request generated.AuthDetailsRequestObject) (generated.AuthDetailsResponseObject, error) {
 	provider := string(request.Provider)
-	consentPageDetails, err := h.application.LoginService.GetConsentPageDetails(ctx, provider)
+	consentPageDetails, err := h.application.AuthService.GetConsentPageDetails(ctx, provider)
 	if err != nil {
 		errDetails := fmt.Errorf("auth handler: %w", err)
 
@@ -59,7 +59,7 @@ func (h *Handler) AuthCallback(ctx context.Context, request generated.AuthCallba
 		return generated.AuthCallback422JSONResponse{Message: "state mismatch"}, nil
 	}
 
-	session, err := h.application.LoginService.GenerateSession(ctx, string(request.Provider), request.Params.Code)
+	session, err := h.application.AuthService.GenerateSession(ctx, string(request.Provider), request.Params.Code)
 	if err != nil {
 		errDetails := fmt.Errorf("auth callback handler: %w", err)
 
@@ -94,7 +94,7 @@ func (h *Handler) Logout(ctx context.Context, _ generated.LogoutRequestObject) (
 		return generated.Logout500JSONResponse{Message: err.Error()}, nil
 	}
 
-	err = h.application.LoginService.DeactivateSession(ctx, session.SessionId)
+	err = h.application.AuthService.DeactivateSession(ctx, session.SessionId)
 	if err != nil && errors.Is(err, domain.ErrSessionNotFound) {
 		return generated.Logout400JSONResponse{Message: "session not found"}, nil
 	}

@@ -30,23 +30,23 @@ func NewRepository(appConfig *common.AppConfig, logger *slog.Logger) (*contract.
 	config.MaxConns = MaxConnections
 	config.MinConns = MinConnections
 
-	conn, err := pgxpool.NewWithConfig(context.Background(), config)
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to created DB connection %w", err)
 	}
 
-	err = runMigration(conn)
+	err = runMigration(pool)
 	if err != nil {
-		conn.Close()
+		pool.Close()
 		return nil, nil, fmt.Errorf("error running migration %w", err)
 	}
 
-	queries := db.New(conn)
+	queries := db.New(pool)
 
 	return &contract.Repository{
-		IdentityRepository: NewIdentityRepository(queries, logger),
+		IdentityRepository: NewIdentityRepository(pool, queries, logger),
 		SessionRepository:  NewSessionRepository(queries, logger),
-	}, conn, nil
+	}, pool, nil
 }
 
 func runMigration(conn *pgxpool.Pool) error {

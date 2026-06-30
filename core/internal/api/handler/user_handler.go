@@ -13,10 +13,13 @@ func (h *Handler) GetUserDetails(ctx context.Context, _ generated.GetUserDetails
 		return generated.GetUserDetails500JSONResponse{Message: err.Error()}, nil
 	}
 
+	roles := h.application.AuthService.GetRoles(ctx, identity.Id)
+
 	return generated.GetUserDetails200JSONResponse{
 		Email:     identity.Email,
 		FirstName: identity.FirstName,
 		Id:        identity.Id.String(),
 		LastName:  identity.LastName,
+		Roles:     roles,
 	}, nil
 }

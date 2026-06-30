@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -8,19 +9,35 @@ import (
 	"github.com/open-iga/core/internal/common"
 )
 
-type Identity struct {
-	Id        uuid.UUID
-	FirstName string
-	LastName  string
-	Email     string
-}
+type (
+	// IdentityRole list of roles assigned to an identity
+	// IdentityRole is not mixed with Identity, as Session(authn) and IdentityRole(authz) are separate concerns
+	IdentityRole struct {
+		IdentityId uuid.UUID
+		Roles      []string
+	}
 
-const sessionValidity = 10 * time.Hour
+	// Identity core model of domain
+	Identity struct {
+		Id        uuid.UUID
+		FirstName string
+		LastName  string
+		Email     string
+	}
 
-type IdentitySession struct {
-	SessionId string
-	ExpiresAt time.Time
-}
+	// IdentitySession To create session for an identity
+	IdentitySession struct {
+		SessionId string
+		ExpiresAt time.Time
+	}
+)
+
+var ErrNoIdentityFound = errors.New("no identity found")
+
+const (
+	sessionValidity     = 10 * time.Hour
+	DefaultIdentityRole = "member"
+)
 
 func (i *Identity) GenerateSession() (*IdentitySession, error) {
 	sessionId, err := common.GenerateHighEntropyID()
