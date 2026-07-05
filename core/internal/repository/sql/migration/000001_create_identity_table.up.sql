@@ -23,7 +23,6 @@ CREATE TABLE session
     created_at  TIMESTAMPTZ(6)          DEFAULT CURRENT_TIMESTAMP,
     expires_at  TIMESTAMPTZ(6) NOT NULL
 );
-
 -- Ensure that only one active session exists per identity
 CREATE UNIQUE INDEX idx_unique_session ON session (identity_id) WHERE active = TRUE;
 CREATE INDEX idx_session_identity_id ON session (identity_id);

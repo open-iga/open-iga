@@ -63,6 +63,18 @@ type Identity struct {
 	UpdatedAt pgtype.Timestamptz
 }
 
+type IdentityRole struct {
+	ID         uuid.UUID
+	RoleID     uuid.UUID
+	IdentityID uuid.UUID
+}
+
+type Role struct {
+	ID        uuid.UUID
+	Name      string
+	CreatedAt pgtype.Timestamptz
+}
+
 type Session struct {
 	ID         uuid.UUID
 	SessionID  string

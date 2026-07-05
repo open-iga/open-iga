@@ -77,7 +77,7 @@ func (m *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 		// 1. If invalid, redirect to login page
 		// 2. if expired, redirect to login page
 		// 3. If failed to expire, redirect to login again
-		identity, session, err := m.application.LoginService.ValidateSession(r.Context(), cookie.Value)
+		identity, session, err := m.application.AuthService.ValidateSession(r.Context(), cookie.Value)
 		if err != nil && !isRequestToAuthEndpoint(r) { // user might have an expired session in login and login callback handler
 			m.logger.Debug("unable to validate session", "error", err)
 			m.redirectResponseToSignIn(w)
@@ -91,7 +91,14 @@ func (m *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := WithIdentity(r.Context(), identity)
+		var identityRoles []string
+		// fetch roles only when identity is avail
+		if identity != nil {
+			identityRoles = m.application.AuthService.GetRoles(r.Context(), identity.Id)
+		}
+
+		ctx := WithRoles(r.Context(), identityRoles)
+		ctx = WithIdentity(ctx, identity)
 		ctx = WithSession(ctx, session)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

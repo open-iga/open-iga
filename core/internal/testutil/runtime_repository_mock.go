@@ -42,19 +42,49 @@ func (m *MockIdentityRepository) EXPECT() *MockIdentityRepositoryMockRecorder {
 	return m.recorder
 }
 
-// FindOrCreate mocks base method.
-func (m *MockIdentityRepository) FindOrCreate(ctx context.Context, user *domain.OauthUser) (*domain.Identity, error) {
+// FindOrCreateWithDefaultRole mocks base method.
+func (m *MockIdentityRepository) FindOrCreateWithDefaultRole(ctx context.Context, user *domain.OauthUser) (*domain.Identity, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindOrCreate", ctx, user)
+	ret := m.ctrl.Call(m, "FindOrCreateWithDefaultRole", ctx, user)
 	ret0, _ := ret[0].(*domain.Identity)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// FindOrCreate indicates an expected call of FindOrCreate.
-func (mr *MockIdentityRepositoryMockRecorder) FindOrCreate(ctx, user any) *gomock.Call {
+// FindOrCreateWithDefaultRole indicates an expected call of FindOrCreateWithDefaultRole.
+func (mr *MockIdentityRepositoryMockRecorder) FindOrCreateWithDefaultRole(ctx, user any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindOrCreate", reflect.TypeOf((*MockIdentityRepository)(nil).FindOrCreate), ctx, user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindOrCreateWithDefaultRole", reflect.TypeOf((*MockIdentityRepository)(nil).FindOrCreateWithDefaultRole), ctx, user)
+}
+
+// GetRolesByIdentityId mocks base method.
+func (m *MockIdentityRepository) GetRolesByIdentityId(ctx context.Context, identityId uuid.UUID) (*domain.IdentityRole, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRolesByIdentityId", ctx, identityId)
+	ret0, _ := ret[0].(*domain.IdentityRole)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRolesByIdentityId indicates an expected call of GetRolesByIdentityId.
+func (mr *MockIdentityRepositoryMockRecorder) GetRolesByIdentityId(ctx, identityId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRolesByIdentityId", reflect.TypeOf((*MockIdentityRepository)(nil).GetRolesByIdentityId), ctx, identityId)
+}
+
+// UpsertRoleByIdentityId mocks base method.
+func (m *MockIdentityRepository) UpsertRoleByIdentityId(ctx context.Context, identityId uuid.UUID, role string) (*domain.IdentityRole, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpsertRoleByIdentityId", ctx, identityId, role)
+	ret0, _ := ret[0].(*domain.IdentityRole)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpsertRoleByIdentityId indicates an expected call of UpsertRoleByIdentityId.
+func (mr *MockIdentityRepositoryMockRecorder) UpsertRoleByIdentityId(ctx, identityId, role any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertRoleByIdentityId", reflect.TypeOf((*MockIdentityRepository)(nil).UpsertRoleByIdentityId), ctx, identityId, role)
 }
 
 // MockSessionRepository is a mock of SessionRepository interface.

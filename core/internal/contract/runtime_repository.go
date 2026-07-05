@@ -8,7 +8,9 @@ import (
 )
 
 type IdentityRepository interface {
-	FindOrCreate(ctx context.Context, user *domain.OauthUser) (*domain.Identity, error)
+	FindOrCreateWithDefaultRole(ctx context.Context, user *domain.OauthUser) (*domain.Identity, error)
+	GetRolesByIdentityId(ctx context.Context, identityId uuid.UUID) (*domain.IdentityRole, error)
+	UpsertRoleByIdentityId(ctx context.Context, identityId uuid.UUID, role string) (*domain.IdentityRole, error)
 }
 
 type SessionRepository interface {

@@ -13,10 +13,17 @@ func (h *Handler) GetUserDetails(ctx context.Context, _ generated.GetUserDetails
 		return generated.GetUserDetails500JSONResponse{Message: err.Error()}, nil
 	}
 
+	roles, err := middleware.GetRoles(ctx)
+	if err != nil {
+		h.logger.Warn("failed to get roles from context. Defaulting to empty roles", "err", err)
+		roles = []string{}
+	}
+
 	return generated.GetUserDetails200JSONResponse{
 		Email:     identity.Email,
 		FirstName: identity.FirstName,
 		Id:        identity.Id.String(),
 		LastName:  identity.LastName,
+		Roles:     roles,
 	}, nil
 }

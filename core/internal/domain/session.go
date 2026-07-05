@@ -21,7 +21,7 @@ type Session struct {
 	IdentityId uuid.UUID
 	Active     bool
 	CreatedAt  time.Time
-	ExpiresAt  time.Time // this is in UTC. Refer to IdentitySession
+	ExpiresAt  time.Time // this is in UTC. Refer to GenerateSession on IdentitySession
 }
 
 func (s *Session) ValidityInSeconds() int {
