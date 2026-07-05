@@ -128,7 +128,7 @@ func (a *AuthService) ValidateSession(ctx context.Context, sessionId string) (*d
 
 func (a *AuthService) DeactivateSession(ctx context.Context, sessionId string) error {
 	_, err := a.sessionRepository.DeactivateBySessionId(ctx, sessionId)
-	if err != nil && !errors.Is(err, domain.ErrSessionNotFound) {
+	if err != nil && errors.Is(err, domain.ErrSessionNotFound) {
 		return domain.ErrSessionNotFound
 	}
 	if err != nil {
