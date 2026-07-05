@@ -42,7 +42,7 @@ func (i *IdentityRepository) FindOrCreateWithDefaultRole(ctx context.Context, us
 	}
 	defer func(tx pgx.Tx, ctx context.Context) {
 		err := tx.Rollback(ctx)
-		if err != nil {
+		if err != nil && !errors.Is(err, pgx.ErrTxClosed) {
 			i.logger.Error("failed to rollback transaction during identity insert / update", "error", err)
 		}
 	}(tx, ctx)
