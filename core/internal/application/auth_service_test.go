@@ -248,3 +248,27 @@ func TestAuthService_DeactivateSession(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
+func TestAuthService_GetRoles(t *testing.T) {
+	t.Run("returns all roles", func(t *testing.T) {
+		authService, _, _, identityRepoMock := setupAuthServiceWithMocks(t)
+		identityId := testutil.NewIdentity().Id
+		identityRepoMock.EXPECT().GetRolesByIdentityId(gomock.Any(), identityId).Return(
+			&domain.IdentityRole{IdentityId: identityId, Roles: []string{"admin", "member"}}, nil,
+		)
+
+		roles := authService.GetRoles(context.TODO(), identityId)
+
+		assert.Equal(t, []string{"admin", "member"}, roles)
+	})
+
+	t.Run("returns  default roles when getting roles fails with error", func(t *testing.T) {
+		authService, _, _, identityRepoMock := setupAuthServiceWithMocks(t)
+		identityId := testutil.NewIdentity().Id
+		identityRepoMock.EXPECT().GetRolesByIdentityId(gomock.Any(), identityId).Return(nil, errors.New("db error"))
+
+		roles := authService.GetRoles(context.TODO(), identityId)
+
+		assert.Equal(t, []string{domain.DefaultIdentityRole}, roles)
+	})
+}

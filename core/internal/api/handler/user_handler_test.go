@@ -14,7 +14,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func setupRouterWithIdentity(t *testing.T, identity *domain.Identity) (*chi.Mux, *testutil.MockAuthService) {
+func setupRouterWithIdentity(t *testing.T, identity *domain.Identity, roles []string) (*chi.Mux, *testutil.MockAuthService) {
 	t.Helper()
 
 	ctrl := gomock.NewController(t)
@@ -24,7 +24,7 @@ func setupRouterWithIdentity(t *testing.T, identity *domain.Identity) (*chi.Mux,
 	applicationMock := &contract.RuntimeApplication{AuthService: authServiceMock}
 	handler := NewHandler(testutil.NewTestAppConfig(), testutil.NewTestLogger(), applicationMock)
 
-	router := testutil.NewMockRouter(handler, testutil.WithIdentitySetterMiddleware(identity))
+	router := testutil.NewMockRouter(handler, testutil.WithIdentitySetterMiddleware(identity), testutil.WithRolesSetterMiddleware(roles))
 
 	return router, authServiceMock
 }
@@ -43,18 +43,17 @@ func TestHandler_GetUserDetails(t *testing.T) {
 
 	t.Run("return user details when context contains identity", func(t *testing.T) {
 		identity := testutil.NewIdentity()
-		router, _ := setupRouterWithIdentity(t, &identity)
+		roles := []string{"admin"}
+		router, _ := setupRouterWithIdentity(t, &identity, roles)
 
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/users", nil)
 		rec := httptest.NewRecorder()
 		router.ServeHTTP(rec, req)
 
 		assert.Equal(t, http.StatusOK, rec.Code)
-
-		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.JSONEq(t,
 			fmt.Sprintf(
-				`{"email": "%s", "firstName": "%s", "lastName": "%s", "id": "%s"}`,
+				`{"email": "%s", "firstName": "%s", "lastName": "%s", "id": "%s", "roles": ["admin"]}`,
 				identity.Email, identity.FirstName, identity.LastName, identity.Id),
 			rec.Body.String(),
 		)

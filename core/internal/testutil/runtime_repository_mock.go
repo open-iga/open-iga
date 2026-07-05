@@ -72,19 +72,19 @@ func (mr *MockIdentityRepositoryMockRecorder) GetRolesByIdentityId(ctx, identity
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRolesByIdentityId", reflect.TypeOf((*MockIdentityRepository)(nil).GetRolesByIdentityId), ctx, identityId)
 }
 
-// UpdateRoleByIdentityId mocks base method.
-func (m *MockIdentityRepository) UpdateRoleByIdentityId(ctx context.Context, identityId uuid.UUID, role string) (*domain.IdentityRole, error) {
+// UpsertRoleByIdentityId mocks base method.
+func (m *MockIdentityRepository) UpsertRoleByIdentityId(ctx context.Context, identityId uuid.UUID, role string) (*domain.IdentityRole, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateRoleByIdentityId", ctx, identityId, role)
+	ret := m.ctrl.Call(m, "UpsertRoleByIdentityId", ctx, identityId, role)
 	ret0, _ := ret[0].(*domain.IdentityRole)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// UpdateRoleByIdentityId indicates an expected call of UpdateRoleByIdentityId.
-func (mr *MockIdentityRepositoryMockRecorder) UpdateRoleByIdentityId(ctx, identityId, role any) *gomock.Call {
+// UpsertRoleByIdentityId indicates an expected call of UpsertRoleByIdentityId.
+func (mr *MockIdentityRepositoryMockRecorder) UpsertRoleByIdentityId(ctx, identityId, role any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRoleByIdentityId", reflect.TypeOf((*MockIdentityRepository)(nil).UpdateRoleByIdentityId), ctx, identityId, role)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertRoleByIdentityId", reflect.TypeOf((*MockIdentityRepository)(nil).UpsertRoleByIdentityId), ctx, identityId, role)
 }
 
 // MockSessionRepository is a mock of SessionRepository interface.

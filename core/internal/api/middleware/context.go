@@ -12,6 +12,7 @@ type contextKey string
 const (
 	IdentityContextKey contextKey = "identity"
 	SessionContextKey  contextKey = "session"
+	RolesContextKey    contextKey = "roles"
 )
 
 func WithIdentity(ctx context.Context, identity *domain.Identity) context.Context {
@@ -38,4 +39,16 @@ func GetSession(ctx context.Context) (*domain.Session, error) {
 	}
 
 	return session, nil
+}
+
+func WithRoles(ctx context.Context, roles []string) context.Context {
+	return context.WithValue(ctx, RolesContextKey, roles)
+}
+
+func GetRoles(ctx context.Context) ([]string, error) {
+	roles, ok := ctx.Value(RolesContextKey).([]string)
+	if !ok {
+		return nil, errors.New("roles missing in context")
+	}
+	return roles, nil
 }

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -41,7 +40,12 @@ func (i *IdentityRepository) FindOrCreateWithDefaultRole(ctx context.Context, us
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction during identity insert / update: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func(tx pgx.Tx, ctx context.Context) {
+		err := tx.Rollback(ctx)
+		if err != nil {
+			i.logger.Error("failed to rollback transaction during identity insert / update", "error", err)
+		}
+	}(tx, ctx)
 
 	queries := i.queries.WithTx(tx)
 
@@ -57,7 +61,7 @@ func (i *IdentityRepository) FindOrCreateWithDefaultRole(ctx context.Context, us
 	}
 
 	_, err = queries.UpsertRoleByIdentityId(ctx, db.UpsertRoleByIdentityIdParams{
-		Name:       domain.DefaultIdentityRole, // Not the best; but fine for now
+		Name:       domain.DefaultIdentityRole, // TODO: pass default role as argument instead
 		IdentityID: identity.ID,
 	})
 
@@ -75,7 +79,7 @@ func (i *IdentityRepository) FindOrCreateWithDefaultRole(ctx context.Context, us
 
 func (i *IdentityRepository) GetRolesByIdentityId(ctx context.Context, identityId uuid.UUID) (*domain.IdentityRole, error) {
 	roles, err := i.queries.GetRolesByIdentityId(ctx, identityId)
-	if err != nil && errors.Is(err, sql.ErrNoRows) {
+	if err == nil && roles == nil {
 		return nil, domain.ErrNoIdentityFound
 	}
 
@@ -89,14 +93,12 @@ func (i *IdentityRepository) GetRolesByIdentityId(ctx context.Context, identityI
 	}, nil
 }
 
-func (i *IdentityRepository) UpdateRoleByIdentityId(ctx context.Context, identityId uuid.UUID, role string) (*domain.IdentityRole, error) {
-	insertedRole, err := i.queries.UpsertRoleByIdentityId(ctx, db.UpsertRoleByIdentityIdParams{Name: role, IdentityID: identityId})
-	if err != nil {
+func (i *IdentityRepository) UpsertRoleByIdentityId(ctx context.Context, identityId uuid.UUID, role string) (*domain.IdentityRole, error) {
+	_, err := i.queries.UpsertRoleByIdentityId(ctx, db.UpsertRoleByIdentityIdParams{Name: role, IdentityID: identityId})
+
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, err
 	}
 
-	return &domain.IdentityRole{
-		IdentityId: identityId,
-		Roles:      []string{insertedRole},
-	}, nil
+	return i.GetRolesByIdentityId(ctx, identityId)
 }

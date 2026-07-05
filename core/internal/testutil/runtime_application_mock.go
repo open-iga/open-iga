@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	uuid "github.com/google/uuid"
 	domain "github.com/open-iga/core/internal/domain"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -83,6 +84,20 @@ func (m *MockAuthService) GetConsentPageDetails(ctx context.Context, provider st
 func (mr *MockAuthServiceMockRecorder) GetConsentPageDetails(ctx, provider any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConsentPageDetails", reflect.TypeOf((*MockAuthService)(nil).GetConsentPageDetails), ctx, provider)
+}
+
+// GetRoles mocks base method.
+func (m *MockAuthService) GetRoles(ctx context.Context, identityId uuid.UUID) []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRoles", ctx, identityId)
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// GetRoles indicates an expected call of GetRoles.
+func (mr *MockAuthServiceMockRecorder) GetRoles(ctx, identityId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoles", reflect.TypeOf((*MockAuthService)(nil).GetRoles), ctx, identityId)
 }
 
 // ValidateSession mocks base method.

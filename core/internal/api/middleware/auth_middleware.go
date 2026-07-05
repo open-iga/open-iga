@@ -91,7 +91,14 @@ func (m *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := WithIdentity(r.Context(), identity)
+		var identityRoles []string
+		// fetch roles only when identity is avail
+		if identity != nil {
+			identityRoles = m.application.AuthService.GetRoles(r.Context(), identity.Id)
+		}
+
+		ctx := WithRoles(r.Context(), identityRoles)
+		ctx = WithIdentity(ctx, identity)
 		ctx = WithSession(ctx, session)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

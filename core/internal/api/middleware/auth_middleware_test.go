@@ -96,4 +96,39 @@ func TestMiddleware_AuthMiddleware(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.JSONEq(t, `{"redirect": "/"}`, rec.Body.String())
 	})
+
+	t.Run("fetches role and sets it in context when identity is available", func(t *testing.T) {
+		m, authServiceMock := setupMiddlewareWithMocks(t)
+		identity := testutil.NewIdentity()
+		session := &domain.Session{SessionId: "sid-1"}
+		authServiceMock.EXPECT().ValidateSession(gomock.Any(), "sid-1").Return(&identity, session, nil)
+		authServiceMock.EXPECT().GetRoles(gomock.Any(), identity.Id).Return([]string{"admin"})
+
+		var capturedRoles []string
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			capturedRoles, _ = middleware.GetRoles(r.Context())
+			w.WriteHeader(http.StatusOK)
+		})
+
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/users", nil)
+		req.AddCookie(&http.Cookie{Name: common.SessionCookieName, Value: "sid-1"})
+		rec := httptest.NewRecorder()
+		m.AuthMiddleware(handler).ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Equal(t, []string{"admin"}, capturedRoles)
+	})
+
+	t.Run("skips fetching role when identity is missing", func(t *testing.T) {
+		m, authServiceMock := setupMiddlewareWithMocks(t)
+		session := &domain.Session{SessionId: "sid-1"}
+		authServiceMock.EXPECT().ValidateSession(gomock.Any(), "sid-1").Return(nil, session, nil)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/users", nil)
+		req.AddCookie(&http.Cookie{Name: common.SessionCookieName, Value: "sid-1"})
+		rec := httptest.NewRecorder()
+		m.AuthMiddleware(mockHandlerWithOkResponse()).ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusOK, rec.Code)
+	})
 }
