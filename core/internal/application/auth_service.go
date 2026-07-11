@@ -58,7 +58,7 @@ func (a *AuthService) GenerateSession(ctx context.Context, provider string, auth
 		return nil, fmt.Errorf("generate session: %w", err)
 	}
 
-	identity, err := a.identityRepository.FindOrCreateWithDefaultRole(ctx, oauthUser)
+	identity, err := a.identityRepository.FindOrCreateWithRole(ctx, oauthUser, domain.DefaultIdentityRole)
 	if err != nil {
 		return nil, fmt.Errorf("generate session: %w", err)
 	}

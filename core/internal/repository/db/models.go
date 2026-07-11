@@ -69,6 +69,13 @@ type IdentityRole struct {
 	IdentityID uuid.UUID
 }
 
+type Onboarding struct {
+	ID          uuid.UUID
+	Email       string
+	Onboarded   bool
+	OnboardedAt pgtype.Timestamptz
+}
+
 type Role struct {
 	ID        uuid.UUID
 	Name      string

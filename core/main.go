@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/open-iga/core/internal/api"
 	"github.com/open-iga/core/internal/application"
 	"github.com/open-iga/core/internal/common"
+	"github.com/open-iga/core/internal/domain"
 	"github.com/open-iga/core/internal/remote"
 	"github.com/open-iga/core/internal/repository"
 )
@@ -36,6 +38,26 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	hasAdmin, err := runtimeRepository.IdentityRepository.HasAdmin(context.Background())
+	if err != nil {
+		logger.Error("failed to check if admin role exists", "err", err)
+		os.Exit(1)
+	}
+
+	if !hasAdmin && appConfig.AdminUser.Email != "" {
+		_, err = runtimeRepository.IdentityRepository.FindOrCreateWithRole(context.Background(), domain.NewOauthUser("", "", appConfig.AdminUser.Email), domain.AdminRole)
+		if err != nil {
+			logger.Error("failed to onboard admin", "err", err)
+			os.Exit(1)
+		}
+	}
+
+	if !hasAdmin && appConfig.AdminUser.Email == "" {
+		logger.Error("ADMIN_USER is required to start the application. Make sure to set a valid email")
+		os.Exit(1)
+	}
+
 	runtimeRemote := remote.NewRemote(appConfig, logger)
 	runtimeApplication := application.NewApplication(appConfig, logger, runtimeRemote, runtimeRepository)
 

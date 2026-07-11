@@ -42,19 +42,19 @@ func (m *MockIdentityRepository) EXPECT() *MockIdentityRepositoryMockRecorder {
 	return m.recorder
 }
 
-// FindOrCreateWithDefaultRole mocks base method.
-func (m *MockIdentityRepository) FindOrCreateWithDefaultRole(ctx context.Context, user *domain.OauthUser) (*domain.Identity, error) {
+// FindOrCreateWithRole mocks base method.
+func (m *MockIdentityRepository) FindOrCreateWithRole(ctx context.Context, user *domain.OauthUser, role string) (*domain.Identity, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindOrCreateWithDefaultRole", ctx, user)
+	ret := m.ctrl.Call(m, "FindOrCreateWithRole", ctx, user, role)
 	ret0, _ := ret[0].(*domain.Identity)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// FindOrCreateWithDefaultRole indicates an expected call of FindOrCreateWithDefaultRole.
-func (mr *MockIdentityRepositoryMockRecorder) FindOrCreateWithDefaultRole(ctx, user any) *gomock.Call {
+// FindOrCreateWithRole indicates an expected call of FindOrCreateWithRole.
+func (mr *MockIdentityRepositoryMockRecorder) FindOrCreateWithRole(ctx, user, role any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindOrCreateWithDefaultRole", reflect.TypeOf((*MockIdentityRepository)(nil).FindOrCreateWithDefaultRole), ctx, user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindOrCreateWithRole", reflect.TypeOf((*MockIdentityRepository)(nil).FindOrCreateWithRole), ctx, user, role)
 }
 
 // GetRolesByIdentityId mocks base method.
@@ -70,6 +70,21 @@ func (m *MockIdentityRepository) GetRolesByIdentityId(ctx context.Context, ident
 func (mr *MockIdentityRepositoryMockRecorder) GetRolesByIdentityId(ctx, identityId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRolesByIdentityId", reflect.TypeOf((*MockIdentityRepository)(nil).GetRolesByIdentityId), ctx, identityId)
+}
+
+// HasAdmin mocks base method.
+func (m *MockIdentityRepository) HasAdmin(ctx context.Context) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasAdmin", ctx)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HasAdmin indicates an expected call of HasAdmin.
+func (mr *MockIdentityRepositoryMockRecorder) HasAdmin(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasAdmin", reflect.TypeOf((*MockIdentityRepository)(nil).HasAdmin), ctx)
 }
 
 // UpsertRoleByIdentityId mocks base method.

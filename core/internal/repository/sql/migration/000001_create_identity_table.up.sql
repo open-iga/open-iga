@@ -10,8 +10,6 @@ CREATE TABLE identity
     created_at TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX idx_identity_email on identity (email);
-
 
 CREATE TABLE session
 (
