@@ -8,8 +8,6 @@ import (
 	"os"
 	"time"
 
-	validation "github.com/go-ozzo/ozzo-validation"
-	"github.com/go-ozzo/ozzo-validation/is"
 	"github.com/open-iga/core/internal/api"
 	"github.com/open-iga/core/internal/application"
 	"github.com/open-iga/core/internal/common"
@@ -48,9 +46,6 @@ func main() {
 	}
 
 	if !hasAdmin && appConfig.AdminUser.Email != "" {
-		// ideally admin would onboard first, so setting the firstname and lastname to empty string is fine
-		err = validation.Validate(appConfig.AdminUser, is.Email)
-
 		_, err = runtimeRepository.IdentityRepository.FindOrCreateWithRole(context.Background(), domain.NewOauthUser("", "", appConfig.AdminUser.Email), domain.AdminRole)
 		if err != nil {
 			logger.Error("failed to onboard admin", "err", err)
