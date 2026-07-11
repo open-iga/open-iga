@@ -17,7 +17,7 @@ var (
 func SetupIdentity(t *testing.T) {
 	t.Helper()
 	var err error
-	identity, err = repository.IdentityRepository.FindOrCreateWithDefaultRole(t.Context(), &mockOauthUser)
+	identity, err = repository.IdentityRepository.FindOrCreateWithRole(t.Context(), &mockOauthUser, domain.DefaultIdentityRole)
 	if err != nil {
 		t.Fatalf("failed to setup identity: %v", err)
 	}

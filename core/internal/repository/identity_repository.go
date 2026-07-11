@@ -27,7 +27,7 @@ func NewIdentityRepository(pool *pgxpool.Pool, queries *db.Queries, logger *slog
 	return &IdentityRepository{pool, queries, logger}
 }
 
-func (i *IdentityRepository) FindOrCreateWithDefaultRole(ctx context.Context, user *domain.OauthUser) (*domain.Identity, error) {
+func (i *IdentityRepository) FindOrCreateWithRole(ctx context.Context, user *domain.OauthUser, role string) (*domain.Identity, error) {
 	if user == nil {
 		return nil, errors.New("user is nil")
 	}
@@ -61,7 +61,7 @@ func (i *IdentityRepository) FindOrCreateWithDefaultRole(ctx context.Context, us
 	}
 
 	_, err = queries.UpsertRoleByIdentityId(ctx, db.UpsertRoleByIdentityIdParams{
-		Name:       domain.DefaultIdentityRole, // TODO: pass default role as argument instead
+		Name:       role,
 		IdentityID: identity.ID,
 	})
 
@@ -101,4 +101,12 @@ func (i *IdentityRepository) UpsertRoleByIdentityId(ctx context.Context, identit
 	}
 
 	return i.GetRolesByIdentityId(ctx, identityId)
+}
+
+func (i *IdentityRepository) HasAdmin(ctx context.Context) (bool, error) {
+	count, err := i.queries.CountAdmin(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to check admin existence: %w", err)
+	}
+	return count > 0, nil
 }

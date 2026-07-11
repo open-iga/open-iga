@@ -11,6 +11,20 @@ import (
 	"github.com/google/uuid"
 )
 
+const countAdmin = `-- name: CountAdmin :one
+SELECT COUNT(*) FROM identity_role ir
+    JOIN role r ON r.id = ir.role_id
+    WHERE r.name = 'admin'
+`
+
+// atleast one admin should present for the application to start
+func (q *Queries) CountAdmin(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countAdmin)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getRolesByIdentityId = `-- name: GetRolesByIdentityId :many
 SELECT r.name FROM role r
     JOIN identity_role ir ON ir.role_id = r.id

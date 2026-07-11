@@ -37,6 +37,7 @@ var ErrNoIdentityFound = errors.New("no identity found")
 const (
 	sessionValidity     = 10 * time.Hour
 	DefaultIdentityRole = "member"
+	AdminRole           = "admin"
 )
 
 func (i *Identity) GenerateSession() (*IdentitySession, error) {

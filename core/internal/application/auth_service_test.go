@@ -98,7 +98,7 @@ func TestAuthService_GenerateSession(t *testing.T) {
 			},
 			nil,
 		)
-		identityRepoMock.EXPECT().FindOrCreateWithDefaultRole(gomock.Any(), gomock.Any()).Return(nil, errors.New("failed to fetch user"))
+		identityRepoMock.EXPECT().FindOrCreateWithRole(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("failed to fetch user"))
 
 		consentDetails, err := authService.GenerateSession(context.TODO(), "google", "code")
 
@@ -113,7 +113,7 @@ func TestAuthService_GenerateSession(t *testing.T) {
 			nil,
 		)
 		identity := &domain.Identity{Id: uuid.New()}
-		identityRepoMock.EXPECT().FindOrCreateWithDefaultRole(gomock.Any(), gomock.Any()).Return(identity, nil)
+		identityRepoMock.EXPECT().FindOrCreateWithRole(gomock.Any(), gomock.Any(), gomock.Any()).Return(identity, nil)
 		sessionRepoMock.EXPECT().FindActiveSessionByIdentityId(gomock.Any(), identity.Id).Return(nil, errors.New("db down"))
 
 		session, err := authService.GenerateSession(context.TODO(), "google", "code")
@@ -129,7 +129,7 @@ func TestAuthService_GenerateSession(t *testing.T) {
 			nil,
 		)
 		identity := &domain.Identity{Id: uuid.New()}
-		identityRepoMock.EXPECT().FindOrCreateWithDefaultRole(gomock.Any(), gomock.Any()).Return(identity, nil)
+		identityRepoMock.EXPECT().FindOrCreateWithRole(gomock.Any(), gomock.Any(), gomock.Any()).Return(identity, nil)
 		existingSession := &domain.Session{SessionId: "sid-1", ExpiresAt: time.Now().UTC().Add(time.Hour)}
 		sessionRepoMock.EXPECT().FindActiveSessionByIdentityId(gomock.Any(), identity.Id).Return(existingSession, nil)
 
@@ -146,7 +146,7 @@ func TestAuthService_GenerateSession(t *testing.T) {
 			nil,
 		)
 		identity := &domain.Identity{Id: uuid.New()}
-		identityRepoMock.EXPECT().FindOrCreateWithDefaultRole(gomock.Any(), gomock.Any()).Return(identity, nil)
+		identityRepoMock.EXPECT().FindOrCreateWithRole(gomock.Any(), gomock.Any(), gomock.Any()).Return(identity, nil)
 		existingSession := &domain.Session{SessionId: "sid-1", ExpiresAt: time.Now().UTC().Add(-time.Hour)}
 		sessionRepoMock.EXPECT().FindActiveSessionByIdentityId(gomock.Any(), identity.Id).Return(existingSession, nil)
 		sessionRepoMock.EXPECT().DeactivateByIdentityId(gomock.Any(), identity.Id).Return(existingSession, nil)
@@ -166,7 +166,7 @@ func TestAuthService_GenerateSession(t *testing.T) {
 			nil,
 		)
 		identity := &domain.Identity{Id: uuid.New()}
-		identityRepoMock.EXPECT().FindOrCreateWithDefaultRole(gomock.Any(), gomock.Any()).Return(identity, nil)
+		identityRepoMock.EXPECT().FindOrCreateWithRole(gomock.Any(), gomock.Any(), gomock.Any()).Return(identity, nil)
 		sessionRepoMock.EXPECT().FindActiveSessionByIdentityId(gomock.Any(), identity.Id).Return(nil, domain.ErrNoActiveSession)
 		newSession := &domain.Session{SessionId: "sid-2", ExpiresAt: time.Now().UTC().Add(time.Hour)}
 		sessionRepoMock.EXPECT().Create(gomock.Any(), identity).Return(newSession, nil)

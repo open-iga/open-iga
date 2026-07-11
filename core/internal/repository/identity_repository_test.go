@@ -22,7 +22,7 @@ func cleanupDbOnExit(t *testing.T, identity *domain.Identity) {
 
 func TestIdentityRepository_FindOrCreate(t *testing.T) {
 	t.Run("returns error if user is nil", func(t *testing.T) {
-		identity, err := repository.IdentityRepository.FindOrCreateWithDefaultRole(context.TODO(), nil)
+		identity, err := repository.IdentityRepository.FindOrCreateWithRole(context.TODO(), nil, domain.DefaultIdentityRole)
 
 		assert.Nil(t, identity)
 		assert.EqualError(t, err, "user is nil")
@@ -32,7 +32,7 @@ func TestIdentityRepository_FindOrCreate(t *testing.T) {
 		emptyUser := testutil.NewOauthUser()
 		emptyUser.Email = ""
 
-		identity, err := repository.IdentityRepository.FindOrCreateWithDefaultRole(context.TODO(), &emptyUser)
+		identity, err := repository.IdentityRepository.FindOrCreateWithRole(context.TODO(), &emptyUser, domain.DefaultIdentityRole)
 
 		assert.Nil(t, identity)
 		assert.EqualError(t, err, "email is empty")
@@ -41,7 +41,7 @@ func TestIdentityRepository_FindOrCreate(t *testing.T) {
 	t.Run("should insert identity if email already exists", func(t *testing.T) {
 		mockOauthUser := testutil.NewOauthUser()
 
-		identity, err := repository.IdentityRepository.FindOrCreateWithDefaultRole(context.TODO(), &mockOauthUser)
+		identity, err := repository.IdentityRepository.FindOrCreateWithRole(context.TODO(), &mockOauthUser, domain.DefaultIdentityRole)
 
 		assert.Nil(t, err)
 
@@ -57,13 +57,13 @@ func TestIdentityRepository_FindOrCreate(t *testing.T) {
 	t.Run("should not insert identity if email already exists", func(t *testing.T) {
 		mockOauthUser := testutil.NewOauthUser()
 
-		identity, err := repository.IdentityRepository.FindOrCreateWithDefaultRole(context.TODO(), &mockOauthUser)
+		identity, err := repository.IdentityRepository.FindOrCreateWithRole(context.TODO(), &mockOauthUser, domain.DefaultIdentityRole)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, identity)
 		cleanupDbOnExit(t, identity)
 
-		upsertedIdentity, upsertingErr := repository.IdentityRepository.FindOrCreateWithDefaultRole(context.TODO(), &mockOauthUser)
+		upsertedIdentity, upsertingErr := repository.IdentityRepository.FindOrCreateWithRole(context.TODO(), &mockOauthUser, domain.DefaultIdentityRole)
 
 		assert.Nil(t, upsertingErr)
 		assert.Equal(t, identity, upsertedIdentity)
@@ -80,10 +80,10 @@ func TestIdentityRepository_FindOrCreate(t *testing.T) {
 		assert.Equal(t, count, 1)
 	})
 
-	t.Run("should upsert default role when upserting identity details", func(t *testing.T) {
+	t.Run("should upsert role when upserting identity details", func(t *testing.T) {
 		mockOauthUser := testutil.NewOauthUser()
 
-		identity, err := repository.IdentityRepository.FindOrCreateWithDefaultRole(context.TODO(), &mockOauthUser)
+		identity, err := repository.IdentityRepository.FindOrCreateWithRole(context.TODO(), &mockOauthUser, domain.DefaultIdentityRole)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, identity)
@@ -101,7 +101,7 @@ func TestIdentityRepository_GetRolesByIdentityId(t *testing.T) {
 	t.Run("returns role for a give", func(t *testing.T) {
 		mockOauthUser := testutil.NewOauthUser()
 
-		identity, err := repository.IdentityRepository.FindOrCreateWithDefaultRole(context.TODO(), &mockOauthUser)
+		identity, err := repository.IdentityRepository.FindOrCreateWithRole(context.TODO(), &mockOauthUser, domain.DefaultIdentityRole)
 		require.NoError(t, err)
 		cleanupDbOnExit(t, identity)
 
@@ -132,7 +132,7 @@ func TestIdentityRepository_UpsertRoleByIdentityId(t *testing.T) {
 	t.Run("inserts a new role if the identity does not have the role", func(t *testing.T) {
 		mockOauthUser := testutil.NewOauthUser()
 
-		identity, err := repository.IdentityRepository.FindOrCreateWithDefaultRole(context.TODO(), &mockOauthUser)
+		identity, err := repository.IdentityRepository.FindOrCreateWithRole(context.TODO(), &mockOauthUser, domain.DefaultIdentityRole)
 		require.NoError(t, err)
 		cleanupDbOnExit(t, identity)
 
@@ -148,7 +148,7 @@ func TestIdentityRepository_UpsertRoleByIdentityId(t *testing.T) {
 	t.Run("does nothing if the identity already has the role", func(t *testing.T) {
 		mockOauthUser := testutil.NewOauthUser()
 
-		identity, err := repository.IdentityRepository.FindOrCreateWithDefaultRole(context.TODO(), &mockOauthUser)
+		identity, err := repository.IdentityRepository.FindOrCreateWithRole(context.TODO(), &mockOauthUser, domain.DefaultIdentityRole)
 		require.NoError(t, err)
 		cleanupDbOnExit(t, identity)
 
@@ -157,5 +157,30 @@ func TestIdentityRepository_UpsertRoleByIdentityId(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(identityRoles.Roles))
 		assert.Contains(t, identityRoles.Roles, domain.DefaultIdentityRole)
+	})
+}
+
+func TestIdentityRepository_HasAdmin(t *testing.T) {
+	t.Run("returns true if atleast one admin exists", func(t *testing.T) {
+		mockOauthUser := testutil.NewOauthUser()
+		mockOauthUser.Email = uuid.New().String() + "@test.com"
+
+		identity, err := repository.IdentityRepository.FindOrCreateWithRole(context.TODO(), &mockOauthUser, domain.DefaultIdentityRole)
+		require.NoError(t, err)
+		require.NotNil(t, identity)
+		cleanupDbOnExit(t, identity)
+
+		_, err = repository.IdentityRepository.UpsertRoleByIdentityId(context.TODO(), identity.Id, "admin")
+		require.NoError(t, err)
+
+		hasAdmin, err := repository.IdentityRepository.HasAdmin(context.TODO())
+		assert.NoError(t, err)
+		assert.True(t, hasAdmin)
+	})
+
+	t.Run("returns false if no admin exists", func(t *testing.T) {
+		hasAdmin, err := repository.IdentityRepository.HasAdmin(context.TODO())
+		assert.NoError(t, err)
+		assert.False(t, hasAdmin)
 	})
 }

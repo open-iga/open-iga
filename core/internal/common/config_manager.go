@@ -1,86 +1,156 @@
 package common
 
 import (
+	"errors"
 	"fmt"
-	"net/url"
 	"os"
 
+	validation "github.com/go-ozzo/ozzo-validation"
+	"github.com/go-ozzo/ozzo-validation/is"
 	"github.com/joho/godotenv"
 )
 
-type EnvValue interface {
-	~int | ~string | ~bool
+type (
+	OauthConfig struct {
+		ClientId     string
+		ClientSecret string
+	}
+
+	Oauth struct {
+		Google OauthConfig
+	}
+
+	Database struct {
+		URL string
+	}
+
+	Redirect struct {
+		Home               string
+		SignIn             string
+		GoogleAuthCallback string
+	}
+
+	AdminUser struct {
+		Email string
+	}
+
+	AppConfig struct {
+		AdminUser AdminUser
+		Port      string
+		HostUrl   string
+		Oauth     Oauth
+		Database  Database
+		Redirect  Redirect
+	}
+)
+
+type (
+	EnvField[T any] struct {
+		envKey       string
+		defaultValue T
+		value        T
+		// This description will be used to inform the users on why this is required and other details
+		description string
+		rules       []validation.Rule
+	}
+
+	ConfigFromEnv struct {
+		AdminUserEmail, Port, HostUrl, GoogleOauthClientId, GoogleOauthClientSecret, DatabaseUrl *EnvField[any]
+	}
+)
+
+func (e *EnvField[T]) IsRequired() *EnvField[T] {
+	e.rules = append(e.rules, validation.Required)
+	return e
 }
 
-type OauthConfig struct {
-	ClientId     string
-	ClientSecret string
+func (e *EnvField[T]) WithDefault(val T) *EnvField[T] {
+	e.defaultValue = val
+	return e
 }
 
-type Oauth struct {
-	Google OauthConfig
+func (e *EnvField[T]) WithDescription(desc string) *EnvField[T] {
+	e.description = desc
+	return e
 }
 
-type Database struct {
-	URL string
-}
-type Redirect struct {
-	Home               string
-	SignIn             string
-	GoogleAuthCallback string
+func (e *EnvField[T]) WithValidationRules(rules ...validation.Rule) *EnvField[T] {
+	e.rules = append(e.rules, rules...)
+	return e
 }
 
-type AppConfig struct {
-	Port     string
-	HostUrl  string
-	Oauth    Oauth
-	Database Database
-	Redirect Redirect
-}
+func (e *EnvField[T]) Validate() error {
+	var valueToParse any
 
-func mustEnv[T EnvValue](key string, converter func(val string) T) T {
-	val, ok := os.LookupEnv(key)
+	raw, ok := os.LookupEnv(e.envKey)
 	if !ok {
-		panic(fmt.Errorf("missing environment variable %s", key))
+		valueToParse = e.defaultValue
+	} else {
+		valueToParse = raw
 	}
 
-	return converter(val)
+	err := validation.Validate(valueToParse, e.rules...)
+	if err != nil {
+		return fmt.Errorf("%s: %v. Details: %s", e.envKey, err, e.description)
+	}
+
+	e.value = valueToParse.(T)
+	return nil
 }
 
-func envWithDefault[T EnvValue](key string, defaultValue T, converter ...func(val string) T) T {
-	val, ok := os.LookupEnv(key)
-	if !ok {
-		return defaultValue
+func Var[T any](key string) *EnvField[T] {
+	return &EnvField[T]{envKey: key}
+}
+
+var (
+	AdminUserEmail          = Var[any]("ADMIN_USER_EMAIL").WithDefault("").WithDescription("Admin user email. This is required during the first run").WithValidationRules(is.Email)
+	Port                    = Var[any]("PORT").WithDefault("8080").WithDescription("Port to listen on").WithValidationRules(is.Port).IsRequired()
+	HostUrl                 = Var[any]("HOST_URL").WithDescription("URL at which this server is running. This is used for Oauth callback").WithValidationRules(is.URL).IsRequired()
+	GoogleOauthClientId     = Var[any]("GOOGLE_OAUTH_CLIENT_ID").WithDescription("Google Client ID for Oauth2 flow").IsRequired()
+	GoogleOauthClientSecret = Var[any]("GOOGLE_OAUTH_CLIENT_SECRET").WithDescription("Google Client Secret for Oauth2 flow").IsRequired()
+	DatabaseUrl             = Var[any]("DATABASE_URL").WithDescription("PostgreSQL connection string").IsRequired()
+
+	configFromEnv = ConfigFromEnv{AdminUserEmail, Port, HostUrl, GoogleOauthClientId, GoogleOauthClientSecret, DatabaseUrl}
+)
+
+func validateEnv() (*ConfigFromEnv, error) {
+	var validationError error
+
+	for _, value := range StructToMap(configFromEnv) {
+		envField := value.(*EnvField[any])
+		if err := envField.Validate(); err != nil {
+			validationError = errors.Join(validationError, err)
+		}
 	}
 
-	if len(converter) > 0 && converter[0] != nil {
-		return converter[0](val)
+	if validationError != nil {
+		return nil, validationError
 	}
 
-	return defaultValue
+	return &configFromEnv, nil
 }
 
 func NewAppConfig() *AppConfig {
 	_ = godotenv.Load(".env")
+	validatedEnv, err := validateEnv()
+	if err != nil {
+		panic(err)
+	}
 
 	return &AppConfig{
-		Port: envWithDefault("PORT", ":8080", func(val string) string { return val }),
-		HostUrl: mustEnv("HOST_URL", func(val string) string {
-			_, err := url.ParseRequestURI(val)
-			if err != nil {
-				panic(fmt.Errorf("invalid HOST_URL: %w", err))
-			}
-
-			return val
-		}),
+		AdminUser: AdminUser{
+			Email: validatedEnv.AdminUserEmail.value.(string),
+		},
+		Port:    ":" + validatedEnv.Port.value.(string),
+		HostUrl: validatedEnv.HostUrl.value.(string),
 		Oauth: Oauth{
 			Google: OauthConfig{
-				ClientId:     mustEnv("GOOGLE_OAUTH_CLIENT_ID", func(val string) string { return val }),
-				ClientSecret: mustEnv("GOOGLE_OAUTH_CLIENT_SECRET", func(val string) string { return val }),
+				ClientId:     validatedEnv.GoogleOauthClientId.value.(string),
+				ClientSecret: validatedEnv.GoogleOauthClientSecret.value.(string),
 			},
 		},
 		Database: Database{
-			URL: mustEnv("DATABASE_URL", func(val string) string { return val }),
+			URL: validatedEnv.DatabaseUrl.value.(string),
 		},
 		Redirect: Redirect{
 			Home:               "/",
