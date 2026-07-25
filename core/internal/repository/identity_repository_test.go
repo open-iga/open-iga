@@ -121,7 +121,6 @@ func TestIdentityRepository_GetRolesByIdentityId(t *testing.T) {
 }
 
 func TestIdentityRepository_UpsertRoleByIdentityId(t *testing.T) {
-
 	t.Run("returns error if user is nil", func(t *testing.T) {
 		identityRole, err := repository.IdentityRepository.UpsertRoleByIdentityId(context.TODO(), uuid.Nil, "admin")
 

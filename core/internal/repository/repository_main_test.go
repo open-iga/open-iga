@@ -13,8 +13,9 @@ import (
 )
 
 var (
-	repository *contract.Repository
-	conn       *pgxpool.Pool
+	repository   *contract.Repository
+	conn         *pgxpool.Pool
+	pgConnString string
 )
 
 func TestMain(m *testing.M) {
@@ -32,7 +33,7 @@ func TestMain(m *testing.M) {
 		code = 1
 	}
 
-	pgConnString, err := pgContainer.ConnectionString(ctx)
+	pgConnString, err = pgContainer.ConnectionString(ctx)
 	if err != nil {
 		fmt.Printf("Error getting connection string: %v\n", err)
 		code = 1

@@ -84,7 +84,7 @@ func (i *IdentityRepository) GetRolesByIdentityId(ctx context.Context, identityI
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get roles by identity id: %w", err)
 	}
 
 	return &domain.IdentityRole{
@@ -97,7 +97,7 @@ func (i *IdentityRepository) UpsertRoleByIdentityId(ctx context.Context, identit
 	_, err := i.queries.UpsertRoleByIdentityId(ctx, db.UpsertRoleByIdentityIdParams{Name: role, IdentityID: identityId})
 
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return nil, err
+		return nil, fmt.Errorf("failed to insert / update the role %w", err)
 	}
 
 	return i.GetRolesByIdentityId(ctx, identityId)
