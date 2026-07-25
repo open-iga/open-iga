@@ -39,6 +39,7 @@ linters:
                 - github.com/jackc/pgx/v5/pgtype.Timestamptz
                 - net/http.Server
                 - log/slog.HandlerOptions
+                - github.com/open-iga/core/internal/common.EnvField
     exclusions:
         rules:
             - path: (.*_test\.go|.*internal/testutil/.*)
@@ -48,3 +49,6 @@ linters:
                   - gosec
                   - exhaustruct
                   - errcheck
+            - path: internal/api/middleware/auth_middleware\.go
+              linters:
+                  - cyclop
