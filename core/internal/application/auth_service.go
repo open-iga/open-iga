@@ -140,7 +140,6 @@ func (a *AuthService) DeactivateSession(ctx context.Context, sessionId string) e
 
 func (a *AuthService) GetRoles(ctx context.Context, identityId uuid.UUID) []string {
 	identityRole, err := a.identityRepository.GetRolesByIdentityId(ctx, identityId)
-
 	if err != nil {
 		a.logger.Error("failed to get roles for identity", "identity", identityId, "error", err.Error(), "default role is returned", domain.DefaultIdentityRole)
 		return []string{domain.DefaultIdentityRole}

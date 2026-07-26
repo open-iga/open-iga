@@ -11,16 +11,12 @@ tasks:
         cmds:
             - go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1 create -ext sql -dir internal/repository/sql/migration -seq {{.NAME}}
     generate:sqlc:
-        preconditions:
-            - sh: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
-              msg: 'Failed to install sqlc@v1.31.1'
         cmds:
             - go tool sqlc generate
             - echo "SQLC generation completed ✨"
     generate:oapi-codegen:
-        dir: ..
         cmds:
-            - oapi-codegen -config core/oapi-codegen.yaml openapi-spec/openapi.yml
+            - go tool oapi-codegen -config oapi-codegen.yaml ../openapi-spec/openapi.yml
     generate:test-mocks:
         cmds:
             - go tool mockgen -source=internal/contract/runtime_application.go -destination=internal/testutil/runtime_application_mock.go -package=testutil
@@ -28,10 +24,13 @@ tasks:
             - go tool mockgen -source=internal/contract/runtime_repository.go -destination=internal/testutil/runtime_repository_mock.go -package=testutil
     lint:
         cmds:
-            - golangci-lint run
+            - go tool golangci-lint run
+    vulncheck:
+        cmds:
+            - go tool govulncheck ./...
     pretty:
         cmds:
-            - gofumpt -l -w .
+            - go tool gofumpt -l -w .
     setup:
         cmds:
             - go get
