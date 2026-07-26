@@ -51,10 +51,12 @@ func TestHandler_GetUserDetails(t *testing.T) {
 		router.ServeHTTP(rec, req)
 
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.JSONEq(t,
+		assert.JSONEq(
+			t,
 			fmt.Sprintf(
 				`{"email": "%s", "firstName": "%s", "lastName": "%s", "id": "%s", "roles": ["admin"]}`,
-				identity.Email, identity.FirstName, identity.LastName, identity.Id),
+				identity.Email, identity.FirstName, identity.LastName, identity.Id,
+			),
 			rec.Body.String(),
 		)
 	})
