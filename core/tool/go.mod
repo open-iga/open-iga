@@ -8,6 +8,7 @@ tool (
 	github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
 	github.com/sqlc-dev/sqlc/cmd/sqlc
 	go.uber.org/mock/mockgen
+	golang.org/x/vuln/cmd/govulncheck
 	mvdan.cc/gofumpt
 )
 
@@ -86,11 +87,11 @@ require (
 	github.com/firefart/nonamedreturns v1.0.6 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
-	github.com/getkin/kin-openapi v0.135.0 // indirect
+	github.com/getkin/kin-openapi v0.145.0 // indirect
 	github.com/ghostiam/protogetter v0.3.20 // indirect
 	github.com/go-critic/go-critic v0.14.3 // indirect
-	github.com/go-openapi/jsonpointer v0.22.4 // indirect
-	github.com/go-openapi/swag/jsonname v0.25.4 // indirect
+	github.com/go-openapi/jsonpointer v0.22.5 // indirect
+	github.com/go-openapi/swag/jsonname v0.25.5 // indirect
 	github.com/go-sql-driver/mysql v1.9.3 // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
 	github.com/go-toolsmith/astcopy v1.1.0 // indirect
@@ -139,7 +140,6 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jjti/go-spancheck v0.6.5 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
-	github.com/josharian/intern v1.0.0 // indirect
 	github.com/julz/importas v0.2.0 // indirect
 	github.com/karamaru-alpha/copyloopvar v1.2.2 // indirect
 	github.com/kisielk/errcheck v1.10.0 // indirect
@@ -157,7 +157,6 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/macabu/inamedparam v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
-	github.com/mailru/easyjson v0.9.1 // indirect
 	github.com/manuelarte/embeddedstructfieldcheck v0.4.0 // indirect
 	github.com/manuelarte/funcorder v0.6.0 // indirect
 	github.com/maratori/testableexamples v1.0.1 // indirect
@@ -170,7 +169,6 @@ require (
 	github.com/mgechev/revive v1.15.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
-	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/moricho/tparallel v0.3.2 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/nakabonne/nestif v0.3.1 // indirect
@@ -180,11 +178,10 @@ require (
 	github.com/nishanths/predeclared v0.2.2 // indirect
 	github.com/nunnatsa/ginkgolinter v0.23.0 // indirect
 	github.com/oapi-codegen/oapi-codegen/v2 v2.7.0 // indirect
-	github.com/oasdiff/yaml v0.0.9 // indirect
-	github.com/oasdiff/yaml3 v0.0.9 // indirect
+	github.com/oasdiff/yaml v0.1.1 // indirect
+	github.com/oasdiff/yaml3 v0.0.14 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.3.1 // indirect
-	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pganalyze/pg_query_go/v6 v6.2.2 // indirect
 	github.com/pingcap/errors v0.11.5-0.20250523034308-74f78ae071ee // indirect
 	github.com/pingcap/failpoint v0.0.0-20240528011301-b51a646c7c86 // indirect
@@ -245,7 +242,6 @@ require (
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/wasilibs/go-pgquery v0.0.0-20250409022910-10ac41983c07 // indirect
 	github.com/wasilibs/wazero-helpers v0.0.0-20240620070341-3dff1577cd52 // indirect
-	github.com/woodsbury/decimal128 v1.4.0 // indirect
 	github.com/xen0n/gosmopolitan v1.3.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/yagipy/maintidx v1.0.0 // indirect
@@ -265,15 +261,17 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b // indirect
 	golang.org/x/exp/typeparams v0.0.0-20260209203927-2842357ff358 // indirect
-	golang.org/x/mod v0.36.0 // indirect
-	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/sync v0.21.0 // indirect
-	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/text v0.38.0 // indirect
-	golang.org/x/tools v0.45.0 // indirect
+	golang.org/x/mod v0.38.0 // indirect
+	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/telemetry v0.0.0-20260708182218-49f421fb7959 // indirect
+	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/tools v0.48.0 // indirect
+	golang.org/x/vuln v1.6.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260630182238-925bb5da69e7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260630182238-925bb5da69e7 // indirect
-	google.golang.org/grpc v1.82.0 // indirect
+	google.golang.org/grpc v1.82.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect

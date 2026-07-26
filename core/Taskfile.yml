@@ -25,6 +25,9 @@ tasks:
     lint:
         cmds:
             - go tool golangci-lint run
+    vulncheck:
+        cmds:
+            - go tool govulncheck ./...
     pretty:
         cmds:
             - go tool gofumpt -l -w .
