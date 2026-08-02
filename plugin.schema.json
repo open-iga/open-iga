@@ -27,7 +27,7 @@
         "properties": {
           "description": {
             "type": "string",
-            "description": "Resource details. This will be shown to the user when choosing the resource"
+            "description": "List of actions supported by the entitlement. This will be shown to the user when choosing the entitlement"
           },
           "actions": {
             "type": "object",
@@ -99,7 +99,8 @@
           "actions"
         ],
         "additionalProperties": false
-      }
+      },
+      "description": "Entitlement supported by the plugin. This is a key-value object where key is the supported entitlement with actions as value."
     }
   },
   "required": [
