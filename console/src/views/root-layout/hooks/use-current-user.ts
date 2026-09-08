@@ -7,6 +7,8 @@ export const useCurrentUser = () => {
         queryFn: () => fetchClient.GET('/api/v1/users'),
     });
 
+    console.log({ isPending, data, isError, error });
+
     return {
         isPending,
         isError,

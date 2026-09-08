@@ -4,7 +4,7 @@ tasks:
     setup:
         dir: ..
         cmds:
-            - pnpm install
+            - bun install
     dev:
         cmds:
-            - pnpm run dev
+            - bun run dev

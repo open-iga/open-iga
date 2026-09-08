@@ -1,0 +1,4 @@
+[install]
+minimumReleaseAge = 432000 # 5 days
+minimumReleaseAgeExcludes = ["@types/bun", "bun-types"]
+ignoreScripts = true
