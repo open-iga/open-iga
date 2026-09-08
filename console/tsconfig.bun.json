@@ -18,7 +18,10 @@
         "noUnusedParameters": true,
         "erasableSyntaxOnly": true,
         "noFallthroughCasesInSwitch": true,
-        "types": ["vitest/globals", "node"]
+        "types": ["vitest/globals", "bun"],
+        "paths": {
+            "@/*": ["./src/*"]
+        }
     },
     "include": ["vite.config.ts", "vitest.config.ts", "vitest.setup.ts"]
 }

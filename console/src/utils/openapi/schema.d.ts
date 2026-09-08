@@ -122,7 +122,7 @@ export interface components {
                 };
             };
         };
-        /** @description Unprocessable Entity */
+        /** @description Bad Request */
         "bad-request-error": {
             headers: {
                 [name: string]: unknown;
@@ -302,6 +302,7 @@ export interface operations {
                         lastName: string;
                         email: string;
                         id: string;
+                        roles: string[];
                     };
                 };
             };
