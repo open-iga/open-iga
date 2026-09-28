@@ -15,3 +15,5 @@ paths:
         $ref: './paths/v1-auth-logout.yml'
     '/api/v1/users':
         $ref: './paths/v1-user-details.yml'
+    '/api/v1/managed-systems':
+        $ref: './paths/v1-managed-systems.yml'
