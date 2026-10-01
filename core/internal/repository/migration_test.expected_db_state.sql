@@ -60,7 +60,6 @@ CREATE TABLE entitlement (
     id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     system_id  uuid REFERENCES system(id) NOT NULL,
     name       VARCHAR(255)     NOT NULL,
-    metadata   JSONB            NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP
 );

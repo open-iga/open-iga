@@ -15,6 +15,12 @@ type AuthService interface {
 	GetRoles(ctx context.Context, identityId uuid.UUID) []string
 }
 
+type ConnectorService interface {
+	ValidateByUrl(ctx context.Context, connectorUrl string, connectorHash string) string
+	GetOnboardedConnectorDetails(ctx context.Context, onboardingId string) (*domain.ConnectorValidationResult, bool)
+}
+
 type RuntimeApplication struct {
-	AuthService AuthService
+	AuthService      AuthService
+	ConnectorService ConnectorService
 }

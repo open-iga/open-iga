@@ -1,0 +1,238 @@
+{
+    "name": "aws",
+    "description": "AWS plugin for OpenIGA core",
+    "config": [
+        {
+            "name": "AWS_REGION",
+            "description": "AWS region",
+            "required": true
+        },
+        {
+            "name": "AWS_ACCESS_KEY_ID",
+            "description": "Base access key id used by the host. Handler level roles are assumed with this access key.",
+            "required": true
+        },
+        {
+            "name": "AWS_SECRET_ACCESS_KEY",
+            "description": "Base secret access key used to call STS. Handler level roles are assumed with this access key.",
+            "required": true
+        }
+    ],
+    "allowedDomains": ["*.amazonaws.com"],
+    "actions": {
+        "iam-user": {
+            "create": {
+                "endpoints": [
+                    {
+                        "method": "POST",
+                        "url": "https://sts.{{AWS_REGION}}.amazonaws.com/",
+                        "description": "STS endpoint URL"
+                    },
+                    {
+                        "method": "POST",
+                        "url": "https://iam.amazonaws.com/",
+                        "description": "IAM endpoint URL"
+                    }
+                ],
+                "description": "IAM User account creation",
+                "config": [
+                    {
+                        "name": "AWS_USER_MANAGEMENT_ROLE",
+                        "description": "ARN of the least-privilege role assumed (via STS) to manage IAM users",
+                        "required": true
+                    },
+                    {
+                        "name": "AWS_PASSWORD_PATTERN",
+                        "description": "Template for the temporary password: A=uppercase, a=lowercase, #=digit, @=symbol, other chars are literal (e.g.) AAa#@ would result two uppercase, one lowercase, a digit and a symbol. Defaults to a 30-character mix of all classes.",
+                        "required": false
+                    }
+                ]
+            },
+            "disable": {
+                "endpoints": [
+                    {
+                        "method": "POST",
+                        "url": "https://sts.{{AWS_REGION}}.amazonaws.com/",
+                        "description": "STS endpoint URL"
+                    },
+                    {
+                        "method": "POST",
+                        "url": "https://iam.amazonaws.com/",
+                        "description": "IAM endpoint URL"
+                    }
+                ],
+                "description": "Disable an IAM user by revoking console access",
+                "config": [
+                    {
+                        "name": "AWS_USER_MANAGEMENT_ROLE",
+                        "description": "ARN of the least-privilege role assumed (via STS) to manage IAM users",
+                        "required": true
+                    }
+                ]
+            },
+            "enable": {
+                "endpoints": [
+                    {
+                        "method": "POST",
+                        "url": "https://sts.{{AWS_REGION}}.amazonaws.com/",
+                        "description": "STS endpoint URL"
+                    },
+                    {
+                        "method": "POST",
+                        "url": "https://iam.amazonaws.com/",
+                        "description": "IAM endpoint URL"
+                    }
+                ],
+                "description": "Enable an IAM user by restoring console access",
+                "config": [
+                    {
+                        "name": "AWS_USER_MANAGEMENT_ROLE",
+                        "description": "ARN of the least-privilege role assumed (via STS) to manage IAM users",
+                        "required": true
+                    }
+                ]
+            },
+            "delete": {
+                "endpoints": [
+                    {
+                        "method": "POST",
+                        "url": "https://sts.{{AWS_REGION}}.amazonaws.com/",
+                        "description": "STS endpoint URL"
+                    },
+                    {
+                        "method": "POST",
+                        "url": "https://iam.amazonaws.com/",
+                        "description": "IAM endpoint URL"
+                    }
+                ],
+                "description": "Delete an IAM user",
+                "config": [
+                    {
+                        "name": "AWS_USER_MANAGEMENT_ROLE",
+                        "description": "ARN of the least-privilege role assumed (via STS) to manage IAM users",
+                        "required": true
+                    }
+                ]
+            },
+            "read": {
+                "endpoints": [
+                    {
+                        "method": "POST",
+                        "url": "https://sts.{{AWS_REGION}}.amazonaws.com/",
+                        "description": "STS endpoint URL"
+                    },
+                    {
+                        "method": "POST",
+                        "url": "https://iam.amazonaws.com/",
+                        "description": "IAM endpoint URL"
+                    }
+                ],
+                "description": "Read an IAM user account state for drift detection",
+                "config": [
+                    {
+                        "name": "AWS_USER_MANAGEMENT_ROLE",
+                        "description": "ARN of the least-privilege role assumed (via STS) to manage IAM users",
+                        "required": true
+                    }
+                ]
+            }
+        }
+    },
+    "entitlements": {
+        "iam-user-group": {
+            "discover": {
+                "endpoints": [
+                    {
+                        "method": "POST",
+                        "url": "https://sts.{{AWS_REGION}}.amazonaws.com/",
+                        "description": "STS endpoint URL"
+                    },
+                    {
+                        "method": "POST",
+                        "url": "https://iam.amazonaws.com/",
+                        "description": "IAM endpoint URL"
+                    }
+                ],
+                "description": "Discover assignable IAM user groups for the entitlement catalog",
+                "config": [
+                    {
+                        "name": "AWS_GROUP_DISCOVERY_ROLE",
+                        "description": "ARN of the least-privilege role assumed (via STS) to list IAM user groups",
+                        "required": true
+                    },
+                    {
+                        "name": "AWS_GROUP_EXCLUDE_PATTERNS",
+                        "description": "';'-separated list of regex patterns to filter out internal groups; a group is excluded if any pattern matches its name or path (e.g. \"^ci-;/infra/\").",
+                        "required": false
+                    }
+                ]
+            },
+            "grant": {
+                "endpoints": [
+                    {
+                        "method": "POST",
+                        "url": "https://sts.{{AWS_REGION}}.amazonaws.com/",
+                        "description": "STS endpoint URL"
+                    },
+                    {
+                        "method": "POST",
+                        "url": "https://iam.amazonaws.com/",
+                        "description": "IAM endpoint URL"
+                    }
+                ],
+                "description": "Grant a user membership in an IAM user group",
+                "config": [
+                    {
+                        "name": "AWS_ENTITLEMENT_MANAGEMENT_ROLE",
+                        "description": "ARN of the least-privilege role assumed (via STS) to manage user group membership",
+                        "required": true
+                    }
+                ]
+            },
+            "revoke": {
+                "endpoints": [
+                    {
+                        "method": "POST",
+                        "url": "https://sts.{{AWS_REGION}}.amazonaws.com/",
+                        "description": "STS endpoint URL"
+                    },
+                    {
+                        "method": "POST",
+                        "url": "https://iam.amazonaws.com/",
+                        "description": "IAM endpoint URL"
+                    }
+                ],
+                "description": "Revoke a user's membership in an IAM user group",
+                "config": [
+                    {
+                        "name": "AWS_ENTITLEMENT_MANAGEMENT_ROLE",
+                        "description": "ARN of the least-privilege role assumed (via STS) to manage user group membership",
+                        "required": true
+                    }
+                ]
+            },
+            "read": {
+                "endpoints": [
+                    {
+                        "method": "POST",
+                        "url": "https://sts.{{AWS_REGION}}.amazonaws.com/",
+                        "description": "STS endpoint URL"
+                    },
+                    {
+                        "method": "POST",
+                        "url": "https://iam.amazonaws.com/",
+                        "description": "IAM endpoint URL"
+                    }
+                ],
+                "description": "Read the IAM user groups a user belongs to (for entitlement drift detection)",
+                "config": [
+                    {
+                        "name": "AWS_ENTITLEMENT_MANAGEMENT_ROLE",
+                        "description": "ARN of the least-privilege role assumed (via STS) to manage user group membership",
+                        "required": true
+                    }
+                ]
+            }
+        }
+    }
+}

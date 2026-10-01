@@ -12,8 +12,8 @@ CREATE TABLE managed_system (
 CREATE TABLE entitlement (
     id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     managed_system_id  uuid REFERENCES managed_system(id) NOT NULL,
+    -- entitlement name from the connector
     name       VARCHAR(255)     NOT NULL,
-    metadata   JSONB            NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP
 );

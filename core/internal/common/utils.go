@@ -1,6 +1,10 @@
 package common
 
-import "reflect"
+import (
+	"context"
+	"log/slog"
+	"reflect"
+)
 
 func StructToMap(strukt interface{}) map[string]interface{} {
 	value := reflect.ValueOf(strukt)
@@ -15,4 +19,10 @@ func StructToMap(strukt interface{}) map[string]interface{} {
 	}
 
 	return out
+}
+
+func WithErrorLogged(ctx context.Context, logger *slog.Logger, cls func(ctx context.Context) error) {
+	if err := cls(ctx); err != nil {
+		logger.Error(err.Error())
+	}
 }
