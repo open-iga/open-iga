@@ -1,5 +1,5 @@
 post:
-    operationId: onboardManagedSystem
+    operationId: onboardConnector
     description: To onboard managed-systems along with connectors
     requestBody:
         description: Details required to create a managed-system
@@ -9,20 +9,18 @@ post:
                 schema:
                     type: object
                     properties:
-                        managedSystemName:
-                            type: string
                         connectorUrl:
                             type: string
                         connectorSha:
                             type: string
-                    required: [managedSystemName, connectorUrl, connectorSha]
+                    required: [connectorUrl, connectorSha]
     responses:
-        '201':
+        201:
             description: Managed system has been successfully created
             content:
                 'application/json':
                     schema:
                         properties:
-                            managedSystemId:
+                            onboardingId:
                                 type: string
-                        required: [managedSystemId]
+                        required: [onboardingId]

@@ -1,0 +1,98 @@
+get:
+    operationId: getConnectorOnboardingRequestDetails
+    description: Get the connector spec for an onboarding request by its id
+    parameters:
+        - name: onboarding-id
+          in: path
+          required: true
+          description: Id returned when the onboarding request was created
+          schema:
+              type: string
+    responses:
+        200:
+            description: Validation result for the onboarding request
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            status:
+                                type: string
+                                enum: [pending, success, failed]
+                            error:
+                                type: string
+                                description: Reason for failure; set when status is failed
+                            connectorSpec:
+                                description: The connector spec; set when status is success
+                                x-go-type: domain.ConnectorSpec
+                                x-go-type-import:
+                                    path: github.com/open-iga/core/internal/domain
+                                type: object
+                                properties:
+                                    name:
+                                        type: string
+                                    description:
+                                        type: string
+                                    config:
+                                        type: array
+                                        items: &configItem
+                                            type: object
+                                            properties:
+                                                name:
+                                                    type: string
+                                                description:
+                                                    type: string
+                                                required:
+                                                    type: boolean
+                                            required: [name, description, required]
+                                    allowedDomains:
+                                        type: array
+                                        items:
+                                            type: string
+                                    actions:
+                                        type: object
+                                        additionalProperties:
+                                            type: object
+                                            properties:
+                                                create: &operation
+                                                    type: object
+                                                    properties:
+                                                        endpoints:
+                                                            type: array
+                                                            items: &endpoint
+                                                                type: object
+                                                                properties:
+                                                                    method:
+                                                                        type: string
+                                                                    url:
+                                                                        type: string
+                                                                    description:
+                                                                        type: string
+                                                                required: [method, url, description]
+                                                        description:
+                                                            type: string
+                                                        config:
+                                                            type: array
+                                                            items: *configItem
+                                                    required: [endpoints, description, config]
+                                                enable: *operation
+                                                disable: *operation
+                                                delete: *operation
+                                                read: *operation
+                                    entitlements:
+                                        type: object
+                                        additionalProperties:
+                                            type: object
+                                            properties:
+                                                discover: *operation
+                                                grant: *operation
+                                                revoke: *operation
+                                                read: *operation
+                                required: [name, description, config, allowedDomains, actions, entitlements]
+                        required: [status]
+        401:
+            $ref: '../components/responses/unauthenticated-error.yml'
+        404:
+            $ref: '../components/responses/not-found-error.yml'
+        500:
+            $ref: '../components/responses/internal-server-error.yml'
