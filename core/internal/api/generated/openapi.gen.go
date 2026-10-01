@@ -19,6 +19,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
+	"github.com/open-iga/core/internal/domain"
 )
 
 // Defines values for AuthDetailsParamsProvider.
@@ -51,6 +52,27 @@ func (e AuthCallbackParamsProvider) Valid() bool {
 	}
 }
 
+// Defines values for GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus.
+const (
+	Failed  GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus = "failed"
+	Pending GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus = "pending"
+	Success GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus = "success"
+)
+
+// Valid indicates whether the value is a known member of the GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus enum.
+func (e GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus) Valid() bool {
+	switch e {
+	case Failed:
+		return true
+	case Pending:
+		return true
+	case Success:
+		return true
+	default:
+		return false
+	}
+}
+
 // AuthDetailsParamsProvider defines parameters for AuthDetails.
 type AuthDetailsParamsProvider string
 
@@ -69,6 +91,18 @@ type AuthCallbackParams struct {
 // AuthCallbackParamsProvider defines parameters for AuthCallback.
 type AuthCallbackParamsProvider string
 
+// OnboardConnectorJSONBody defines parameters for OnboardConnector.
+type OnboardConnectorJSONBody struct {
+	ConnectorSha string `json:"connectorSha"`
+	ConnectorUrl string `json:"connectorUrl"`
+}
+
+// GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus defines parameters for GetConnectorOnboardingRequestDetails.
+type GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus string
+
+// OnboardConnectorJSONRequestBody defines body for OnboardConnector for application/json ContentType.
+type OnboardConnectorJSONRequestBody OnboardConnectorJSONBody
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
@@ -83,6 +117,12 @@ type ServerInterface interface {
 
 	// (POST /api/v1/auth/{provider}/callback)
 	AuthCallback(w http.ResponseWriter, r *http.Request, provider AuthCallbackParamsProvider, params AuthCallbackParams)
+
+	// (POST /api/v1/connectors/onboarding-requests)
+	OnboardConnector(w http.ResponseWriter, r *http.Request)
+
+	// (GET /api/v1/connectors/onboarding-requests/{onboarding-id})
+	GetConnectorOnboardingRequestDetails(w http.ResponseWriter, r *http.Request, onboardingId string)
 
 	// (GET /api/v1/users)
 	GetUserDetails(w http.ResponseWriter, r *http.Request)
@@ -109,6 +149,16 @@ func (_ Unimplemented) AuthDetails(w http.ResponseWriter, r *http.Request, provi
 
 // (POST /api/v1/auth/{provider}/callback)
 func (_ Unimplemented) AuthCallback(w http.ResponseWriter, r *http.Request, provider AuthCallbackParamsProvider, params AuthCallbackParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/connectors/onboarding-requests)
+func (_ Unimplemented) OnboardConnector(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/connectors/onboarding-requests/{onboarding-id})
+func (_ Unimplemented) GetConnectorOnboardingRequestDetails(w http.ResponseWriter, r *http.Request, onboardingId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -241,6 +291,46 @@ func (siw *ServerInterfaceWrapper) AuthCallback(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AuthCallback(w, r, provider, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OnboardConnector operation middleware
+func (siw *ServerInterfaceWrapper) OnboardConnector(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OnboardConnector(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetConnectorOnboardingRequestDetails operation middleware
+func (siw *ServerInterfaceWrapper) GetConnectorOnboardingRequestDetails(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "onboarding-id" -------------
+	var onboardingId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "onboarding-id", chi.URLParam(r, "onboarding-id"), &onboardingId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "onboarding-id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetConnectorOnboardingRequestDetails(w, r, onboardingId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -388,6 +478,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/auth/{provider}/callback", wrapper.AuthCallback)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/connectors/onboarding-requests", wrapper.OnboardConnector)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/connectors/onboarding-requests/{onboarding-id}", wrapper.GetConnectorOnboardingRequestDetails)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/users", wrapper.GetUserDetails)
@@ -635,6 +731,108 @@ func (response AuthCallback500JSONResponse) VisitAuthCallbackResponse(w http.Res
 	return err
 }
 
+type OnboardConnectorRequestObject struct {
+	Body *OnboardConnectorJSONRequestBody
+}
+
+type OnboardConnectorResponseObject interface {
+	VisitOnboardConnectorResponse(w http.ResponseWriter) error
+}
+
+type OnboardConnector201JSONResponse struct {
+	OnboardingId string `json:"onboardingId"`
+}
+
+func (response OnboardConnector201JSONResponse) VisitOnboardConnectorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetConnectorOnboardingRequestDetailsRequestObject struct {
+	OnboardingId string `json:"onboarding-id"`
+}
+
+type GetConnectorOnboardingRequestDetailsResponseObject interface {
+	VisitGetConnectorOnboardingRequestDetailsResponse(w http.ResponseWriter) error
+}
+
+type GetConnectorOnboardingRequestDetails200JSONResponse struct {
+	// ConnectorSpec The connector spec; set when status is success
+	ConnectorSpec *domain.ConnectorSpec `json:"connectorSpec,omitempty"`
+
+	// Error Reason for failure; set when status is failed
+	Error  *string                                                       `json:"error,omitempty"`
+	Status GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus `json:"status"`
+}
+
+func (response GetConnectorOnboardingRequestDetails200JSONResponse) VisitGetConnectorOnboardingRequestDetailsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetConnectorOnboardingRequestDetails401JSONResponse struct {
+	Message  string `json:"message"`
+	Redirect string `json:"redirect"`
+}
+
+func (response GetConnectorOnboardingRequestDetails401JSONResponse) VisitGetConnectorOnboardingRequestDetailsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetConnectorOnboardingRequestDetails404JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response GetConnectorOnboardingRequestDetails404JSONResponse) VisitGetConnectorOnboardingRequestDetailsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetConnectorOnboardingRequestDetails500JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response GetConnectorOnboardingRequestDetails500JSONResponse) VisitGetConnectorOnboardingRequestDetailsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetUserDetailsRequestObject struct {
 }
 
@@ -709,6 +907,12 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/auth/{provider}/callback)
 	AuthCallback(ctx context.Context, request AuthCallbackRequestObject) (AuthCallbackResponseObject, error)
+
+	// (POST /api/v1/connectors/onboarding-requests)
+	OnboardConnector(ctx context.Context, request OnboardConnectorRequestObject) (OnboardConnectorResponseObject, error)
+
+	// (GET /api/v1/connectors/onboarding-requests/{onboarding-id})
+	GetConnectorOnboardingRequestDetails(ctx context.Context, request GetConnectorOnboardingRequestDetailsRequestObject) (GetConnectorOnboardingRequestDetailsResponseObject, error)
 
 	// (GET /api/v1/users)
 	GetUserDetails(ctx context.Context, request GetUserDetailsRequestObject) (GetUserDetailsResponseObject, error)
@@ -844,6 +1048,63 @@ func (sh *strictHandler) AuthCallback(w http.ResponseWriter, r *http.Request, pr
 	}
 }
 
+// OnboardConnector operation middleware
+func (sh *strictHandler) OnboardConnector(w http.ResponseWriter, r *http.Request) {
+	var request OnboardConnectorRequestObject
+
+	var body OnboardConnectorJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OnboardConnector(ctx, request.(OnboardConnectorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OnboardConnector")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OnboardConnectorResponseObject); ok {
+		if err := validResponse.VisitOnboardConnectorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetConnectorOnboardingRequestDetails operation middleware
+func (sh *strictHandler) GetConnectorOnboardingRequestDetails(w http.ResponseWriter, r *http.Request, onboardingId string) {
+	var request GetConnectorOnboardingRequestDetailsRequestObject
+
+	request.OnboardingId = onboardingId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetConnectorOnboardingRequestDetails(ctx, request.(GetConnectorOnboardingRequestDetailsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetConnectorOnboardingRequestDetails")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetConnectorOnboardingRequestDetailsResponseObject); ok {
+		if err := validResponse.VisitGetConnectorOnboardingRequestDetailsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetUserDetails operation middleware
 func (sh *strictHandler) GetUserDetails(w http.ResponseWriter, r *http.Request) {
 	var request GetUserDetailsRequestObject
@@ -873,24 +1134,34 @@ func (sh *strictHandler) GetUserDetails(w http.ResponseWriter, r *http.Request) 
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"1FdBc9s2E/0rGHzfkRJt173olqqt65lM0rHiUybjgYmlhAQEEGBpR/Xwv3cWIClKomzVidvkJIJY7r4F",
-	"3nuAHnhhK2cNGAx89sA9BGdNgDjYTN30729uhZx4+FxDwAl4b32KNAgG6VE4p1UhUFmTfwzW0LtQrKAS",
-	"9OS8deBRpQIVhCCWQI+4dsBnPKBXZsmbJuNURHmQfPa+D/yQdYH29iMUyBuKlBAKrxyV5DP+i5DsKgHk",
-	"TTbehDII3gg9CeDvwH+fjVy2INkigmQJ5KGWaiNqXIFBwgzyBVuijqTyhProfgffHNP69XYzjzTtvC2o",
-	"xq2GCcXj+vvczOshUvZbRBoTJhRhAyjcWGp+4ry9UxJ8nNpOtqidsx5BsrcUyv7sQzMOpq4I3NLapR5i",
-	"65toMq5MaffTzq3WUNCA2ZKBkc4qg4GV1rO3DszlxSuecVSoKd/mzR34kDKcTk+mJ7Rb1oERTvEZ/2l6",
-	"Mj3nGXcCV7GVXDiVr0BoXNFwCbiPJE2zgALrQGBwBYy0qgriEu1W3MtLyWf8j5Qr2zavs5OTHQ4gfMHc",
-	"aaF2dn9vfZq4RhHn3WlOK5xru7R1zOJsGAH8zrIUwkpvK1YH8EwUha0N7uF9nXI9ifdlOZuaPE9V/++h",
-	"5DP+v3yjsrxHlx95DsR0p89MN25fTcZ/fjbCcZMf2dyHTmrNQUK+s0wZhUogRC4OwJJcWm2ze4WrxFUH",
-	"hSoVKfQVKbSrMO20GmLY9dXrqC56Lgi1QebEEpgwkgXAwEQUAc3aTwpi8Hxx9TslxKTVPX5RwV8BhdIh",
-	"6s6LCjD6yPsHTuSPWuQZN6IipnTY+JAp6GvIBnQbW//Wr/JDvtU0H74pyY8/dv7RYbOAQPbFhPYg5JrB",
-	"FxUwZKxLwtKPXhMdzxLDn9kBLdDcSrj2moal9ZVAPuO1Vzx7oqfht8e09QbuI01Zqe19z16Z9UQj8kWe",
-	"DQkWgJxpBaI7eRaAk3mcGzkwiInDz3n2qK/+y2rOC6H1rSg+HfbteRvRn3ZRYSthpFZmuSNe1qNhokTw",
-	"rc1vWcGUzT0IhKjcjlidmNMpll4q2S15NI2ebK029yXdQf2vNZ3triGBs179laywsBLSIbi9eDxLOD/X",
-	"4NcboBT+KMg9Uexdhp72x7HCkbZfV3mM/rFUP2pr0Rou2nqH8/8QZnkFWHuzQ+Vya7jto19vmi/USafT",
-	"HZX2434TjzTDxe53jzvh+dnZs69KB//0vLjDkuOFg7eki8HyKZnsUfY3kW1LuwC8DuA3F5VvyH2ohNKj",
-	"/1xL5QO+iaocmVVy9LUWj3zjrU5FFUIVRkPaF8J7sd7j7AbRoFDWthAhdTWO+ps5XPIf50LeNH8HAAD/",
-	"/w==",
+	"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",
+	"7Lr857nlVpb/BAAA//8=",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

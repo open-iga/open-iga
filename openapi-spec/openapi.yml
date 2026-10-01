@@ -15,5 +15,7 @@ paths:
         $ref: './paths/v1-auth-logout.yml'
     '/api/v1/users':
         $ref: './paths/v1-user-details.yml'
-    '/api/v1/managed-systems':
-        $ref: './paths/v1-managed-systems.yml'
+    '/api/v1/connectors/onboarding-requests':
+        $ref: './paths/v1-connectors-onboarding-request.yml'
+    '/api/v1/connectors/onboarding-requests/{onboarding-id}':
+        $ref: './paths/v1-connectors-onboarding-request-details.yml'
