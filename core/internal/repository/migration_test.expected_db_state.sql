@@ -45,8 +45,8 @@ CREATE TABLE identity_role (
 );
 CREATE UNIQUE INDEX idx_unique_identity_role ON identity_role(identity_id, role_id);
 
--- A system is an external managed target, onboarded with a single WASM connector
-CREATE TABLE system (
+-- A managed system is an external target, onboarded with a single WASM connector
+CREATE TABLE managed_system (
     id            uuid PRIMARY KEY    DEFAULT gen_random_uuid(),
     name          VARCHAR(255) UNIQUE NOT NULL,
     connector_url TEXT                NOT NULL,
@@ -55,20 +55,33 @@ CREATE TABLE system (
     updated_at    TIMESTAMPTZ(6)      DEFAULT CURRENT_TIMESTAMP
 );
 
+-- A tenant/scope within a system: a Keycloak realm, an Azure AD tenant, etc.
+-- Single-tenant systems (e.g. one AWS account) have exactly one row here.
+CREATE TABLE managed_system_tenant (
+    id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    managed_system_id uuid REFERENCES managed_system(id) NOT NULL,
+    external_id       VARCHAR(255)   NOT NULL,
+    name              VARCHAR(255)   NOT NULL,
+    metadata          JSONB          NOT NULL DEFAULT '{}',
+    created_at        TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+    updated_at        TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX idx_unique_managed_system_tenant ON managed_system_tenant(managed_system_id, external_id);
+
 -- Entitlements are exposed by business owners/admins. These are owned by the connectors
 CREATE TABLE entitlement (
     id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    system_id  uuid REFERENCES system(id) NOT NULL,
+    tenant_id  uuid REFERENCES managed_system_tenant(id) NOT NULL,
     name       VARCHAR(255)     NOT NULL,
     created_at TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP
 );
-CREATE UNIQUE INDEX idx_unique_entitlement ON entitlement(system_id, name);
+CREATE UNIQUE INDEX idx_unique_entitlement ON entitlement(tenant_id, name);
 
--- An identity's managed account on a system. Created before any entitlement is assigned.
+-- An identity's managed account on a tenant. Created before any entitlement is assigned.
 CREATE TABLE account (
     id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    system_id   uuid REFERENCES system(id) NOT NULL,
+    tenant_id   uuid REFERENCES managed_system_tenant(id) NOT NULL,
     identity_id uuid REFERENCES identity(id) NOT NULL,
     -- account id in the target system, set once provisioned
     external_id VARCHAR(255),
@@ -77,7 +90,7 @@ CREATE TABLE account (
     created_at  TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP
 );
-CREATE UNIQUE INDEX idx_unique_account ON account(system_id, identity_id);
+CREATE UNIQUE INDEX idx_unique_account ON account(tenant_id, identity_id);
 
 -- An entitlement assigned to an account
 CREATE TABLE account_entitlement (
