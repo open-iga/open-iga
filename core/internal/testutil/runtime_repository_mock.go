@@ -201,3 +201,42 @@ func (mr *MockSessionRepositoryMockRecorder) FindBySessionId(ctx, sessionId any)
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindBySessionId", reflect.TypeOf((*MockSessionRepository)(nil).FindBySessionId), ctx, sessionId)
 }
+
+// MockManagedSystemRepository is a mock of ManagedSystemRepository interface.
+type MockManagedSystemRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockManagedSystemRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockManagedSystemRepositoryMockRecorder is the mock recorder for MockManagedSystemRepository.
+type MockManagedSystemRepositoryMockRecorder struct {
+	mock *MockManagedSystemRepository
+}
+
+// NewMockManagedSystemRepository creates a new mock instance.
+func NewMockManagedSystemRepository(ctrl *gomock.Controller) *MockManagedSystemRepository {
+	mock := &MockManagedSystemRepository{ctrl: ctrl}
+	mock.recorder = &MockManagedSystemRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockManagedSystemRepository) EXPECT() *MockManagedSystemRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateManagedSystem mocks base method.
+func (m *MockManagedSystemRepository) CreateManagedSystem(ctx context.Context, name, connectorUrl, connectorHash string) (*domain.ManagedSystem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateManagedSystem", ctx, name, connectorUrl, connectorHash)
+	ret0, _ := ret[0].(*domain.ManagedSystem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateManagedSystem indicates an expected call of CreateManagedSystem.
+func (mr *MockManagedSystemRepositoryMockRecorder) CreateManagedSystem(ctx, name, connectorUrl, connectorHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateManagedSystem", reflect.TypeOf((*MockManagedSystemRepository)(nil).CreateManagedSystem), ctx, name, connectorUrl, connectorHash)
+}

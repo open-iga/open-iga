@@ -53,6 +53,35 @@ func (ns NullIdentityType) Value() (driver.Value, error) {
 	return string(ns.IdentityType), nil
 }
 
+type Account struct {
+	ID         uuid.UUID
+	TenantID   uuid.UUID
+	IdentityID uuid.UUID
+	ExternalID pgtype.Text
+	Enabled    bool
+	Metadata   []byte
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+}
+
+type AccountEntitlement struct {
+	ID            uuid.UUID
+	AccountID     uuid.UUID
+	EntitlementID uuid.UUID
+	ExternalID    pgtype.Text
+	Metadata      []byte
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+}
+
+type Entitlement struct {
+	ID        uuid.UUID
+	TenantID  uuid.UUID
+	Name      string
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
+}
+
 type Identity struct {
 	ID        uuid.UUID
 	FirstName pgtype.Text
@@ -67,6 +96,25 @@ type IdentityRole struct {
 	ID         uuid.UUID
 	RoleID     uuid.UUID
 	IdentityID uuid.UUID
+}
+
+type ManagedSystem struct {
+	ID            uuid.UUID
+	Name          string
+	ConnectorUrl  string
+	ConnectorHash string
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+}
+
+type ManagedSystemTenant struct {
+	ID              uuid.UUID
+	ManagedSystemID uuid.UUID
+	ExternalID      string
+	Name            string
+	Metadata        []byte
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 }
 
 type Role struct {

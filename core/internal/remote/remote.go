@@ -5,6 +5,7 @@ import (
 
 	"github.com/open-iga/core/internal/common"
 	"github.com/open-iga/core/internal/contract"
+	"github.com/open-iga/core/internal/remote/connector_runtime/wasm"
 	"github.com/open-iga/core/internal/remote/oauth2_client"
 )
 
@@ -14,5 +15,6 @@ func NewRemote(appConfig *common.AppConfig, logger *slog.Logger) *contract.Runti
 		Oauth2Clients: contract.Oauth2Clients{
 			contract.Google: oauth2_client.NewGoogleOauth2Client(appConfig, logger),
 		},
+		ConnectorRuntime: wasm.NewConnectorRuntime(logger),
 	}
 }

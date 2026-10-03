@@ -41,7 +41,7 @@ func TestMiddleware_AuthMiddleware(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/users", nil)
 		rec := httptest.NewRecorder()
-		m.AuthMiddleware(mockHandlerWithOkResponse()).ServeHTTP(rec, req)
+		m.AuthnMiddleware(mockHandlerWithOkResponse()).ServeHTTP(rec, req)
 
 		assert.Equal(t, http.StatusUnauthorized, rec.Code)
 		assert.JSONEq(t, `{"message": "No session cookie found", "redirect": "/auth/sign-in"}`, rec.Body.String())
@@ -54,7 +54,7 @@ func TestMiddleware_AuthMiddleware(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/users", nil)
 		req.AddCookie(&http.Cookie{Name: common.SessionCookieName, Value: "sid-1"})
 		rec := httptest.NewRecorder()
-		m.AuthMiddleware(mockHandlerWithOkResponse()).ServeHTTP(rec, req)
+		m.AuthnMiddleware(mockHandlerWithOkResponse()).ServeHTTP(rec, req)
 
 		assert.Equal(t, http.StatusUnauthorized, rec.Code)
 		assert.JSONEq(t, `{"message": "No session cookie found", "redirect": "/auth/sign-in"}`, rec.Body.String())
@@ -65,7 +65,7 @@ func TestMiddleware_AuthMiddleware(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/google", nil)
 		rec := httptest.NewRecorder()
-		m.AuthMiddleware(mockHandlerWithOkResponse()).ServeHTTP(rec, req)
+		m.AuthnMiddleware(mockHandlerWithOkResponse()).ServeHTTP(rec, req)
 
 		assert.Equal(t, http.StatusOK, rec.Code)
 	})
@@ -77,7 +77,7 @@ func TestMiddleware_AuthMiddleware(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/google", nil)
 		req.AddCookie(&http.Cookie{Name: common.SessionCookieName, Value: "sid-1"})
 		rec := httptest.NewRecorder()
-		m.AuthMiddleware(mockHandlerWithOkResponse()).ServeHTTP(rec, req)
+		m.AuthnMiddleware(mockHandlerWithOkResponse()).ServeHTTP(rec, req)
 
 		assert.Equal(t, http.StatusOK, rec.Code)
 	})
@@ -91,7 +91,7 @@ func TestMiddleware_AuthMiddleware(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/google", nil)
 		req.AddCookie(&http.Cookie{Name: common.SessionCookieName, Value: "sid-1"})
 		rec := httptest.NewRecorder()
-		m.AuthMiddleware(mockHandlerWithOkResponse()).ServeHTTP(rec, req)
+		m.AuthnMiddleware(mockHandlerWithOkResponse()).ServeHTTP(rec, req)
 
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.JSONEq(t, `{"redirect": "/"}`, rec.Body.String())
@@ -113,7 +113,7 @@ func TestMiddleware_AuthMiddleware(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/users", nil)
 		req.AddCookie(&http.Cookie{Name: common.SessionCookieName, Value: "sid-1"})
 		rec := httptest.NewRecorder()
-		m.AuthMiddleware(handler).ServeHTTP(rec, req)
+		m.AuthnMiddleware(handler).ServeHTTP(rec, req)
 
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, []string{"admin"}, capturedRoles)
@@ -127,7 +127,7 @@ func TestMiddleware_AuthMiddleware(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/users", nil)
 		req.AddCookie(&http.Cookie{Name: common.SessionCookieName, Value: "sid-1"})
 		rec := httptest.NewRecorder()
-		m.AuthMiddleware(mockHandlerWithOkResponse()).ServeHTTP(rec, req)
+		m.AuthnMiddleware(mockHandlerWithOkResponse()).ServeHTTP(rec, req)
 
 		assert.Equal(t, http.StatusOK, rec.Code)
 	})

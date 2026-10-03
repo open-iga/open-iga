@@ -70,3 +70,42 @@ func (mr *MockOauth2ClientAdapterMockRecorder) GetConsentDetails(ctx any) *gomoc
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConsentDetails", reflect.TypeOf((*MockOauth2ClientAdapter)(nil).GetConsentDetails), ctx)
 }
+
+// MockConnectorRuntime is a mock of ConnectorRuntime interface.
+type MockConnectorRuntime struct {
+	ctrl     *gomock.Controller
+	recorder *MockConnectorRuntimeMockRecorder
+	isgomock struct{}
+}
+
+// MockConnectorRuntimeMockRecorder is the mock recorder for MockConnectorRuntime.
+type MockConnectorRuntimeMockRecorder struct {
+	mock *MockConnectorRuntime
+}
+
+// NewMockConnectorRuntime creates a new mock instance.
+func NewMockConnectorRuntime(ctrl *gomock.Controller) *MockConnectorRuntime {
+	mock := &MockConnectorRuntime{ctrl: ctrl}
+	mock.recorder = &MockConnectorRuntimeMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockConnectorRuntime) EXPECT() *MockConnectorRuntimeMockRecorder {
+	return m.recorder
+}
+
+// ValidateConnectorByURL mocks base method.
+func (m *MockConnectorRuntime) ValidateConnectorByURL(ctx context.Context, url, hash string) (*domain.ConnectorSpec, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateConnectorByURL", ctx, url, hash)
+	ret0, _ := ret[0].(*domain.ConnectorSpec)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ValidateConnectorByURL indicates an expected call of ValidateConnectorByURL.
+func (mr *MockConnectorRuntimeMockRecorder) ValidateConnectorByURL(ctx, url, hash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateConnectorByURL", reflect.TypeOf((*MockConnectorRuntime)(nil).ValidateConnectorByURL), ctx, url, hash)
+}
