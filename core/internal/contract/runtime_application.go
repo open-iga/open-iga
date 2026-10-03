@@ -20,7 +20,12 @@ type ConnectorService interface {
 	GetOnboardedConnectorDetails(ctx context.Context, onboardingId string) (*domain.ConnectorValidationResult, bool)
 }
 
+type ManagedSystemService interface {
+	Onboard(ctx context.Context, connectorOnboardId string) (*domain.ManagedSystem, error)
+}
+
 type RuntimeApplication struct {
-	AuthService      AuthService
-	ConnectorService ConnectorService
+	AuthService          AuthService
+	ConnectorService     ConnectorService
+	ManagedSystemService ManagedSystemService
 }

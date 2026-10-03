@@ -18,7 +18,8 @@ type Config struct {
 }
 
 func (c Config) Validate() error {
-	return validation.ValidateStruct(&c,
+	return validation.ValidateStruct(
+		&c,
 		validation.Field(&c.Name, validation.Required),
 		validation.Field(&c.Description, validation.Required),
 		validation.Field(&c.Required, validation.NotNil),
@@ -32,7 +33,8 @@ type Endpoint struct {
 }
 
 func (e Endpoint) Validate() error {
-	return validation.ValidateStruct(&e,
+	return validation.ValidateStruct(
+		&e,
 		validation.Field(&e.Method, validation.Required,
 			validation.In("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "get", "post", "put", "delete", "patch", "head")),
 		validation.Field(&e.URL, validation.Required, validation.Match(templateUrl)),
@@ -47,7 +49,8 @@ type Operation struct {
 }
 
 func (o Operation) Validate() error {
-	return validation.ValidateStruct(&o,
+	return validation.ValidateStruct(
+		&o,
 		validation.Field(&o.Endpoints, validation.Required, validation.Each()),
 		validation.Field(&o.Description, validation.Required),
 		validation.Field(&o.Config, validation.Required, validation.Each()),
@@ -63,7 +66,8 @@ type AccountActions struct {
 }
 
 func (a AccountActions) Validate() error {
-	return validation.ValidateStruct(&a,
+	return validation.ValidateStruct(
+		&a,
 		validation.Field(&a.Create, validation.Required),
 		validation.Field(&a.Enable, validation.Required),
 		validation.Field(&a.Disable, validation.Required),
@@ -80,7 +84,8 @@ type UserEntitlements struct {
 }
 
 func (e UserEntitlements) Validate() error {
-	return validation.ValidateStruct(&e,
+	return validation.ValidateStruct(
+		&e,
 		validation.Field(&e.Discover, validation.Required),
 		validation.Field(&e.Grant, validation.Required),
 		validation.Field(&e.Revoke, validation.Required),
@@ -98,7 +103,8 @@ type ConnectorSpec struct {
 }
 
 func (c ConnectorSpec) Validate() error {
-	return validation.ValidateStruct(&c,
+	return validation.ValidateStruct(
+		&c,
 		validation.Field(&c.Name, validation.Required),
 		validation.Field(&c.Description, validation.Required),
 		validation.Field(&c.Config, validation.Required, validation.Each()),

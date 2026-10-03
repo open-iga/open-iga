@@ -27,18 +27,23 @@ func NewConnectorService(connectorRuntime contract.ConnectorRuntime, logger *slo
 		connectorRuntime:  connectorRuntime,
 		logger:            logger,
 		onboardingResults: make(map[string]domain.ConnectorValidationResult),
+		mu:                sync.RWMutex{}, //for exhaustruct lint
 	}
 }
 
 func (c *ConnectorService) ValidateByUrl(_ context.Context, connectorUrl string, connectorHash string) string {
 	c.mu.Lock()
 	id := uuid.New().String()
-	c.onboardingResults[id] = domain.ConnectorValidationResult{Error: nil, Status: domain.ConnectorValidationPending, ConnectorSpec: nil}
+	c.onboardingResults[id] = domain.ConnectorValidationResult{
+		Error:         nil,
+		ConnectorHash: connectorHash,
+		ConnectorUrl:  connectorUrl,
+		Status:        domain.ConnectorValidationPending,
+		ConnectorSpec: nil,
+	}
 	c.mu.Unlock()
 
 	go func() {
-		time.Sleep(10 * time.Second)
-
 		ctx, cancel := context.WithTimeout(context.Background(), validationTimeout)
 		defer cancel()
 
@@ -51,7 +56,13 @@ func (c *ConnectorService) ValidateByUrl(_ context.Context, connectorUrl string,
 
 		c.logger.Debug("Validation completed", "connectorUrl", connectorUrl, "id", id, "status", status)
 		c.mu.Lock()
-		c.onboardingResults[id] = domain.ConnectorValidationResult{Error: err, Status: status, ConnectorSpec: connectorSpec}
+		c.onboardingResults[id] = domain.ConnectorValidationResult{
+			Error:         err,
+			ConnectorHash: connectorHash,
+			ConnectorUrl:  connectorUrl,
+			Status:        status,
+			ConnectorSpec: connectorSpec,
+		}
 		c.mu.Unlock()
 	}()
 

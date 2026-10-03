@@ -14,9 +14,7 @@ import (
 	"github.com/tetratelabs/wazero"
 )
 
-var (
-	CustomSectionName = "openiga:manifest"
-)
+var CustomSectionName = "openiga:manifest"
 
 type ConnectorRuntime struct {
 	logger *slog.Logger

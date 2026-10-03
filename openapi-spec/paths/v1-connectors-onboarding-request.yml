@@ -1,25 +1,26 @@
-operationId: onboardConnector
-description: To onboard managed-systems along with connectors
-requestBody:
-    description: Details required to create a managed-system
-    required: true
-    content:
-        'application/json':
-            schema:
-                type: object
-                properties:
-                    connectorUrl:
-                        type: string
-                    connectorSha:
-                        type: string
-                required: [connectorUrl, connectorSha]
-responses:
-    201:
-        description: Managed system has been successfully created
+post:
+    operationId: onboardConnector
+    description: To onboard managed-systems along with connectors
+    requestBody:
+        description: Details required to create a managed-system
+        required: true
         content:
             'application/json':
                 schema:
+                    type: object
                     properties:
-                        onboardingId:
+                        connectorUrl:
                             type: string
-                    required: [onboardingId]
+                        connectorSha:
+                            type: string
+                    required: [connectorUrl, connectorSha]
+    responses:
+        201:
+            description: Managed system has been successfully created
+            content:
+                'application/json':
+                    schema:
+                        properties:
+                            onboardingId:
+                                type: string
+                        required: [onboardingId]

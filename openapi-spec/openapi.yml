@@ -6,23 +6,18 @@ info:
 
 paths:
     '/api/health':
-        get:
-            $ref: './paths/health.yml'
+        $ref: './paths/health.yml'
     '/api/v1/auth/{provider}':
-        get:
-            $ref: './paths/v1-auth-login.yml'
+        $ref: './paths/v1-auth-login.yml'
     '/api/v1/auth/{provider}/callback':
-        post:
-            $ref: './paths/v1-auth-callback.yml'
+        $ref: './paths/v1-auth-callback.yml'
     '/api/v1/auth/logout':
-        post:
-            $ref: './paths/v1-auth-logout.yml'
+        $ref: './paths/v1-auth-logout.yml'
     '/api/v1/users':
-        get:
-            $ref: './paths/v1-user-details.yml'
+        $ref: './paths/v1-user-details.yml'
     '/api/v1/connectors/onboarding-requests':
-        post:
-            $ref: './paths/v1-connectors-onboarding-request.yml'
+        $ref: './paths/v1-connectors-onboarding-request.yml'
     '/api/v1/connectors/onboarding-requests/{onboarding-id}':
-        get:
-            $ref: './paths/v1-connectors-onboarding-request-details.yml'
+        $ref: './paths/v1-connectors-onboarding-request-details.yml'
+    '/api/v1/managed-systems':
+        $ref: './paths/v1-managed-systems.yml'

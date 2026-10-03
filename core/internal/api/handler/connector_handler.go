@@ -23,13 +23,14 @@ func (h *Handler) GetConnectorOnboardingRequestDetails(ctx context.Context, requ
 	}
 
 	resp := generated.GetConnectorOnboardingRequestDetails200JSONResponse{
-		Status: generated.GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus(connectorValidationResult.Status),
+		Status:        generated.GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus(connectorValidationResult.Status),
+		Error:         nil,
+		ConnectorSpec: nil,
 	}
 
 	if connectorValidationResult.Error != nil {
 		resp.Error = new(connectorValidationResult.Error.Error())
 	}
-
 	resp.ConnectorSpec = connectorValidationResult.ConnectorSpec
 
 	return resp, nil

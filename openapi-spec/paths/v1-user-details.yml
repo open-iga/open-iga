@@ -1,27 +1,28 @@
-operationId: getUserDetails
-description: Get session id user details
-responses:
-    200:
-        description: User details
-        content:
-            application/json:
-                schema:
-                    type: object
-                    properties:
-                        firstName:
-                            type: string
-                        lastName:
-                            type: string
-                        email:
-                            type: string
-                        id:
-                            type: string
-                        roles:
-                            type: array
-                            items:
+get:
+    operationId: getUserDetails
+    description: Get session id user details
+    responses:
+        200:
+            description: User details
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            firstName:
                                 type: string
-                    required: [firstName, lastName, email, id, roles]
-    401:
-        $ref: '../components/responses/unauthenticated-error.yml'
-    500:
-        $ref: '../components/responses/internal-server-error.yml'
+                            lastName:
+                                type: string
+                            email:
+                                type: string
+                            id:
+                                type: string
+                            roles:
+                                type: array
+                                items:
+                                    type: string
+                        required: [firstName, lastName, email, id, roles]
+        401:
+            $ref: '../components/responses/unauthenticated-error.yml'
+        500:
+            $ref: '../components/responses/internal-server-error.yml'

@@ -10,6 +10,12 @@ const (
 
 type ConnectorValidationResult struct {
 	Status        ConnectorValidationStatus
+	ConnectorUrl  string
+	ConnectorHash string
 	ConnectorSpec *ConnectorSpec
 	Error         error
+}
+
+func (c *ConnectorValidationResult) CanBeOnboarded() bool {
+	return c.Status == ConnectorValidationSuccess
 }

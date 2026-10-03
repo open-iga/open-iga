@@ -1,11 +1,11 @@
 -- A managed system is an external target, onboarded with a WASM connector
 CREATE TABLE managed_system (
-    id            uuid PRIMARY KEY    DEFAULT gen_random_uuid(),
-    name          VARCHAR(255) UNIQUE NOT NULL,
-    connector_url TEXT                NOT NULL,
-    connector_sha VARCHAR(64)         NOT NULL,
-    created_at    TIMESTAMPTZ(6)      DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TIMESTAMPTZ(6)      DEFAULT CURRENT_TIMESTAMP
+    id              uuid PRIMARY KEY    DEFAULT gen_random_uuid(),
+    name            VARCHAR(255) UNIQUE NOT NULL,
+    connector_url   TEXT                NOT NULL,
+    connector_hash  VARCHAR(64)         NOT NULL,
+    created_at      TIMESTAMPTZ(6)      DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMPTZ(6)      DEFAULT CURRENT_TIMESTAMP
 );
 
 -- A tenant/scope within a managed system: a Keycloak realm, etc.

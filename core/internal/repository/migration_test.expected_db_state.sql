@@ -1,5 +1,5 @@
 /*
-With ORM entity is the single source truth. But with migrations and SQLC, it's difficult to see the state of the DB in single place
+With ORM, entity is the single source truth. But with migrations and SQLC, it's difficult to see the state of the DB in single place
 The aim of this file is to check the state of DB in a single place and check if the DB is actually in an expected state post migration.
 */
 CREATE TYPE identity_type AS ENUM ('user');
@@ -47,12 +47,12 @@ CREATE UNIQUE INDEX idx_unique_identity_role ON identity_role(identity_id, role_
 
 -- A managed system is an external target, onboarded with a single WASM connector
 CREATE TABLE managed_system (
-    id            uuid PRIMARY KEY    DEFAULT gen_random_uuid(),
-    name          VARCHAR(255) UNIQUE NOT NULL,
-    connector_url TEXT                NOT NULL,
-    connector_sha VARCHAR(64)         NOT NULL,
-    created_at    TIMESTAMPTZ(6)      DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TIMESTAMPTZ(6)      DEFAULT CURRENT_TIMESTAMP
+    id              uuid PRIMARY KEY    DEFAULT gen_random_uuid(),
+    name            VARCHAR(255) UNIQUE NOT NULL,
+    connector_url   TEXT                NOT NULL,
+    connector_hash  VARCHAR(64)         NOT NULL,
+    created_at      TIMESTAMPTZ(6)      DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMPTZ(6)      DEFAULT CURRENT_TIMESTAMP
 );
 
 -- A tenant/scope within a system: a Keycloak realm, an Azure AD tenant, etc.
