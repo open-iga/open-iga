@@ -18,6 +18,10 @@ func (h *Handler) OnboardManagedSystem(ctx context.Context, request generated.On
 			}, nil
 		}
 
+		if errors.Is(err, domain.ErrManagedSystemNameExists) {
+			return generated.OnboardManagedSystem409JSONResponse{Message: err.Error()}, nil
+		}
+
 		return generated.OnboardManagedSystem500JSONResponse{Message: err.Error()}, nil
 	}
 

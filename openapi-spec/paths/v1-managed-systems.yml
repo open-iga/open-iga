@@ -25,5 +25,7 @@ post:
             $ref: '../components/responses/unauthenticated-error.yml'
         404:
             $ref: '../components/responses/not-found-error.yml'
+        409:
+            $ref: '../components/responses/conflict-error.yml'
         500:
             $ref: '../components/responses/internal-server-error.yml'

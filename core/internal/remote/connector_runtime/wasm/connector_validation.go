@@ -23,7 +23,7 @@ import (
 var CustomSectionName = "openiga:manifest"
 
 const (
-	maxConnectorSize = 32 << 20 // 32 MiB cap on a downloaded connector
+	maxConnectorSize = 32 * 1024 * 1024 // 32 MiB cap on a downloaded connector
 	fetchTimeout     = 30 * time.Second
 )
 
