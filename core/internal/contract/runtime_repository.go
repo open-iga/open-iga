@@ -22,7 +22,12 @@ type SessionRepository interface {
 	FindActiveSessionByIdentityId(ctx context.Context, identityId uuid.UUID) (*domain.Session, error)
 }
 
+type ManagedSystemRepository interface {
+	CreateManagedSystem(ctx context.Context, name string, connectorUrl string, connectorHash string) (*domain.ManagedSystem, error)
+}
+
 type Repository struct {
-	IdentityRepository IdentityRepository
-	SessionRepository  SessionRepository
+	IdentityRepository      IdentityRepository
+	SessionRepository       SessionRepository
+	ManagedSystemRepository ManagedSystemRepository
 }

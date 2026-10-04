@@ -1,51 +1,4 @@
-/*
-With ORM, entity is the single source truth. But with migrations and SQLC, it's difficult to see the state of the DB in single place
-The aim of this file is to check the state of DB in a single place and check if the DB is actually in an expected state post migration.
-*/
-CREATE TYPE identity_type AS ENUM ('user');
-
-CREATE TABLE identity
-(
-    id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    first_name VARCHAR(255)     DEFAULT NULL,
-    last_name  VARCHAR(255)     DEFAULT NULL,
-    type       identity_type       NOT NULL,
-    email      VARCHAR(255) UNIQUE NOT NULL,
-    created_at TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE session
-(
-    id          uuid PRIMARY KEY        DEFAULT gen_random_uuid(),
--- session_id is the high entropy value used in cookie
-    session_id  VARCHAR(64)    NOT NULL UNIQUE,
-    identity_id uuid           NOT NULL REFERENCES identity (id),
-    active      boolean        NOT NULL DEFAULT TRUE,
-    created_at  TIMESTAMPTZ(6)          DEFAULT CURRENT_TIMESTAMP,
-    expires_at  TIMESTAMPTZ(6) NOT NULL
-);
--- Ensure that only one active session exists per identity
-CREATE UNIQUE INDEX idx_unique_session ON session (identity_id) WHERE active = TRUE;
-CREATE INDEX idx_session_identity_id ON session (identity_id);
-
-
-CREATE TABLE role (
-    id  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    name    VARCHAR(50) NOT NULL UNIQUE,
-    created_at TIMESTAMPTZ(3) DEFAULT CURRENT_TIMESTAMP
-);
--- seed default roles in DB during migration
-INSERT INTO role(name) VALUES ('admin'), ('member');
-
-CREATE TABLE identity_role (
-       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-       role_id uuid REFERENCES role(id) NOT NULL ,
-       identity_id uuid REFERENCES identity(id) NOT NULL
-);
-CREATE UNIQUE INDEX idx_unique_identity_role ON identity_role(identity_id, role_id);
-
--- A managed system is an external target, onboarded with a single WASM connector
+-- A managed system is an external target, onboarded with a WASM connector
 CREATE TABLE managed_system (
     id              uuid PRIMARY KEY    DEFAULT gen_random_uuid(),
     name            VARCHAR(255) UNIQUE NOT NULL,
@@ -55,11 +8,12 @@ CREATE TABLE managed_system (
     updated_at      TIMESTAMPTZ(6)      DEFAULT CURRENT_TIMESTAMP
 );
 
--- A tenant/scope within a system: a Keycloak realm, an Azure AD tenant, etc.
+-- A tenant/scope within a managed system: a Keycloak realm, etc.
 -- Single-tenant systems (e.g. one AWS account) have exactly one row here.
 CREATE TABLE managed_system_tenant (
     id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     managed_system_id uuid REFERENCES managed_system(id) NOT NULL,
+    -- tenant id in the target system (realm name, account id, ...)
     external_id       VARCHAR(255)   NOT NULL,
     name              VARCHAR(255)   NOT NULL,
     metadata          JSONB          NOT NULL DEFAULT '{}',
@@ -68,10 +22,11 @@ CREATE TABLE managed_system_tenant (
 );
 CREATE UNIQUE INDEX idx_unique_managed_system_tenant ON managed_system_tenant(managed_system_id, external_id);
 
--- Entitlements are exposed by business owners/admins. These are owned by the connectors
+-- Entitlements are exposed by connectors. These are onboarded by business owners/admins
 CREATE TABLE entitlement (
     id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id  uuid REFERENCES managed_system_tenant(id) NOT NULL,
+    -- entitlement name from the connector
     name       VARCHAR(255)     NOT NULL,
     created_at TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP

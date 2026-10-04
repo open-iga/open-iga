@@ -115,3 +115,95 @@ func (mr *MockAuthServiceMockRecorder) ValidateSession(ctx, sessionId any) *gomo
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateSession", reflect.TypeOf((*MockAuthService)(nil).ValidateSession), ctx, sessionId)
 }
+
+// MockConnectorService is a mock of ConnectorService interface.
+type MockConnectorService struct {
+	ctrl     *gomock.Controller
+	recorder *MockConnectorServiceMockRecorder
+	isgomock struct{}
+}
+
+// MockConnectorServiceMockRecorder is the mock recorder for MockConnectorService.
+type MockConnectorServiceMockRecorder struct {
+	mock *MockConnectorService
+}
+
+// NewMockConnectorService creates a new mock instance.
+func NewMockConnectorService(ctrl *gomock.Controller) *MockConnectorService {
+	mock := &MockConnectorService{ctrl: ctrl}
+	mock.recorder = &MockConnectorServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockConnectorService) EXPECT() *MockConnectorServiceMockRecorder {
+	return m.recorder
+}
+
+// GetOnboardedConnectorDetails mocks base method.
+func (m *MockConnectorService) GetOnboardedConnectorDetails(ctx context.Context, onboardingId string) (*domain.ConnectorValidationResult, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOnboardedConnectorDetails", ctx, onboardingId)
+	ret0, _ := ret[0].(*domain.ConnectorValidationResult)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetOnboardedConnectorDetails indicates an expected call of GetOnboardedConnectorDetails.
+func (mr *MockConnectorServiceMockRecorder) GetOnboardedConnectorDetails(ctx, onboardingId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOnboardedConnectorDetails", reflect.TypeOf((*MockConnectorService)(nil).GetOnboardedConnectorDetails), ctx, onboardingId)
+}
+
+// ValidateByUrl mocks base method.
+func (m *MockConnectorService) ValidateByUrl(ctx context.Context, connectorUrl, connectorHash string) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateByUrl", ctx, connectorUrl, connectorHash)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ValidateByUrl indicates an expected call of ValidateByUrl.
+func (mr *MockConnectorServiceMockRecorder) ValidateByUrl(ctx, connectorUrl, connectorHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateByUrl", reflect.TypeOf((*MockConnectorService)(nil).ValidateByUrl), ctx, connectorUrl, connectorHash)
+}
+
+// MockManagedSystemService is a mock of ManagedSystemService interface.
+type MockManagedSystemService struct {
+	ctrl     *gomock.Controller
+	recorder *MockManagedSystemServiceMockRecorder
+	isgomock struct{}
+}
+
+// MockManagedSystemServiceMockRecorder is the mock recorder for MockManagedSystemService.
+type MockManagedSystemServiceMockRecorder struct {
+	mock *MockManagedSystemService
+}
+
+// NewMockManagedSystemService creates a new mock instance.
+func NewMockManagedSystemService(ctrl *gomock.Controller) *MockManagedSystemService {
+	mock := &MockManagedSystemService{ctrl: ctrl}
+	mock.recorder = &MockManagedSystemServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockManagedSystemService) EXPECT() *MockManagedSystemServiceMockRecorder {
+	return m.recorder
+}
+
+// Onboard mocks base method.
+func (m *MockManagedSystemService) Onboard(ctx context.Context, connectorOnboardId string) (*domain.ManagedSystem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Onboard", ctx, connectorOnboardId)
+	ret0, _ := ret[0].(*domain.ManagedSystem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Onboard indicates an expected call of Onboard.
+func (mr *MockManagedSystemServiceMockRecorder) Onboard(ctx, connectorOnboardId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Onboard", reflect.TypeOf((*MockManagedSystemService)(nil).Onboard), ctx, connectorOnboardId)
+}

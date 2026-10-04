@@ -1,5 +1,5 @@
 # $schema=https://golangci-lint.run/jsonschema/golangci.v2.jsonschema.json
-version: 2
+version: "2"
 
 run:
     timeout: 5m
@@ -40,6 +40,9 @@ linters:
                 - net/http.Server
                 - log/slog.HandlerOptions
                 - github.com/open-iga/core/internal/common.EnvField
+                - net/http.Client
+                - net/http.Transport
+                - net.Dialer
     exclusions:
         rules:
             - path: (.*_test\.go|.*internal/testutil/.*)
@@ -49,6 +52,7 @@ linters:
                   - gosec
                   - exhaustruct
                   - errcheck
-            - path: internal/api/middleware/auth_middleware\.go
+            # ozzo validation.Errors are surfaced verbatim; wrapping flattens field detail.
+            - path: internal/domain/connector_spec\.go
               linters:
-                  - cyclop
+                  - wrapcheck

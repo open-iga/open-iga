@@ -24,8 +24,10 @@ func NewRouter(appConfig *common.AppConfig, logger *slog.Logger, application *co
 	router := chi.NewRouter()
 
 	router.Use(codegenMiddleware.OapiRequestValidator(spec))
-	router.Use(reqMiddleware.AuthMiddleware)
-	serverInterface := generated.NewStrictHandler(reqHandler, nil)
+	router.Use(reqMiddleware.AuthnMiddleware)
+	serverInterface := generated.NewStrictHandler(reqHandler, []generated.StrictMiddlewareFunc{
+		reqMiddleware.AuthzStrictMiddleware,
+	})
 	generated.HandlerFromMux(serverInterface, router)
 
 	return router

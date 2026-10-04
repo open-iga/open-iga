@@ -19,6 +19,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
+	"github.com/open-iga/core/internal/domain"
 )
 
 // Defines values for AuthDetailsParamsProvider.
@@ -51,6 +52,27 @@ func (e AuthCallbackParamsProvider) Valid() bool {
 	}
 }
 
+// Defines values for GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus.
+const (
+	Failed  GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus = "failed"
+	Pending GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus = "pending"
+	Success GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus = "success"
+)
+
+// Valid indicates whether the value is a known member of the GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus enum.
+func (e GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus) Valid() bool {
+	switch e {
+	case Failed:
+		return true
+	case Pending:
+		return true
+	case Success:
+		return true
+	default:
+		return false
+	}
+}
+
 // AuthDetailsParamsProvider defines parameters for AuthDetails.
 type AuthDetailsParamsProvider string
 
@@ -69,6 +91,27 @@ type AuthCallbackParams struct {
 // AuthCallbackParamsProvider defines parameters for AuthCallback.
 type AuthCallbackParamsProvider string
 
+// OnboardConnectorJSONBody defines parameters for OnboardConnector.
+type OnboardConnectorJSONBody struct {
+	ConnectorSha string `json:"connectorSha"`
+	ConnectorUrl string `json:"connectorUrl"`
+}
+
+// GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus defines parameters for GetConnectorOnboardingRequestDetails.
+type GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus string
+
+// OnboardManagedSystemJSONBody defines parameters for OnboardManagedSystem.
+type OnboardManagedSystemJSONBody struct {
+	// ConnectorOnboardingId Connector onboarding ID tat passed validation
+	ConnectorOnboardingId string `json:"connectorOnboardingId"`
+}
+
+// OnboardConnectorJSONRequestBody defines body for OnboardConnector for application/json ContentType.
+type OnboardConnectorJSONRequestBody OnboardConnectorJSONBody
+
+// OnboardManagedSystemJSONRequestBody defines body for OnboardManagedSystem for application/json ContentType.
+type OnboardManagedSystemJSONRequestBody OnboardManagedSystemJSONBody
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
@@ -83,6 +126,15 @@ type ServerInterface interface {
 
 	// (POST /api/v1/auth/{provider}/callback)
 	AuthCallback(w http.ResponseWriter, r *http.Request, provider AuthCallbackParamsProvider, params AuthCallbackParams)
+
+	// (POST /api/v1/connectors/onboarding-requests)
+	OnboardConnector(w http.ResponseWriter, r *http.Request)
+
+	// (GET /api/v1/connectors/onboarding-requests/{onboarding-id})
+	GetConnectorOnboardingRequestDetails(w http.ResponseWriter, r *http.Request, onboardingId string)
+
+	// (POST /api/v1/managed-systems)
+	OnboardManagedSystem(w http.ResponseWriter, r *http.Request)
 
 	// (GET /api/v1/users)
 	GetUserDetails(w http.ResponseWriter, r *http.Request)
@@ -109,6 +161,21 @@ func (_ Unimplemented) AuthDetails(w http.ResponseWriter, r *http.Request, provi
 
 // (POST /api/v1/auth/{provider}/callback)
 func (_ Unimplemented) AuthCallback(w http.ResponseWriter, r *http.Request, provider AuthCallbackParamsProvider, params AuthCallbackParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/connectors/onboarding-requests)
+func (_ Unimplemented) OnboardConnector(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/connectors/onboarding-requests/{onboarding-id})
+func (_ Unimplemented) GetConnectorOnboardingRequestDetails(w http.ResponseWriter, r *http.Request, onboardingId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/managed-systems)
+func (_ Unimplemented) OnboardManagedSystem(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -241,6 +308,60 @@ func (siw *ServerInterfaceWrapper) AuthCallback(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AuthCallback(w, r, provider, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OnboardConnector operation middleware
+func (siw *ServerInterfaceWrapper) OnboardConnector(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OnboardConnector(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetConnectorOnboardingRequestDetails operation middleware
+func (siw *ServerInterfaceWrapper) GetConnectorOnboardingRequestDetails(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "onboarding-id" -------------
+	var onboardingId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "onboarding-id", chi.URLParam(r, "onboarding-id"), &onboardingId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "onboarding-id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetConnectorOnboardingRequestDetails(w, r, onboardingId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OnboardManagedSystem operation middleware
+func (siw *ServerInterfaceWrapper) OnboardManagedSystem(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OnboardManagedSystem(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -388,6 +509,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/auth/{provider}/callback", wrapper.AuthCallback)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/connectors/onboarding-requests", wrapper.OnboardConnector)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/connectors/onboarding-requests/{onboarding-id}", wrapper.GetConnectorOnboardingRequestDetails)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/managed-systems", wrapper.OnboardManagedSystem)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/users", wrapper.GetUserDetails)
@@ -635,6 +765,198 @@ func (response AuthCallback500JSONResponse) VisitAuthCallbackResponse(w http.Res
 	return err
 }
 
+type OnboardConnectorRequestObject struct {
+	Body *OnboardConnectorJSONRequestBody
+}
+
+type OnboardConnectorResponseObject interface {
+	VisitOnboardConnectorResponse(w http.ResponseWriter) error
+}
+
+type OnboardConnector201JSONResponse struct {
+	OnboardingId string `json:"onboardingId"`
+}
+
+func (response OnboardConnector201JSONResponse) VisitOnboardConnectorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetConnectorOnboardingRequestDetailsRequestObject struct {
+	OnboardingId string `json:"onboarding-id"`
+}
+
+type GetConnectorOnboardingRequestDetailsResponseObject interface {
+	VisitGetConnectorOnboardingRequestDetailsResponse(w http.ResponseWriter) error
+}
+
+type GetConnectorOnboardingRequestDetails200JSONResponse struct {
+	// ConnectorSpec The connector spec; set when status is success
+	ConnectorSpec *domain.ConnectorSpec `json:"connectorSpec,omitempty"`
+
+	// Error Reason for failure; set when status is failed
+	Error  *string                                                       `json:"error,omitempty"`
+	Status GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus `json:"status"`
+}
+
+func (response GetConnectorOnboardingRequestDetails200JSONResponse) VisitGetConnectorOnboardingRequestDetailsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetConnectorOnboardingRequestDetails401JSONResponse struct {
+	Message  string `json:"message"`
+	Redirect string `json:"redirect"`
+}
+
+func (response GetConnectorOnboardingRequestDetails401JSONResponse) VisitGetConnectorOnboardingRequestDetailsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetConnectorOnboardingRequestDetails404JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response GetConnectorOnboardingRequestDetails404JSONResponse) VisitGetConnectorOnboardingRequestDetailsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetConnectorOnboardingRequestDetails500JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response GetConnectorOnboardingRequestDetails500JSONResponse) VisitGetConnectorOnboardingRequestDetailsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OnboardManagedSystemRequestObject struct {
+	Body *OnboardManagedSystemJSONRequestBody
+}
+
+type OnboardManagedSystemResponseObject interface {
+	VisitOnboardManagedSystemResponse(w http.ResponseWriter) error
+}
+
+type OnboardManagedSystem200JSONResponse struct {
+	// Id Id of the onboarded managed system
+	Id string `json:"id"`
+}
+
+func (response OnboardManagedSystem200JSONResponse) VisitOnboardManagedSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OnboardManagedSystem401JSONResponse struct {
+	Message  string `json:"message"`
+	Redirect string `json:"redirect"`
+}
+
+func (response OnboardManagedSystem401JSONResponse) VisitOnboardManagedSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OnboardManagedSystem404JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response OnboardManagedSystem404JSONResponse) VisitOnboardManagedSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OnboardManagedSystem409JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response OnboardManagedSystem409JSONResponse) VisitOnboardManagedSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OnboardManagedSystem500JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response OnboardManagedSystem500JSONResponse) VisitOnboardManagedSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetUserDetailsRequestObject struct {
 }
 
@@ -709,6 +1031,15 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/auth/{provider}/callback)
 	AuthCallback(ctx context.Context, request AuthCallbackRequestObject) (AuthCallbackResponseObject, error)
+
+	// (POST /api/v1/connectors/onboarding-requests)
+	OnboardConnector(ctx context.Context, request OnboardConnectorRequestObject) (OnboardConnectorResponseObject, error)
+
+	// (GET /api/v1/connectors/onboarding-requests/{onboarding-id})
+	GetConnectorOnboardingRequestDetails(ctx context.Context, request GetConnectorOnboardingRequestDetailsRequestObject) (GetConnectorOnboardingRequestDetailsResponseObject, error)
+
+	// (POST /api/v1/managed-systems)
+	OnboardManagedSystem(ctx context.Context, request OnboardManagedSystemRequestObject) (OnboardManagedSystemResponseObject, error)
 
 	// (GET /api/v1/users)
 	GetUserDetails(ctx context.Context, request GetUserDetailsRequestObject) (GetUserDetailsResponseObject, error)
@@ -844,6 +1175,94 @@ func (sh *strictHandler) AuthCallback(w http.ResponseWriter, r *http.Request, pr
 	}
 }
 
+// OnboardConnector operation middleware
+func (sh *strictHandler) OnboardConnector(w http.ResponseWriter, r *http.Request) {
+	var request OnboardConnectorRequestObject
+
+	var body OnboardConnectorJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OnboardConnector(ctx, request.(OnboardConnectorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OnboardConnector")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OnboardConnectorResponseObject); ok {
+		if err := validResponse.VisitOnboardConnectorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetConnectorOnboardingRequestDetails operation middleware
+func (sh *strictHandler) GetConnectorOnboardingRequestDetails(w http.ResponseWriter, r *http.Request, onboardingId string) {
+	var request GetConnectorOnboardingRequestDetailsRequestObject
+
+	request.OnboardingId = onboardingId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetConnectorOnboardingRequestDetails(ctx, request.(GetConnectorOnboardingRequestDetailsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetConnectorOnboardingRequestDetails")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetConnectorOnboardingRequestDetailsResponseObject); ok {
+		if err := validResponse.VisitGetConnectorOnboardingRequestDetailsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OnboardManagedSystem operation middleware
+func (sh *strictHandler) OnboardManagedSystem(w http.ResponseWriter, r *http.Request) {
+	var request OnboardManagedSystemRequestObject
+
+	var body OnboardManagedSystemJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OnboardManagedSystem(ctx, request.(OnboardManagedSystemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OnboardManagedSystem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OnboardManagedSystemResponseObject); ok {
+		if err := validResponse.VisitOnboardManagedSystemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetUserDetails operation middleware
 func (sh *strictHandler) GetUserDetails(w http.ResponseWriter, r *http.Request) {
 	var request GetUserDetailsRequestObject
@@ -873,24 +1292,36 @@ func (sh *strictHandler) GetUserDetails(w http.ResponseWriter, r *http.Request) 
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"1FdBc9s2E/0rGHzfkRJt173olqqt65lM0rHiUybjgYmlhAQEEGBpR/Xwv3cWIClKomzVidvkJIJY7r4F",
-	"3nuAHnhhK2cNGAx89sA9BGdNgDjYTN30729uhZx4+FxDwAl4b32KNAgG6VE4p1UhUFmTfwzW0LtQrKAS",
-	"9OS8deBRpQIVhCCWQI+4dsBnPKBXZsmbJuNURHmQfPa+D/yQdYH29iMUyBuKlBAKrxyV5DP+i5DsKgHk",
-	"TTbehDII3gg9CeDvwH+fjVy2INkigmQJ5KGWaiNqXIFBwgzyBVuijqTyhProfgffHNP69XYzjzTtvC2o",
-	"xq2GCcXj+vvczOshUvZbRBoTJhRhAyjcWGp+4ry9UxJ8nNpOtqidsx5BsrcUyv7sQzMOpq4I3NLapR5i",
-	"65toMq5MaffTzq3WUNCA2ZKBkc4qg4GV1rO3DszlxSuecVSoKd/mzR34kDKcTk+mJ7Rb1oERTvEZ/2l6",
-	"Mj3nGXcCV7GVXDiVr0BoXNFwCbiPJE2zgALrQGBwBYy0qgriEu1W3MtLyWf8j5Qr2zavs5OTHQ4gfMHc",
-	"aaF2dn9vfZq4RhHn3WlOK5xru7R1zOJsGAH8zrIUwkpvK1YH8EwUha0N7uF9nXI9ifdlOZuaPE9V/++h",
-	"5DP+v3yjsrxHlx95DsR0p89MN25fTcZ/fjbCcZMf2dyHTmrNQUK+s0wZhUogRC4OwJJcWm2ze4WrxFUH",
-	"hSoVKfQVKbSrMO20GmLY9dXrqC56Lgi1QebEEpgwkgXAwEQUAc3aTwpi8Hxx9TslxKTVPX5RwV8BhdIh",
-	"6s6LCjD6yPsHTuSPWuQZN6IipnTY+JAp6GvIBnQbW//Wr/JDvtU0H74pyY8/dv7RYbOAQPbFhPYg5JrB",
-	"FxUwZKxLwtKPXhMdzxLDn9kBLdDcSrj2moal9ZVAPuO1Vzx7oqfht8e09QbuI01Zqe19z16Z9UQj8kWe",
-	"DQkWgJxpBaI7eRaAk3mcGzkwiInDz3n2qK/+y2rOC6H1rSg+HfbteRvRn3ZRYSthpFZmuSNe1qNhokTw",
-	"rc1vWcGUzT0IhKjcjlidmNMpll4q2S15NI2ebK029yXdQf2vNZ3triGBs179laywsBLSIbi9eDxLOD/X",
-	"4NcboBT+KMg9Uexdhp72x7HCkbZfV3mM/rFUP2pr0Rou2nqH8/8QZnkFWHuzQ+Vya7jto19vmi/USafT",
-	"HZX2434TjzTDxe53jzvh+dnZs69KB//0vLjDkuOFg7eki8HyKZnsUfY3kW1LuwC8DuA3F5VvyH2ohNKj",
-	"/1xL5QO+iaocmVVy9LUWj3zjrU5FFUIVRkPaF8J7sd7j7AbRoFDWthAhdTWO+ps5XPIf50LeNH8HAAD/",
-	"/w==",
+	"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",
+	"RrrZ/BsAAP//",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

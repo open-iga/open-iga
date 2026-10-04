@@ -1,0 +1,31 @@
+post:
+    operationId: onboardManagedSystem
+    description: Onboard managed systems after connector validation
+    requestBody:
+        required: true
+        content:
+            'application/json':
+                schema:
+                    properties:
+                        connectorOnboardingId:
+                            type: string
+                            description: Connector onboarding ID tat passed validation
+                    required: [connectorOnboardingId]
+    responses:
+        200:
+            content:
+                'application/json':
+                    schema:
+                        properties:
+                            id:
+                                type: string
+                                description: Id of the onboarded managed system
+                        required: [id]
+        401:
+            $ref: '../components/responses/unauthenticated-error.yml'
+        404:
+            $ref: '../components/responses/not-found-error.yml'
+        409:
+            $ref: '../components/responses/conflict-error.yml'
+        500:
+            $ref: '../components/responses/internal-server-error.yml'

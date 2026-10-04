@@ -22,6 +22,11 @@ type Oauth2ClientAdapter interface {
 
 type Oauth2Clients map[Provider]Oauth2ClientAdapter
 
+type ConnectorRuntime interface {
+	ValidateConnectorByURL(ctx context.Context, url string, hash string) (*domain.ConnectorSpec, error)
+}
+
 type RuntimeRemote struct {
-	Oauth2Clients Oauth2Clients
+	Oauth2Clients    Oauth2Clients
+	ConnectorRuntime ConnectorRuntime
 }
