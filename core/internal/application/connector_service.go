@@ -44,8 +44,6 @@ func (c *ConnectorService) ValidateByUrl(ctx context.Context, connectorUrl strin
 	c.mu.Unlock()
 
 	go func() {
-		// Detach from the request lifecycle (validation outlives the request) but keep
-		// request-scoped values via WithoutCancel, then bound the work with a timeout.
 		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), validationTimeout)
 		defer cancel()
 

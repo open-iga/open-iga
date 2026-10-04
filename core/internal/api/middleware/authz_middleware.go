@@ -9,9 +9,7 @@ import (
 	"github.com/open-iga/core/internal/domain"
 )
 
-// operationRoles maps an oapi-codegen operationId to the roles allowed to call it.
-// nil/empty means the operation is public (no role required). An operation absent
-// from this map is denied (fail closed) until a policy is added for it.
+// operationRoles maps operationId to allowed roles. nil = public; absent = denied.
 var operationRoles = map[string][]string{
 	"Health":       nil,
 	"AuthDetails":  nil,
@@ -24,13 +22,8 @@ var operationRoles = map[string][]string{
 	"OnboardManagedSystem":                 {domain.AdminRole},
 }
 
-// AuthzStrictMiddleware enforces role-based access per operation. It runs at the
-// oapi-codegen strict-handler layer (after routing), so it receives the operationId
-// directly and needs no route-pattern matching. AuthnMiddleware runs earlier in the
-// chi chain and populates roles in the context.
-//
-// On deny it writes the response and returns (nil, nil); the strict wrapper treats a
-// nil response with no error as "already handled" and writes nothing further.
+// AuthzStrictMiddleware enforces per-operation roles at the strict-handler layer.
+// On deny it writes the response and returns (nil, nil) to short-circuit.
 func (m *Middleware) AuthzStrictMiddleware(f generated.StrictHandlerFunc, operationID string) generated.StrictHandlerFunc {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		requiredRoles, known := operationRoles[operationID]

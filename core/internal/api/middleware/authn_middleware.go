@@ -58,17 +58,14 @@ func (m *Middleware) AuthnMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// authenticate resolves the session; if it returns proceed=false it has already
-		// written the response (redirect) or forwarded the request itself.
 		if ctx, proceed := m.authenticate(w, r, next); proceed {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 	})
 }
 
-// authenticate validates the session cookie and, on success, returns a context carrying
-// the identity, session and roles. It returns proceed=false when it has already handled
-// the request (redirected to sign-in/home, or forwarded an unauthenticated auth request).
+// authenticate returns a context with identity, session and roles on success.
+// proceed=false means it already handled the response (redirect or forward).
 func (m *Middleware) authenticate(w http.ResponseWriter, r *http.Request, next http.Handler) (context.Context, bool) {
 	cookie, err := r.Cookie(common.SessionCookieName)
 	if err != nil && !isRequestToAuthEndpoint(r) {

@@ -40,7 +40,9 @@ linters:
                 - net/http.Server
                 - log/slog.HandlerOptions
                 - github.com/open-iga/core/internal/common.EnvField
-                - github.com/extism/go-sdk.WasmUrl
+                - net/http.Client
+                - net/http.Transport
+                - net.Dialer
     exclusions:
         rules:
             - path: (.*_test\.go|.*internal/testutil/.*)
@@ -50,8 +52,7 @@ linters:
                   - gosec
                   - exhaustruct
                   - errcheck
-            # ozzo-validation returns structured validation.Errors meant to be surfaced
-            # verbatim; wrapping them would flatten the field-level detail.
+            # ozzo validation.Errors are surfaced verbatim; wrapping flattens field detail.
             - path: internal/domain/connector_spec\.go
               linters:
                   - wrapcheck
