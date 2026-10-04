@@ -8,7 +8,7 @@ import (
 
 func StructToMap(strukt interface{}) map[string]interface{} {
 	value := reflect.ValueOf(strukt)
-	if value.Kind() == reflect.Ptr {
+	if value.Kind() == reflect.Pointer {
 		value = value.Elem()
 	}
 

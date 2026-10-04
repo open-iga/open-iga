@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/extism/go-sdk"
+	extism "github.com/extism/go-sdk"
 	"github.com/open-iga/core/internal/common"
 	"github.com/open-iga/core/internal/contract"
 	"github.com/open-iga/core/internal/domain"
@@ -26,6 +26,11 @@ func NewConnectorRuntime(logger *slog.Logger) *ConnectorRuntime {
 	return &ConnectorRuntime{logger: logger}
 }
 
+func sha256Hex(b []byte) string {
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:])
+}
+
 // ValidateConnectorByURL validates the WASM connector based on the URL; on top of this, this function also validates the custom section
 // Validation: Download and verify the hash with Extism -> Get the custom section with Wazero runtime
 func (c *ConnectorRuntime) ValidateConnectorByURL(ctx context.Context, url string, hash string) (*domain.ConnectorSpec, error) {
@@ -39,8 +44,7 @@ func (c *ConnectorRuntime) ValidateConnectorByURL(ctx context.Context, url strin
 		return nil, fmt.Errorf(`failed to fetch wasm data from url "%s". reason: %w`, url, err)
 	}
 
-	sum := sha256.Sum256(wasmData.Data)
-	if actualSha := hex.EncodeToString(sum[:]); actualSha != hash {
+	if actualSha := sha256Hex(wasmData.Data); actualSha != hash {
 		return nil, fmt.Errorf(`expected hash "%s", got "%s"`, hash, actualSha)
 	}
 
@@ -49,7 +53,12 @@ func (c *ConnectorRuntime) ValidateConnectorByURL(ctx context.Context, url strin
 		return nil, fmt.Errorf("custom section at %s is invalid: %w", url, err)
 	}
 
-	return domain.NewConnectorSpec(customSection)
+	spec, err := domain.NewConnectorSpec(customSection)
+	if err != nil {
+		return nil, fmt.Errorf("invalid connector spec at %s: %w", url, err)
+	}
+
+	return spec, nil
 }
 
 // readCustomSection Extism does not expose method to get custom section; with this the custom section is extracted

@@ -27,11 +27,11 @@ func NewConnectorService(connectorRuntime contract.ConnectorRuntime, logger *slo
 		connectorRuntime:  connectorRuntime,
 		logger:            logger,
 		onboardingResults: make(map[string]domain.ConnectorValidationResult),
-		mu:                sync.RWMutex{}, //for exhaustruct lint
+		mu:                sync.RWMutex{}, // for exhaustruct lint
 	}
 }
 
-func (c *ConnectorService) ValidateByUrl(_ context.Context, connectorUrl string, connectorHash string) string {
+func (c *ConnectorService) ValidateByUrl(ctx context.Context, connectorUrl string, connectorHash string) string {
 	c.mu.Lock()
 	id := uuid.New().String()
 	c.onboardingResults[id] = domain.ConnectorValidationResult{
@@ -44,7 +44,9 @@ func (c *ConnectorService) ValidateByUrl(_ context.Context, connectorUrl string,
 	c.mu.Unlock()
 
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), validationTimeout)
+		// Detach from the request lifecycle (validation outlives the request) but keep
+		// request-scoped values via WithoutCancel, then bound the work with a timeout.
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), validationTimeout)
 		defer cancel()
 
 		connectorSpec, err := c.connectorRuntime.ValidateConnectorByURL(ctx, connectorUrl, connectorHash)
