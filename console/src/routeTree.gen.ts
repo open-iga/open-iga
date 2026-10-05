@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ManagedSystemsIndexRouteImport } from './routes/managed-systems/index'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
 import { Route as AuthProviderCallbackRouteImport } from './routes/auth/$provider/callback'
@@ -17,6 +18,11 @@ import { Route as AuthProviderCallbackRouteImport } from './routes/auth/$provide
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManagedSystemsIndexRoute = ManagedSystemsIndexRouteImport.update({
+  id: '/managed-systems/',
+  path: '/managed-systems/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthSignInRoute = AuthSignInRouteImport.update({
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth/logout': typeof AuthLogoutRoute
   '/auth/sign-in': typeof AuthSignInRoute
+  '/managed-systems/': typeof ManagedSystemsIndexRoute
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth/logout': typeof AuthLogoutRoute
   '/auth/sign-in': typeof AuthSignInRoute
+  '/managed-systems': typeof ManagedSystemsIndexRoute
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
 }
 export interface FileRoutesById {
@@ -52,18 +60,30 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth/logout': typeof AuthLogoutRoute
   '/auth/sign-in': typeof AuthSignInRoute
+  '/managed-systems/': typeof ManagedSystemsIndexRoute
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth/logout' | '/auth/sign-in' | '/auth/$provider/callback'
+  fullPaths:
+    | '/'
+    | '/auth/logout'
+    | '/auth/sign-in'
+    | '/managed-systems/'
+    | '/auth/$provider/callback'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth/logout' | '/auth/sign-in' | '/auth/$provider/callback'
+  to:
+    | '/'
+    | '/auth/logout'
+    | '/auth/sign-in'
+    | '/managed-systems'
+    | '/auth/$provider/callback'
   id:
     | '__root__'
     | '/'
     | '/auth/logout'
     | '/auth/sign-in'
+    | '/managed-systems/'
     | '/auth/$provider/callback'
   fileRoutesById: FileRoutesById
 }
@@ -71,6 +91,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthLogoutRoute: typeof AuthLogoutRoute
   AuthSignInRoute: typeof AuthSignInRoute
+  ManagedSystemsIndexRoute: typeof ManagedSystemsIndexRoute
   AuthProviderCallbackRoute: typeof AuthProviderCallbackRoute
 }
 
@@ -81,6 +102,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/managed-systems/': {
+      id: '/managed-systems/'
+      path: '/managed-systems'
+      fullPath: '/managed-systems/'
+      preLoaderRoute: typeof ManagedSystemsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/sign-in': {
@@ -111,6 +139,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthLogoutRoute: AuthLogoutRoute,
   AuthSignInRoute: AuthSignInRoute,
+  ManagedSystemsIndexRoute: ManagedSystemsIndexRoute,
   AuthProviderCallbackRoute: AuthProviderCallbackRoute,
 }
 export const routeTree = rootRouteImport

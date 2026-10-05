@@ -1,36 +1,41 @@
-import {
-    Sidebar,
-    SidebarContent,
-    SidebarHeader,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    SidebarTrigger,
-} from '@/design-system/components/ui/sidebar.tsx';
+import { Sidebar, SidebarHeader, SidebarTrigger, useSidebar } from '@/design-system/components/ui/sidebar.tsx';
 import { Logo } from '@/design-system/components/icons/logo.tsx';
 import { AppSidebarFooter } from './app-sidebar-footer.tsx';
-import { Construction } from 'lucide-react';
+import { AppSidebarContent } from '@/components/sidebar/app-sidebar-content.tsx';
+import { Favicon } from '@/design-system/components/icons/favicon.tsx';
+import { Link } from '@tanstack/react-router';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
-interface AppSidebarProps {
-    firstName: string;
-    lastName: string;
-}
+const AppSidebarHeader = () => {
+    const { open } = useSidebar();
 
-export const AppSidebar = ({ firstName, lastName }: AppSidebarProps) => {
     return (
-        <Sidebar>
-            <SidebarHeader className="flex flex-row items-center">
-                <Logo width={150} height={50} />
-                <SidebarTrigger />
-            </SidebarHeader>
-            <SidebarContent>
-                <SidebarMenuItem>
-                    <SidebarMenuButton size="lg">
-                        <Construction />
-                        In Progress
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarContent>
-            <AppSidebarFooter firstName={firstName} lastName={lastName} />
+        <SidebarHeader className="flex flex-row items-center">
+            {open ? (
+                <>
+                    <Link to="/">
+                        <Logo width={150} height={50} />
+                    </Link>
+                    <SidebarTrigger icon={<PanelLeftClose />} />
+                </>
+            ) : (
+                <div className="group/favicon">
+                    <span className="group-hover/favicon:hidden">
+                        <Favicon size={32} />
+                    </span>
+                    <SidebarTrigger icon={<PanelLeftOpen />} className="hidden group-hover/favicon:flex" />
+                </div>
+            )}
+        </SidebarHeader>
+    );
+};
+
+export const AppSidebar = () => {
+    return (
+        <Sidebar collapsible="icon">
+            <AppSidebarHeader />
+            <AppSidebarContent />
+            <AppSidebarFooter />
         </Sidebar>
     );
 };

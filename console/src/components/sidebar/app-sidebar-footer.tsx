@@ -13,17 +13,12 @@ import {
 } from '@/design-system/components/ui/dropdown-menu.tsx';
 import { Avatar, AvatarFallback } from '@/design-system/components/ui/avatar.tsx';
 import { ChevronsUpDown, LogOut } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
+import { useCurrentUser } from '@/hooks/use-current-user.ts';
 
-interface AppSidebarFooterProps {
-    firstName: string;
-    lastName: string;
-}
-
-export const AppSidebarFooter = ({ firstName, lastName }: AppSidebarFooterProps) => {
+export const AppSidebarFooter = () => {
     const { t } = useTranslation();
-    const navigate = useNavigate();
-    const logout = () => navigate({ to: '/auth/logout' });
+    const { firstName, lastName } = useCurrentUser();
 
     return (
         <SidebarFooter>
@@ -44,7 +39,7 @@ export const AppSidebarFooter = ({ firstName, lastName }: AppSidebarFooterProps)
                             }
                         />
                         <DropdownMenuContent side="top">
-                            <DropdownMenuItem className="cursor-pointer" onClick={logout}>
+                            <DropdownMenuItem render={<Link to="/auth/logout" />} className="cursor-pointer">
                                 <LogOut />
                                 {t('auth.logout.label')}
                             </DropdownMenuItem>

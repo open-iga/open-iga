@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/api/health": {
+    '/api/health': {
         parameters: {
             query?: never;
             header?: never;
@@ -12,7 +12,7 @@ export interface paths {
             cookie?: never;
         };
         /** @description health status of the service */
-        get: operations["health"];
+        get: operations['health'];
         put?: never;
         post?: never;
         delete?: never;
@@ -21,7 +21,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/{provider}": {
+    '/api/v1/auth/{provider}': {
         parameters: {
             query?: never;
             header?: never;
@@ -29,7 +29,7 @@ export interface paths {
             cookie?: never;
         };
         /** @description To initiate the authentication process with the specified OAuth provider. Provides the URL for the consent page and sets a state cookie for CSRF protection */
-        get: operations["authDetails"];
+        get: operations['authDetails'];
         put?: never;
         post?: never;
         delete?: never;
@@ -38,7 +38,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/{provider}/callback": {
+    '/api/v1/auth/{provider}/callback': {
         parameters: {
             query?: never;
             header?: never;
@@ -48,14 +48,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** @description Callback endpoint for handling OAuth provider responses after user authentication. Creates a session and sets the session id cookie with redirect path */
-        post: operations["authCallback"];
+        post: operations['authCallback'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/logout": {
+    '/api/v1/auth/logout': {
         parameters: {
             query?: never;
             header?: never;
@@ -65,14 +65,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** @description To logout from user account */
-        post: operations["logout"];
+        post: operations['logout'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/users": {
+    '/api/v1/users': {
         parameters: {
             query?: never;
             header?: never;
@@ -80,9 +80,60 @@ export interface paths {
             cookie?: never;
         };
         /** @description Get session id user details */
-        get: operations["getUserDetails"];
+        get: operations['getUserDetails'];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    '/api/v1/connectors/onboarding-requests': {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description To onboard managed-systems along with connectors */
+        post: operations['onboardConnector'];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    '/api/v1/connectors/onboarding-requests/{onboarding-id}': {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get the connector spec for an onboarding request by its id */
+        get: operations['getConnectorOnboardingRequestDetails'];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    '/api/v1/managed-systems': {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Onboard managed systems after connector validation */
+        post: operations['onboardManagedSystem'];
         delete?: never;
         options?: never;
         head?: never;
@@ -97,51 +148,78 @@ export interface components {
          * @description Supported Oauth Providers
          * @enum {string}
          */
-        "oauth-providers": "google";
+        'oauth-providers': 'google';
+        /**
+         * @description Role assigned to an identity
+         * @enum {string}
+         */
+        role: 'admin' | 'member';
     };
     responses: {
         /** @description Internal Server error */
-        "internal-server-error": {
+        'internal-server-error': {
             headers: {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": {
+                'application/json': {
                     message: string;
                 };
             };
         };
         /** @description Unprocessable Entity */
-        "unprocessable-entity-error": {
+        'unprocessable-entity-error': {
             headers: {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": {
+                'application/json': {
                     message: string;
                 };
             };
         };
         /** @description Bad Request */
-        "bad-request-error": {
+        'bad-request-error': {
             headers: {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": {
+                'application/json': {
                     message: string;
                 };
             };
         };
         /** @description Unauthenticated */
-        "unauthenticated-error": {
+        'unauthenticated-error': {
             headers: {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": {
+                'application/json': {
                     message: string;
                     redirect: string;
+                };
+            };
+        };
+        /** @description Not Found */
+        'not-found-error': {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                'application/json': {
+                    message: string;
+                };
+            };
+        };
+        /** @description Conflict */
+        'conflict-error': {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                'application/json': {
+                    message: string;
                 };
             };
         };
@@ -167,7 +245,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/plain": string;
+                    'text/plain': string;
                 };
             };
         };
@@ -177,7 +255,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                provider: components["schemas"]["oauth-providers"];
+                provider: components['schemas']['oauth-providers'];
             };
             cookie?: never;
         };
@@ -189,7 +267,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
+                    'application/json': {
                         redirect: string;
                     };
                 };
@@ -198,17 +276,17 @@ export interface operations {
             201: {
                 headers: {
                     /** @description CSRF state cookie */
-                    "Set-Cookie"?: string;
+                    'Set-Cookie'?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
+                    'application/json': {
                         /** Format: uri */
                         authCodeUrl: string;
                     };
                 };
             };
-            500: components["responses"]["internal-server-error"];
+            500: components['responses']['internal-server-error'];
         };
     };
     authCallback: {
@@ -221,7 +299,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                provider: components["schemas"]["oauth-providers"];
+                provider: components['schemas']['oauth-providers'];
             };
             cookie?: {
                 /** @description CSRF state cookie */
@@ -236,7 +314,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
+                    'application/json': {
                         redirect: string;
                     };
                 };
@@ -245,17 +323,17 @@ export interface operations {
             201: {
                 headers: {
                     /** @description Session cookie */
-                    "Set-Cookie"?: string;
+                    'Set-Cookie'?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
+                    'application/json': {
                         redirect: string;
                     };
                 };
             };
-            422: components["responses"]["unprocessable-entity-error"];
-            500: components["responses"]["internal-server-error"];
+            422: components['responses']['unprocessable-entity-error'];
+            500: components['responses']['internal-server-error'];
         };
     };
     logout: {
@@ -272,14 +350,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
+                    'application/json': {
                         message: string;
                     };
                 };
             };
-            400: components["responses"]["bad-request-error"];
-            401: components["responses"]["unauthenticated-error"];
-            500: components["responses"]["internal-server-error"];
+            400: components['responses']['bad-request-error'];
+            401: components['responses']['unauthenticated-error'];
+            500: components['responses']['internal-server-error'];
         };
     };
     getUserDetails: {
@@ -297,17 +375,247 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
+                    'application/json': {
                         firstName: string;
                         lastName: string;
                         email: string;
                         id: string;
-                        roles: string[];
+                        roles: components['schemas']['role'][];
                     };
                 };
             };
-            401: components["responses"]["unauthenticated-error"];
-            500: components["responses"]["internal-server-error"];
+            401: components['responses']['unauthenticated-error'];
+            500: components['responses']['internal-server-error'];
+        };
+    };
+    onboardConnector: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Details required to create a managed-system */
+        requestBody: {
+            content: {
+                'application/json': {
+                    connectorUrl: string;
+                    connectorSha: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Managed system has been successfully created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        onboardingId: string;
+                    };
+                };
+            };
+        };
+    };
+    getConnectorOnboardingRequestDetails: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Id returned when the onboarding request was created */
+                'onboarding-id': string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Validation result for the onboarding request */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** @enum {string} */
+                        status: 'pending' | 'success' | 'failed';
+                        /** @description Reason for failure; set when status is failed */
+                        error?: string;
+                        /** @description The connector spec; set when status is success */
+                        connectorSpec?: {
+                            name: string;
+                            description: string;
+                            config: {
+                                name: string;
+                                description: string;
+                                required: boolean;
+                            }[];
+                            allowedDomains: string[];
+                            actions: {
+                                [key: string]: {
+                                    create?: {
+                                        endpoints: {
+                                            method: string;
+                                            url: string;
+                                            description: string;
+                                        }[];
+                                        description: string;
+                                        config: {
+                                            name: string;
+                                            description: string;
+                                            required: boolean;
+                                        }[];
+                                    };
+                                    enable?: {
+                                        endpoints: {
+                                            method: string;
+                                            url: string;
+                                            description: string;
+                                        }[];
+                                        description: string;
+                                        config: {
+                                            name: string;
+                                            description: string;
+                                            required: boolean;
+                                        }[];
+                                    };
+                                    disable?: {
+                                        endpoints: {
+                                            method: string;
+                                            url: string;
+                                            description: string;
+                                        }[];
+                                        description: string;
+                                        config: {
+                                            name: string;
+                                            description: string;
+                                            required: boolean;
+                                        }[];
+                                    };
+                                    delete?: {
+                                        endpoints: {
+                                            method: string;
+                                            url: string;
+                                            description: string;
+                                        }[];
+                                        description: string;
+                                        config: {
+                                            name: string;
+                                            description: string;
+                                            required: boolean;
+                                        }[];
+                                    };
+                                    read?: {
+                                        endpoints: {
+                                            method: string;
+                                            url: string;
+                                            description: string;
+                                        }[];
+                                        description: string;
+                                        config: {
+                                            name: string;
+                                            description: string;
+                                            required: boolean;
+                                        }[];
+                                    };
+                                };
+                            };
+                            entitlements: {
+                                [key: string]: {
+                                    discover?: {
+                                        endpoints: {
+                                            method: string;
+                                            url: string;
+                                            description: string;
+                                        }[];
+                                        description: string;
+                                        config: {
+                                            name: string;
+                                            description: string;
+                                            required: boolean;
+                                        }[];
+                                    };
+                                    grant?: {
+                                        endpoints: {
+                                            method: string;
+                                            url: string;
+                                            description: string;
+                                        }[];
+                                        description: string;
+                                        config: {
+                                            name: string;
+                                            description: string;
+                                            required: boolean;
+                                        }[];
+                                    };
+                                    revoke?: {
+                                        endpoints: {
+                                            method: string;
+                                            url: string;
+                                            description: string;
+                                        }[];
+                                        description: string;
+                                        config: {
+                                            name: string;
+                                            description: string;
+                                            required: boolean;
+                                        }[];
+                                    };
+                                    read?: {
+                                        endpoints: {
+                                            method: string;
+                                            url: string;
+                                            description: string;
+                                        }[];
+                                        description: string;
+                                        config: {
+                                            name: string;
+                                            description: string;
+                                            required: boolean;
+                                        }[];
+                                    };
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+            401: components['responses']['unauthenticated-error'];
+            404: components['responses']['not-found-error'];
+            500: components['responses']['internal-server-error'];
+        };
+    };
+    onboardManagedSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @description Connector onboarding ID tat passed validation */
+                    connectorOnboardingId: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** @description Id of the onboarded managed system */
+                        id: string;
+                    };
+                };
+            };
+            401: components['responses']['unauthenticated-error'];
+            404: components['responses']['not-found-error'];
+            409: components['responses']['conflict-error'];
+            500: components['responses']['internal-server-error'];
         };
     };
 }
