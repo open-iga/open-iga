@@ -19,11 +19,14 @@ const AppSidebarHeader = () => {
                     <SidebarTrigger icon={<PanelLeftClose />} />
                 </>
             ) : (
-                <div className="group/favicon">
-                    <span className="group-hover/favicon:hidden">
+                <div className="relative group/favicon">
+                    <span className="group-hover/favicon:opacity-0">
                         <Favicon size={32} />
                     </span>
-                    <SidebarTrigger icon={<PanelLeftOpen />} className="hidden group-hover/favicon:flex" />
+                    <SidebarTrigger
+                        icon={<PanelLeftOpen />}
+                        className="pointer-events-none absolute inset-0 flex opacity-0 focus-visible:pointer-events-auto focus-visible:opacity-100 group-hover/favicon:pointer-events-auto group-hover/favicon:opacity-100"
+                    />
                 </div>
             )}
         </SidebarHeader>

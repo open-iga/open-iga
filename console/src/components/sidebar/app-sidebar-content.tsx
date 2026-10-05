@@ -50,7 +50,8 @@ export const AppSidebarContent = () => {
                                         'group-data-[collapsible=icon]:justify-center',
                                         isActive ? 'bg-sidebar-accent' : '',
                                     )}
-                                    render={<Link to={link} />}
+                                    tooltip={label}
+                                    render={<Link aria-label={label} to={link} />}
                                 >
                                     <Icon />
                                     <span className="group-data-[collapsible=icon]:hidden">{label}</span>

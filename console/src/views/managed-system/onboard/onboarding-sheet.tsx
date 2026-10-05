@@ -32,11 +32,13 @@ export const OnboardingSheet = () => {
             connectorUrl: '',
             connectorSha: '',
         },
-        onSubmit: ({ value, formApi }) => {
-            submit(value);
-            if (state === 'success') {
-                handleOpenChange(!open);
+        onSubmit: async ({ value, formApi }) => {
+            try {
+                await submit(value);
                 formApi.reset();
+                setOpen(false);
+            } catch {
+                // noop: failure is surfaced by the hook's onError toast; keep the sheet open to retry
             }
         },
     });

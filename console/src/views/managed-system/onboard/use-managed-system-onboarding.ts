@@ -56,5 +56,6 @@ export const useManagedSystemOnboarding = () => {
         return 'idle';
     };
 
-    return { error: onboarding.error?.message, state: resolveState(), submit: onboarding.mutate };
+    // mutateAsync so callers can await success (it rejects on error; onError still toasts).
+    return { error: onboarding.error?.message, state: resolveState(), submit: onboarding.mutateAsync };
 };
