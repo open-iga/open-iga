@@ -19,11 +19,16 @@ func (h *Handler) GetUserDetails(ctx context.Context, _ generated.GetUserDetails
 		roles = []string{}
 	}
 
+	rolesEnum := make([]generated.GetUserDetails200JSONResponseBodyRoles, len(roles))
+	for i, role := range roles {
+		rolesEnum[i] = generated.GetUserDetails200JSONResponseBodyRoles(role)
+	}
+
 	return generated.GetUserDetails200JSONResponse{
 		Email:     identity.Email,
 		FirstName: identity.FirstName,
 		Id:        identity.Id.String(),
 		LastName:  identity.LastName,
-		Roles:     roles,
+		Roles:     rolesEnum,
 	}, nil
 }

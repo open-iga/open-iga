@@ -20,7 +20,7 @@ get:
                             roles:
                                 type: array
                                 items:
-                                    type: string
+                                    $ref: '../schemas/role.yml'
                         required: [firstName, lastName, email, id, roles]
         401:
             $ref: '../components/responses/unauthenticated-error.yml'

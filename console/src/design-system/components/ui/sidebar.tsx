@@ -10,8 +10,7 @@ import { Input } from '@/design-system/components/ui/input';
 import { Separator } from '@/design-system/components/ui/separator';
 import { Skeleton } from '@/design-system/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/ui/tooltip';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/design-system/components/ui/sheet';
-import { PanelLeftIcon } from 'lucide-react';
+import type { ReactElement } from 'react';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -76,9 +75,10 @@ export const SidebarProvider = ({
     );
 
     // Helper to toggle the sidebar.
+    // Toggle drives `open` at every width so the collapsible rail (not a mobile Sheet) is used everywhere.
     const toggleSidebar = React.useCallback(() => {
-        return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
-    }, [isMobile, setOpen, setOpenMobile]);
+        return setOpen((open) => !open);
+    }, [setOpen]);
 
     // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
@@ -93,9 +93,14 @@ export const SidebarProvider = ({
         return () => globalThis.removeEventListener('keydown', handleKeyDown);
     }, [toggleSidebar]);
 
+    // Collapse to the icon rail on mobile widths, expand on desktop; internal setter so it isn't persisted to the cookie.
+    React.useEffect(() => {
+        _setOpen(!isMobile);
+    }, [isMobile]);
+
     // We add a state so that we can do data-state="expanded" or "collapsed".
     // This makes it easier to style the sidebar with Tailwind classes.
-    const state = open || openMobile ? 'expanded' : 'collapsed';
+    const state = open ? 'expanded' : 'collapsed';
 
     const contextValue = React.useMemo<SidebarContextProps>(
         () => ({
@@ -145,7 +150,7 @@ export const Sidebar = ({
     variant?: 'sidebar' | 'floating' | 'inset';
     collapsible?: 'offcanvas' | 'icon' | 'none';
 }) => {
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+    const { state } = useSidebar();
 
     if (collapsible === 'none') {
         return (
@@ -159,30 +164,9 @@ export const Sidebar = ({
         );
     }
 
-    if (isMobile) {
-        return (
-            <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-                <SheetContent
-                    data-sidebar="sidebar"
-                    data-slot="sidebar"
-                    data-mobile="true"
-                    className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
-                    style={{ width: SIDEBAR_WIDTH, maxWidth: SIDEBAR_WIDTH }}
-                    side={side}
-                >
-                    <SheetHeader className="sr-only">
-                        <SheetTitle>Sidebar</SheetTitle>
-                        <SheetDescription>Displays the mobile sidebar.</SheetDescription>
-                    </SheetHeader>
-                    <div className="flex h-full w-full flex-col">{children}</div>
-                </SheetContent>
-            </Sheet>
-        );
-    }
-
     return (
         <div
-            className="group peer hidden text-sidebar-foreground md:block"
+            className="group peer block text-sidebar-foreground"
             data-state={state}
             data-collapsible={state === 'collapsed' ? collapsible : ''}
             data-variant={variant}
@@ -205,7 +189,7 @@ export const Sidebar = ({
                 data-slot="sidebar-container"
                 data-side={side}
                 className={cn(
-                    'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex',
+                    'fixed inset-y-0 z-10 flex h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
                     // Adjust the padding for floating and inset variants.
                     variant === 'floating' || variant === 'inset'
                         ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]'
@@ -226,7 +210,14 @@ export const Sidebar = ({
     );
 };
 
-export const SidebarTrigger = ({ className, onClick, ...props }: React.ComponentProps<typeof Button>) => {
+export const SidebarTrigger = ({
+    className,
+    onClick,
+    icon,
+    ...props
+}: React.ComponentProps<typeof Button> & {
+    icon: ReactElement;
+}) => {
     const { toggleSidebar } = useSidebar();
 
     return (
@@ -242,7 +233,7 @@ export const SidebarTrigger = ({ className, onClick, ...props }: React.Component
             }}
             {...props}
         >
-            <PanelLeftIcon />
+            {icon}
             <span className="sr-only">Toggle Sidebar</span>
         </Button>
     );

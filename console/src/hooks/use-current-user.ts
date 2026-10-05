@@ -13,5 +13,6 @@ export const useCurrentUser = () => {
         error,
         firstName: data?.data?.firstName || 'FirstName',
         lastName: data?.data?.lastName || 'LastName',
+        roles: data?.data?.roles || [],
     };
 };

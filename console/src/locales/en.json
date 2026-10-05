@@ -21,6 +21,29 @@
             }
         }
     },
+    "managedSystems": {
+        "name": "Managed Systems",
+        "onboard": {
+            "name": "New Managed System",
+            "description": "Onboard Managed system using WASM connector",
+            "cancel": "Cancel",
+            "managedSystem": {
+                "name": "Managed System Name",
+                "description": "Name is auto-filled from connector spec after validation"
+            },
+            "connectorHash": {
+                "name": "Connector Hash",
+                "description": "SHA256 digest of the WASM"
+            },
+            "connectorUrl": {
+                "name": "Connector URL",
+                "description": "Connector URL to download the WASM. SSRF protection enabled"
+            },
+            "validateAndOnboard": "Validate & Onboard",
+            "validationError": "Failed to validate managed system",
+            "onboardingError": "Failed to onboard managed system"
+        }
+    },
     "termsOfUse": {
         "description": "This software is licensed under the terms described [here](https://github.com/open-iga/open-iga/blob/main/LICENSE).\n By using, modifying, or distributing it, you agree to comply with that license."
     },

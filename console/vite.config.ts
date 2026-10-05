@@ -6,9 +6,14 @@ import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
     resolve: {
+        // force a single React instance so base-ui subpath deps don't bundle their own copy
+        dedupe: ['react', 'react-dom'],
         alias: {
             '@': fileURLToPath(new URL('./src', import.meta.url)),
         },
+    },
+    optimizeDeps: {
+        include: ['@base-ui/react/collapsible'],
     },
     plugins: [
         tailwindcss(),
