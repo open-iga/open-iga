@@ -8,3 +8,12 @@ tasks:
     dev:
         cmds:
             - bun run dev
+    test:
+        cmds:
+            - bun run test
+    lint:
+        cmds:
+            - bunx oxlint -c ../oxlint.config.ts src
+    build:
+        cmds:
+            - bun run build

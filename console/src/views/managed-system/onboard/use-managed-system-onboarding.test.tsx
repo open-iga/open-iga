@@ -35,7 +35,7 @@ describe('useManagedSystemOnboarding', () => {
 
         const { result } = renderHook(useManagedSystemOnboarding, { wrapper: Wrapper });
 
-        result.current.submit({ connectorUrl: 'https://example.com/x.wasm', connectorSha: 'sha' });
+        result.current.submit({ connectorUrl: 'https://example.com/x.wasm', connectorSha: 'sha' }).catch(() => {});
 
         await waitFor(() => expect(result.current.state).toBe('success'));
 
@@ -55,7 +55,7 @@ describe('useManagedSystemOnboarding', () => {
 
         const { result } = renderHook(useManagedSystemOnboarding, { wrapper: Wrapper });
 
-        result.current.submit({ connectorUrl: 'https://example.com/x.wasm', connectorSha: 'sha' });
+        result.current.submit({ connectorUrl: 'https://example.com/x.wasm', connectorSha: 'sha' }).catch(() => {});
 
         await waitFor(() => expect(result.current.state).toBe('error'));
 
@@ -77,7 +77,7 @@ describe('useManagedSystemOnboarding', () => {
 
         const { result } = renderHook(useManagedSystemOnboarding, { wrapper: Wrapper });
 
-        result.current.submit({ connectorUrl: 'https://example.com/x.wasm', connectorSha: 'sha' });
+        result.current.submit({ connectorUrl: 'https://example.com/x.wasm', connectorSha: 'sha' }).catch(() => {});
 
         await waitFor(() => expect(result.current.state).toBe('error'));
 
@@ -93,7 +93,7 @@ describe('useManagedSystemOnboarding', () => {
 
         const { result } = renderHook(useManagedSystemOnboarding, { wrapper: Wrapper });
 
-        result.current.submit({ connectorUrl: 'https://example.com/x.wasm', connectorSha: 'sha' });
+        result.current.submit({ connectorUrl: 'https://example.com/x.wasm', connectorSha: 'sha' }).catch(() => {});
 
         await waitFor(() => expect(result.current.state).toBe('error'));
 
@@ -117,7 +117,7 @@ describe('useManagedSystemOnboarding', () => {
             const { result } = renderHook(useManagedSystemOnboarding, { wrapper: Wrapper });
 
             act(() => {
-                result.current.submit({ connectorUrl: 'https://example.com/x.wasm', connectorSha: 'sha' });
+                result.current.submit({ connectorUrl: 'https://example.com/x.wasm', connectorSha: 'sha' }).catch(() => {});
             });
 
             await act(async () => {
