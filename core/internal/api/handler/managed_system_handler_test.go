@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/open-iga/core/internal/contract"
@@ -82,5 +83,46 @@ func TestHandler_OnboardManagedSystem(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.JSONEq(t, `{"id": "system-id"}`, rec.Body.String())
+	})
+}
+
+func TestHandler_ListManagedSystems(t *testing.T) {
+	t.Run("returns 200 with the onboarded managed systems", func(t *testing.T) {
+		router, managedSystemServiceMock := setupRouterWithMockManagedSystemService(t)
+		createdAt := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+		managedSystemServiceMock.EXPECT().ListManagedSystems(gomock.Any()).Return([]*domain.ManagedSystem{
+			{
+				Id:            "system-id",
+				Name:          "aws",
+				ConnectorUrl:  "https://example.com/aws.wasm",
+				ConnectorHash: "hash",
+				CreatedAt:     createdAt,
+			},
+		}, nil)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/managed-systems", nil)
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.JSONEq(t, `[{
+			"id": "system-id",
+			"name": "aws",
+			"connectorUrl": "https://example.com/aws.wasm",
+			"connectorHash": "hash",
+			"createdAt": "2026-01-02T03:04:05Z"
+		}]`, rec.Body.String())
+	})
+
+	t.Run("returns 500 when listing fails", func(t *testing.T) {
+		router, managedSystemServiceMock := setupRouterWithMockManagedSystemService(t)
+		managedSystemServiceMock.EXPECT().ListManagedSystems(gomock.Any()).Return(nil, errors.New("failed to list"))
+
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/managed-systems", nil)
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+		assert.JSONEq(t, `{"message": "failed to list"}`, rec.Body.String())
 	})
 }

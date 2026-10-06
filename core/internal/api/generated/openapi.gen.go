@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
@@ -154,6 +155,9 @@ type ServerInterface interface {
 	// (GET /api/v1/connectors/onboarding-requests/{onboarding-id})
 	GetConnectorOnboardingRequestDetails(w http.ResponseWriter, r *http.Request, onboardingId string)
 
+	// (GET /api/v1/managed-systems)
+	ListManagedSystems(w http.ResponseWriter, r *http.Request)
+
 	// (POST /api/v1/managed-systems)
 	OnboardManagedSystem(w http.ResponseWriter, r *http.Request)
 
@@ -192,6 +196,11 @@ func (_ Unimplemented) OnboardConnector(w http.ResponseWriter, r *http.Request) 
 
 // (GET /api/v1/connectors/onboarding-requests/{onboarding-id})
 func (_ Unimplemented) GetConnectorOnboardingRequestDetails(w http.ResponseWriter, r *http.Request, onboardingId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/managed-systems)
+func (_ Unimplemented) ListManagedSystems(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -378,6 +387,20 @@ func (siw *ServerInterfaceWrapper) GetConnectorOnboardingRequestDetails(w http.R
 	handler.ServeHTTP(w, r)
 }
 
+// ListManagedSystems operation middleware
+func (siw *ServerInterfaceWrapper) ListManagedSystems(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListManagedSystems(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // OnboardManagedSystem operation middleware
 func (siw *ServerInterfaceWrapper) OnboardManagedSystem(w http.ResponseWriter, r *http.Request) {
 
@@ -536,6 +559,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/connectors/onboarding-requests/{onboarding-id}", wrapper.GetConnectorOnboardingRequestDetails)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/managed-systems", wrapper.ListManagedSystems)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/managed-systems", wrapper.OnboardManagedSystem)
@@ -888,6 +914,66 @@ func (response GetConnectorOnboardingRequestDetails500JSONResponse) VisitGetConn
 	return err
 }
 
+type ListManagedSystemsRequestObject struct {
+}
+
+type ListManagedSystemsResponseObject interface {
+	VisitListManagedSystemsResponse(w http.ResponseWriter) error
+}
+
+type ListManagedSystems200JSONResponse []struct {
+	ConnectorHash string    `json:"connectorHash"`
+	ConnectorUrl  string    `json:"connectorUrl"`
+	CreatedAt     time.Time `json:"createdAt"`
+	Id            string    `json:"id"`
+	Name          string    `json:"name"`
+}
+
+func (response ListManagedSystems200JSONResponse) VisitListManagedSystemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListManagedSystems401JSONResponse struct {
+	Message  string `json:"message"`
+	Redirect string `json:"redirect"`
+}
+
+func (response ListManagedSystems401JSONResponse) VisitListManagedSystemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListManagedSystems500JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response ListManagedSystems500JSONResponse) VisitListManagedSystemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type OnboardManagedSystemRequestObject struct {
 	Body *OnboardManagedSystemJSONRequestBody
 }
@@ -1058,6 +1144,9 @@ type StrictServerInterface interface {
 
 	// (GET /api/v1/connectors/onboarding-requests/{onboarding-id})
 	GetConnectorOnboardingRequestDetails(ctx context.Context, request GetConnectorOnboardingRequestDetailsRequestObject) (GetConnectorOnboardingRequestDetailsResponseObject, error)
+
+	// (GET /api/v1/managed-systems)
+	ListManagedSystems(ctx context.Context, request ListManagedSystemsRequestObject) (ListManagedSystemsResponseObject, error)
 
 	// (POST /api/v1/managed-systems)
 	OnboardManagedSystem(ctx context.Context, request OnboardManagedSystemRequestObject) (OnboardManagedSystemResponseObject, error)
@@ -1253,6 +1342,30 @@ func (sh *strictHandler) GetConnectorOnboardingRequestDetails(w http.ResponseWri
 	}
 }
 
+// ListManagedSystems operation middleware
+func (sh *strictHandler) ListManagedSystems(w http.ResponseWriter, r *http.Request) {
+	var request ListManagedSystemsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListManagedSystems(ctx, request.(ListManagedSystemsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListManagedSystems")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListManagedSystemsResponseObject); ok {
+		if err := validResponse.VisitListManagedSystemsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // OnboardManagedSystem operation middleware
 func (sh *strictHandler) OnboardManagedSystem(w http.ResponseWriter, r *http.Request) {
 	var request OnboardManagedSystemRequestObject
@@ -1313,36 +1426,38 @@ func (sh *strictHandler) GetUserDetails(w http.ResponseWriter, r *http.Request) 
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
+	"P+o/Btqj8eOced7t/hcAAP//",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

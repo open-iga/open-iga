@@ -193,6 +193,21 @@ func (m *MockManagedSystemService) EXPECT() *MockManagedSystemServiceMockRecorde
 	return m.recorder
 }
 
+// ListManagedSystems mocks base method.
+func (m *MockManagedSystemService) ListManagedSystems(ctx context.Context) ([]*domain.ManagedSystem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListManagedSystems", ctx)
+	ret0, _ := ret[0].([]*domain.ManagedSystem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListManagedSystems indicates an expected call of ListManagedSystems.
+func (mr *MockManagedSystemServiceMockRecorder) ListManagedSystems(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListManagedSystems", reflect.TypeOf((*MockManagedSystemService)(nil).ListManagedSystems), ctx)
+}
+
 // Onboard mocks base method.
 func (m *MockManagedSystemService) Onboard(ctx context.Context, connectorOnboardId string) (*domain.ManagedSystem, error) {
 	m.ctrl.T.Helper()

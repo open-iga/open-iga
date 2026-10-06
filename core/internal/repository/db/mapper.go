@@ -30,5 +30,6 @@ func (m *ManagedSystem) ToDomain() *domain.ManagedSystem {
 		Name:          m.Name,
 		ConnectorUrl:  m.ConnectorUrl,
 		ConnectorHash: m.ConnectorHash,
+		CreatedAt:     m.CreatedAt.Time,
 	}
 }

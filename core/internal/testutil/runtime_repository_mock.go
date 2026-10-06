@@ -240,3 +240,18 @@ func (mr *MockManagedSystemRepositoryMockRecorder) CreateManagedSystem(ctx, name
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateManagedSystem", reflect.TypeOf((*MockManagedSystemRepository)(nil).CreateManagedSystem), ctx, name, connectorUrl, connectorHash)
 }
+
+// ListManagedSystems mocks base method.
+func (m *MockManagedSystemRepository) ListManagedSystems(ctx context.Context) ([]*domain.ManagedSystem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListManagedSystems", ctx)
+	ret0, _ := ret[0].([]*domain.ManagedSystem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListManagedSystems indicates an expected call of ListManagedSystems.
+func (mr *MockManagedSystemRepositoryMockRecorder) ListManagedSystems(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListManagedSystems", reflect.TypeOf((*MockManagedSystemRepository)(nil).ListManagedSystems), ctx)
+}

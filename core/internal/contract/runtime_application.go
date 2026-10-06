@@ -22,6 +22,7 @@ type ConnectorService interface {
 
 type ManagedSystemService interface {
 	Onboard(ctx context.Context, connectorOnboardId string) (*domain.ManagedSystem, error)
+	ListManagedSystems(ctx context.Context) ([]*domain.ManagedSystem, error)
 }
 
 type RuntimeApplication struct {
