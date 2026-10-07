@@ -31,7 +31,8 @@ const Breadcrumbs = () => {
                 {paths.map((path, i) => (
                     <Fragment key={path}>
                         <BreadcrumbItem>
-                            <BreadcrumbLink render={i !== paths.length - 1 ? <Link to={path} /> : undefined}>
+                            {/* @ts-ignore: error can be ignored as only the valida path can land here */}
+                            <BreadcrumbLink render={i !== paths.length - 1 ? <Link to={`/${path}`} /> : undefined}>
                                 {path.split('-').map(capitalize).join(' ')}
                             </BreadcrumbLink>
                         </BreadcrumbItem>

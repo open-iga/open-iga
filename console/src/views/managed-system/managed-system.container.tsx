@@ -10,7 +10,11 @@ export const ManagedSystemContainer = () => {
     const { t } = useTranslation();
     const query = useQuery({
         queryKey: ['managed-systems'],
-        queryFn: () => fetchClient.GET('/api/v1/managed-systems'),
+        queryFn: async () => {
+            const { data, error } = await fetchClient.GET('/api/v1/managed-systems');
+            if (error) throw error;
+            return { data };
+        },
     });
 
     const managedSystems = query.data?.data ?? [];

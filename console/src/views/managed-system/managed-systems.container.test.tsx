@@ -84,6 +84,25 @@ describe('<ManagedSystemContainer />', () => {
         );
     });
 
+    it('should return error state when the response is a non-2xx status', async () => {
+        mockServer.use(
+            mockHttpHandlers.get('/api/v1/managed-systems', async () => {
+                await delay(50);
+                return HttpResponse.json({ message: 'boom' }, { status: 500 });
+            }),
+        );
+
+        render(<ManagedSystemContainer />, { wrapper: createWrapper() });
+
+        expect(dataTableProps).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'loading' }));
+
+        await waitFor(() =>
+            expect(dataTableProps).toHaveBeenLastCalledWith(
+                expect.objectContaining({ status: 'error', errorMessage: 'error.generic' }),
+            ),
+        );
+    });
+
     it('should return error when the query fails', async () => {
         mockServer.use(
             mockHttpHandlers.get('/api/v1/managed-systems', async () => {
