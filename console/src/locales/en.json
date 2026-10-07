@@ -23,14 +23,15 @@
     },
     "managedSystems": {
         "name": "Managed Systems",
+        "description": "Managed systems are the external applications OpenIGA governs — such as AWS or Keycloak. Each is onboarded with a connector that defines what OpenIGA can do, letting it manage the accounts and entitlements within that system from one place.",
+        "emptyManagedSystem": {
+            "name": "No managed systems onboarded yet",
+            "description": "Click Onboard to add it and extend what OpenIGA can govern."
+        },
         "onboard": {
             "name": "New Managed System",
             "description": "Onboard Managed system using WASM connector",
             "cancel": "Cancel",
-            "managedSystem": {
-                "name": "Managed System Name",
-                "description": "Name is auto-filled from connector spec after validation"
-            },
             "connectorHash": {
                 "name": "Connector Hash",
                 "description": "SHA256 digest of the WASM"
@@ -41,7 +42,8 @@
             },
             "validateAndOnboard": "Validate & Onboard",
             "validationError": "Failed to validate managed system",
-            "onboardingError": "Failed to onboard managed system"
+            "onboardingError": "Failed to onboard managed system",
+            "createAt": "Created At"
         }
     },
     "termsOfUse": {
