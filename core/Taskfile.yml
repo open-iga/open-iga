@@ -41,3 +41,6 @@ tasks:
             - task: generate:test-mocks
         cmds:
             - go test ./...
+    build:
+        cmds:
+            - go build ./...

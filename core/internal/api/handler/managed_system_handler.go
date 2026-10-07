@@ -27,3 +27,21 @@ func (h *Handler) OnboardManagedSystem(ctx context.Context, request generated.On
 
 	return generated.OnboardManagedSystem200JSONResponse{Id: managedSystem.Id}, nil
 }
+
+func (h *Handler) ListManagedSystems(ctx context.Context, _ generated.ListManagedSystemsRequestObject) (generated.ListManagedSystemsResponseObject, error) {
+	managedSystems, err := h.application.ManagedSystemService.ListManagedSystems(ctx)
+	if err != nil {
+		return generated.ListManagedSystems500JSONResponse{Message: err.Error()}, nil
+	}
+
+	response := make(generated.ListManagedSystems200JSONResponse, len(managedSystems))
+	for i, managedSystem := range managedSystems {
+		response[i].Id = managedSystem.Id
+		response[i].Name = managedSystem.Name
+		response[i].ConnectorUrl = managedSystem.ConnectorUrl
+		response[i].ConnectorHash = managedSystem.ConnectorHash
+		response[i].CreatedAt = managedSystem.CreatedAt
+	}
+
+	return response, nil
+}

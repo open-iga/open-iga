@@ -40,3 +40,17 @@ func (m *ManagedSystemRepository) CreateManagedSystem(ctx context.Context, name 
 
 	return managedSystem.ToDomain(), nil
 }
+
+func (m *ManagedSystemRepository) ListManagedSystems(ctx context.Context) ([]*domain.ManagedSystem, error) {
+	rows, err := m.queries.ListManagedSystems(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list managed systems: %w", err)
+	}
+
+	managedSystems := make([]*domain.ManagedSystem, len(rows))
+	for i := range rows {
+		managedSystems[i] = rows[i].ToDomain()
+	}
+
+	return managedSystems, nil
+}

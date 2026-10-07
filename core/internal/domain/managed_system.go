@@ -1,6 +1,9 @@
 package domain
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 var (
 	ErrConnectorNotFound       = errors.New("connector not found")
@@ -13,4 +16,5 @@ type ManagedSystem struct {
 	Name          string
 	ConnectorUrl  string
 	ConnectorHash string
+	CreatedAt     time.Time
 }

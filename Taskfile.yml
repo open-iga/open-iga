@@ -13,3 +13,9 @@ tasks:
         deps: [task: core:dev, task: console:dev]
     setup:
         deps: [task: core:setup, task: console:setup]
+    test:
+        deps: [task: core:test, task: console:test]
+    lint:
+        deps: [task: core:lint, task: console:lint]
+    build:
+        deps: [task: core:build, task: console:build]

@@ -39,3 +39,12 @@ func (m *ManagedSystemService) Onboard(ctx context.Context, connectorOnboardId s
 
 	return managedSystem, nil
 }
+
+func (m *ManagedSystemService) ListManagedSystems(ctx context.Context) ([]*domain.ManagedSystem, error) {
+	managedSystems, err := m.managedSystemRepository.ListManagedSystems(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list managed systems: %w", err)
+	}
+
+	return managedSystems, nil
+}

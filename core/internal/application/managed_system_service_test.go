@@ -85,3 +85,26 @@ func TestManagedSystemService_Onboard(t *testing.T) {
 		assert.ErrorContains(t, err, "db down")
 	})
 }
+
+func TestManagedSystemService_ListManagedSystems(t *testing.T) {
+	t.Run("returns the managed systems from the repository", func(t *testing.T) {
+		svc, _, repo := setupManagedSystemServiceWithMocks(t)
+		want := []*domain.ManagedSystem{{Id: "a", Name: "aws"}, {Id: "b", Name: "gcp"}}
+		repo.EXPECT().ListManagedSystems(gomock.Any()).Return(want, nil)
+
+		got, err := svc.ListManagedSystems(context.TODO())
+
+		assert.NoError(t, err)
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("propagates repository errors", func(t *testing.T) {
+		svc, _, repo := setupManagedSystemServiceWithMocks(t)
+		repo.EXPECT().ListManagedSystems(gomock.Any()).Return(nil, errors.New("db down"))
+
+		got, err := svc.ListManagedSystems(context.TODO())
+
+		assert.Nil(t, got)
+		assert.ErrorContains(t, err, "db down")
+	})
+}

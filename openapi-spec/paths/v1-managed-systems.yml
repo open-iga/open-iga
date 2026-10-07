@@ -1,3 +1,32 @@
+get:
+    operationId: listManagedSystems
+    description: List the onboarded managed systems
+    responses:
+        200:
+            description: Onboarded managed systems
+            content:
+                'application/json':
+                    schema:
+                        type: array
+                        items:
+                            type: object
+                            properties:
+                                id:
+                                    type: string
+                                name:
+                                    type: string
+                                connectorUrl:
+                                    type: string
+                                connectorHash:
+                                    type: string
+                                createdAt:
+                                    type: string
+                                    format: date-time
+                            required: [id, name, connectorUrl, connectorHash, createdAt]
+        401:
+            $ref: '../components/responses/unauthenticated-error.yml'
+        500:
+            $ref: '../components/responses/internal-server-error.yml'
 post:
     operationId: onboardManagedSystem
     description: Onboard managed systems after connector validation
