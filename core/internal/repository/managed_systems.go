@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -24,11 +25,17 @@ func NewManagedSystemRepository(queries *db.Queries, logger *slog.Logger) *Manag
 	return &ManagedSystemRepository{queries: queries, logger: logger}
 }
 
-func (m *ManagedSystemRepository) CreateManagedSystem(ctx context.Context, name string, connectorUrl string, connectorHash string) (*domain.ManagedSystem, error) {
+func (m *ManagedSystemRepository) CreateManagedSystem(ctx context.Context, name string, connectorUrl string, connectorHash string, spec *domain.ConnectorSpec) (*domain.ManagedSystem, error) {
+	specJSON, err := json.Marshal(spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal connector spec: %w", err)
+	}
+
 	managedSystem, err := m.queries.CreateManagedSystem(ctx, db.CreateManagedSystemParams{
 		Name:          name,
 		ConnectorUrl:  connectorUrl,
 		ConnectorHash: connectorHash,
+		ConnectorSpec: specJSON,
 	})
 	if err != nil {
 		var pgErr *pgconn.PgError

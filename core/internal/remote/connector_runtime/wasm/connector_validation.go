@@ -38,8 +38,12 @@ func NewConnectorRuntime(logger *slog.Logger) *ConnectorRuntime {
 	return &ConnectorRuntime{logger: logger, httpClient: newSecureClient()}
 }
 
+// maxRedirects bounds redirect following; GitHub release URLs 302 to a signed CDN host.
+const maxRedirects = 5
+
 // newSecureClient blocks non-public addresses at dial time (SSRF guard, incl. DNS
-// rebinding since the resolved IP is checked) and refuses redirects.
+// rebinding since the resolved IP is checked). Redirects are followed but kept on
+// https and re-dialed through the same guard, so every hop is SSRF-checked.
 func newSecureClient() *http.Client {
 	dialer := &net.Dialer{
 		Timeout: 10 * time.Second,
@@ -58,8 +62,14 @@ func newSecureClient() *http.Client {
 	return &http.Client{
 		Timeout:   fetchTimeout,
 		Transport: &http.Transport{DialContext: dialer.DialContext},
-		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
-			return errors.New("redirects are not allowed")
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= maxRedirects {
+				return errors.New("too many redirects")
+			}
+			if req.URL.Scheme != "https" {
+				return errors.New("redirect to non-https blocked")
+			}
+			return nil
 		},
 	}
 }

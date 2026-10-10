@@ -10,25 +10,32 @@ import (
 )
 
 const createManagedSystem = `-- name: CreateManagedSystem :one
-INSERT INTO managed_system(name, connector_url, connector_hash)
-VALUES ($1, $2, $3)
-RETURNING id, name, connector_url, connector_hash, created_at, updated_at
+INSERT INTO managed_system(name, connector_url, connector_hash, connector_spec)
+VALUES ($1, $2, $3, $4)
+RETURNING id, name, connector_url, connector_hash, connector_spec, created_at, updated_at
 `
 
 type CreateManagedSystemParams struct {
 	Name          string
 	ConnectorUrl  string
 	ConnectorHash string
+	ConnectorSpec []byte
 }
 
 func (q *Queries) CreateManagedSystem(ctx context.Context, arg CreateManagedSystemParams) (ManagedSystem, error) {
-	row := q.db.QueryRow(ctx, createManagedSystem, arg.Name, arg.ConnectorUrl, arg.ConnectorHash)
+	row := q.db.QueryRow(ctx, createManagedSystem,
+		arg.Name,
+		arg.ConnectorUrl,
+		arg.ConnectorHash,
+		arg.ConnectorSpec,
+	)
 	var i ManagedSystem
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.ConnectorUrl,
 		&i.ConnectorHash,
+		&i.ConnectorSpec,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -36,7 +43,7 @@ func (q *Queries) CreateManagedSystem(ctx context.Context, arg CreateManagedSyst
 }
 
 const listManagedSystems = `-- name: ListManagedSystems :many
-SELECT id, name, connector_url, connector_hash, created_at, updated_at
+SELECT id, name, connector_url, connector_hash, connector_spec, created_at, updated_at
 FROM managed_system
 ORDER BY created_at DESC
 `
@@ -55,6 +62,7 @@ func (q *Queries) ListManagedSystems(ctx context.Context) ([]ManagedSystem, erro
 			&i.Name,
 			&i.ConnectorUrl,
 			&i.ConnectorHash,
+			&i.ConnectorSpec,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

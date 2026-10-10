@@ -85,7 +85,6 @@ export const DataTable = <TData extends RowData>(props: DataTableProps<TData>) =
                                     {header.column.getCanResize() && (
                                         <button
                                             type="button"
-                                            aria-label="Resize column"
                                             onMouseDown={header.getResizeHandler()}
                                             onTouchStart={header.getResizeHandler()}
                                             className="absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none select-none border-0 bg-transparent p-0 hover:bg-primary/30"

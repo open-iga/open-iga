@@ -103,6 +103,7 @@ type ManagedSystem struct {
 	Name          string
 	ConnectorUrl  string
 	ConnectorHash string
+	ConnectorSpec []byte
 	CreatedAt     pgtype.Timestamptz
 	UpdatedAt     pgtype.Timestamptz
 }

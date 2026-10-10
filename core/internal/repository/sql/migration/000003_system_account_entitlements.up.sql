@@ -4,6 +4,7 @@ CREATE TABLE managed_system (
     name            VARCHAR(255) UNIQUE NOT NULL,
     connector_url   TEXT                NOT NULL,
     connector_hash  VARCHAR(64)         NOT NULL,
+    connector_spec  JSONB               NOT NULL,
     created_at      TIMESTAMPTZ(6)      DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMPTZ(6)      DEFAULT CURRENT_TIMESTAMP
 );

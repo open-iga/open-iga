@@ -23,7 +23,7 @@
     },
     "managedSystems": {
         "name": "Managed Systems",
-        "description": "Managed systems are the external applications OpenIGA governs — such as AWS or Keycloak. Each is onboarded with a connector that defines what OpenIGA can do, letting it manage the accounts and entitlements within that system from one place.",
+        "description": "External systems Open IGA governs through sandboxed WASM connectors",
         "emptyManagedSystem": {
             "name": "No managed systems onboarded yet",
             "description": "Click Onboard to add it and extend what OpenIGA can govern."
@@ -40,10 +40,46 @@
                 "name": "Connector URL",
                 "description": "Connector URL to download the WASM. SSRF protection enabled"
             },
-            "validateAndOnboard": "Validate & Onboard",
+            "validate": "Validate",
+            "reject": "Reject",
+            "approveAndOnboard": "Approve & Onboard",
             "validationError": "Failed to validate managed system",
             "onboardingError": "Failed to onboard managed system",
-            "createAt": "Created At"
+            "onboardedTitle": "Managed system onboarded",
+            "onboardedDescription": "{{name}} is now governed by OpenIGA.",
+            "createAt": "Created At",
+            "steps": {
+                "validate": "Validate",
+                "review": "Review",
+                "onboard": "Onboard"
+            },
+            "review": {
+                "heading": "{{name}} passed validation",
+                "description": "Review the capabilities this connector will be granted before onboarding it."
+            },
+            "capability": {
+                "required": "Required",
+                "optional": "Optional",
+                "operationCount_one": "{{count}} operation",
+                "operationCount_other": "{{count}} operations",
+                "requiredConfig": "Required configuration",
+                "accountActions": "Account actions",
+                "entitlementOps": "Entitlement operations",
+                "egress": {
+                    "title": "Allowed network egress",
+                    "hint": "The connector may only reach these domains."
+                },
+                "stats": {
+                    "domains": "Domains",
+                    "operations": "Operations",
+                    "endpoints": "Endpoints",
+                    "config": "Config keys"
+                },
+                "kind": {
+                    "account": "account",
+                    "entitlement": "entitlement"
+                }
+            }
         }
     },
     "termsOfUse": {
