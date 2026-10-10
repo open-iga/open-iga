@@ -16,13 +16,15 @@ var (
 	repository   *contract.Repository
 	conn         *pgxpool.Pool
 	pgConnString string
+	pgContainer  *postgres.PostgresContainer
 )
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 	var code int
+	var err error
 
-	pgContainer, err := setupDB(ctx)
+	pgContainer, err = setupDB(ctx)
 	defer func() {
 		teardownDB(ctx, pgContainer)
 		os.Exit(code)

@@ -3,21 +3,30 @@ package repository
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
 
-// fetchPGDump
-func fetchPGDump(connString string, t *testing.T) string {
+// fetchPGDump runs pg_dump inside the Postgres container so the client always
+// matches the server version; both dbs live on the same container server.
+func fetchPGDump(ctx context.Context, dbName string, t *testing.T) string {
 	t.Helper()
-	output, err := exec.Command("pg_dump", "--schema-only", "--no-owner", "--no-acl", "--schema=public", "-T", "schema_migrations", connString).Output()
+	code, reader, err := pgContainer.Exec(ctx,
+		[]string{"pg_dump", "--schema-only", "--no-owner", "--no-acl", "--schema=public", "-T", "schema_migrations", "-U", "test", dbName},
+		tcexec.Multiplexed(),
+	)
+	if err != nil || code != 0 {
+		t.Fatalf("pg_dump failed (exit %d): %v", code, err)
+	}
+	output, err := io.ReadAll(reader)
 	if err != nil {
-		t.Fatalf("pg_dump failed: %v", err)
+		t.Fatalf("failed to read pg_dump output: %v", err)
 	}
 
 	lines := strings.Split(string(output), "\n")
@@ -56,7 +65,7 @@ func TestMigration(t *testing.T) {
 			t.Fatalf("failed to apply expected schema: %v", err)
 		}
 
-		actual, expected := fetchPGDump(pgConnString, t), fetchPGDump(expectedConnString, t)
+		actual, expected := fetchPGDump(ctx, "open_iga", t), fetchPGDump(ctx, "migration_expected", t)
 		assert.Equal(t, expected, actual)
 	})
 }
