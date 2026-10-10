@@ -37,6 +37,9 @@ jobs:
               with:
                   version: 3.x
                   repo-token: ${{ secrets.GITHUB_TOKEN }}
-            - run: task core:lint
+            - uses: golangci/golangci-lint-action@v9
+              with:
+                  version: v2.12.2
+                  working-directory: core
             - run: task core:build
             - run: task core:test
