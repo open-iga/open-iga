@@ -85,7 +85,9 @@ describe('useManagedSystemOnboarding', () => {
 
         const { result } = renderHook(useManagedSystemOnboarding, { wrapper: Wrapper });
 
-        result.current.validate({ connectorUrl: 'https://example.com/x.wasm', connectorSha: 'sha256:abc123' }).catch(() => {});
+        result.current
+            .validate({ connectorUrl: 'https://example.com/x.wasm', connectorSha: 'sha256:abc123' })
+            .catch(() => {});
 
         await waitFor(() => expect(result.current.phase).toBe('review'));
         expect(sentBody?.connectorSha).toBe('abc123');
@@ -93,7 +95,9 @@ describe('useManagedSystemOnboarding', () => {
 
     it('should error when creating the onboarding request fails', async () => {
         mockServer.use(
-            mockHttpHandlers.post('/api/v1/connectors/onboarding-requests', () => HttpResponse.json(null, { status: 500 })),
+            mockHttpHandlers.post('/api/v1/connectors/onboarding-requests', () =>
+                HttpResponse.json(null, { status: 500 }),
+            ),
         );
 
         const { result } = renderHook(useManagedSystemOnboarding, { wrapper: Wrapper });

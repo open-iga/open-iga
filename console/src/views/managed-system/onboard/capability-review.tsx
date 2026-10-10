@@ -52,7 +52,15 @@ const OperationRow = ({ name, op }: { name: string; op: Operation }) => (
     </li>
 );
 
-const OperationGroup = ({ title, kind, group }: { title: string; kind: string; group: Record<string, Operation | undefined> }) => {
+const OperationGroup = ({
+    title,
+    kind,
+    group,
+}: {
+    title: string;
+    kind: string;
+    group: Record<string, Operation | undefined>;
+}) => {
     const { t } = useTranslation();
     const ops = definedOps(group);
     return (
@@ -79,7 +87,11 @@ const CapabilitySummary = ({ spec }: { spec: ConnectorSpec }) => {
     const { t } = useTranslation();
     const { operations, endpoints } = countOps(spec);
     const stats = [
-        { id: 'domains', label: t('managedSystems.onboard.capability.stats.domains'), value: spec.allowedDomains.length },
+        {
+            id: 'domains',
+            label: t('managedSystems.onboard.capability.stats.domains'),
+            value: spec.allowedDomains.length,
+        },
         { id: 'operations', label: t('managedSystems.onboard.capability.stats.operations'), value: operations },
         { id: 'endpoints', label: t('managedSystems.onboard.capability.stats.endpoints'), value: endpoints },
         { id: 'config', label: t('managedSystems.onboard.capability.stats.config'), value: spec.config.length },
@@ -96,7 +108,17 @@ const CapabilitySummary = ({ spec }: { spec: ConnectorSpec }) => {
     );
 };
 
-const Section = ({ icon, title, hint, children }: { icon: React.ReactNode; title: string; hint?: string; children: React.ReactNode }) => (
+const Section = ({
+    icon,
+    title,
+    hint,
+    children,
+}: {
+    icon: React.ReactNode;
+    title: string;
+    hint?: string;
+    children: React.ReactNode;
+}) => (
     <section className="flex flex-col gap-2">
         <h3 className="flex items-center gap-2 text-sm font-medium">
             {icon}
@@ -128,7 +150,10 @@ export const CapabilityReview = ({ spec }: { spec: ConnectorSpec }) => {
                 </ul>
             </Section>
 
-            <Section icon={<KeyRound className={iconCls} aria-hidden />} title={t('managedSystems.onboard.capability.requiredConfig')}>
+            <Section
+                icon={<KeyRound className={iconCls} aria-hidden />}
+                title={t('managedSystems.onboard.capability.requiredConfig')}
+            >
                 <ul className="divide-y overflow-hidden rounded-lg border">
                     {spec.config.map((c) => (
                         <li key={c.name} className="flex items-center justify-between gap-3 px-3 py-2">
@@ -146,7 +171,10 @@ export const CapabilityReview = ({ spec }: { spec: ConnectorSpec }) => {
                 </ul>
             </Section>
 
-            <Section icon={<UserCog className={iconCls} aria-hidden />} title={t('managedSystems.onboard.capability.accountActions')}>
+            <Section
+                icon={<UserCog className={iconCls} aria-hidden />}
+                title={t('managedSystems.onboard.capability.accountActions')}
+            >
                 {Object.entries(spec.actions).map(([resource, group]) => (
                     <OperationGroup
                         key={resource}
@@ -157,7 +185,10 @@ export const CapabilityReview = ({ spec }: { spec: ConnectorSpec }) => {
                 ))}
             </Section>
 
-            <Section icon={<Layers className={iconCls} aria-hidden />} title={t('managedSystems.onboard.capability.entitlementOps')}>
+            <Section
+                icon={<Layers className={iconCls} aria-hidden />}
+                title={t('managedSystems.onboard.capability.entitlementOps')}
+            >
                 {Object.entries(spec.entitlements).map(([resource, group]) => (
                     <OperationGroup
                         key={resource}

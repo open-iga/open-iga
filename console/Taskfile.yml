@@ -16,7 +16,10 @@ tasks:
             - bun run test
     lint:
         cmds:
-            - bunx oxlint -c ../oxlint.config.ts src
+            - bun run lint
+    pretty:
+        cmds:
+            - bun run pretty
     build:
         cmds:
             - bun run build

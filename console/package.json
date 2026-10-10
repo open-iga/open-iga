@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "generate:openapi-fetch": "bunx openapi-typescript ../openapi-spec/openapi.yml -o src/utils/openapi/schema.d.ts",
     "typecheck": "tsc -b --force",
+    "lint": "oxlint -c ../oxlint.config.ts src",
+    "pretty": "oxfmt src",
     "test": "vitest run"
   },
   "dependencies": {

@@ -36,7 +36,12 @@ const Stepper = ({ phase }: { phase: OnboardingPhase }) => {
         <ol className="mt-3 flex items-center gap-2 text-xs">
             {STEPS.map((step, i) => (
                 <li key={step} className="flex items-center gap-2">
-                    <span className={cn('flex items-center gap-1.5', i <= current ? 'text-foreground' : 'text-muted-foreground')}>
+                    <span
+                        className={cn(
+                            'flex items-center gap-1.5',
+                            i <= current ? 'text-foreground' : 'text-muted-foreground',
+                        )}
+                    >
                         <span
                             className={cn(
                                 'flex size-4 items-center justify-center rounded-full border text-[10px] tabular-nums',
@@ -214,7 +219,9 @@ export const OnboardingSheet = () => {
                                     }
                                 />
                                 <form.Subscribe
-                                    selector={(s) => s.values.connectorUrl.trim() !== '' && s.values.connectorSha.trim() !== ''}
+                                    selector={(s) =>
+                                        s.values.connectorUrl.trim() !== '' && s.values.connectorSha.trim() !== ''
+                                    }
                                 >
                                     {(canSubmit) => (
                                         <Button type="submit" form="onboard-form" disabled={busy || !canSubmit}>

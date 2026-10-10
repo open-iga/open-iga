@@ -17,7 +17,8 @@ import (
 // matches the server version; both dbs live on the same container server.
 func fetchPGDump(ctx context.Context, dbName string, t *testing.T) string {
 	t.Helper()
-	code, reader, err := pgContainer.Exec(ctx,
+	code, reader, err := pgContainer.Exec(
+		ctx,
 		[]string{"pg_dump", "--schema-only", "--no-owner", "--no-acl", "--schema=public", "-T", "schema_migrations", "-U", "test", dbName},
 		tcexec.Multiplexed(),
 	)
