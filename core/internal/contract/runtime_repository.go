@@ -23,7 +23,7 @@ type SessionRepository interface {
 }
 
 type ManagedSystemRepository interface {
-	CreateManagedSystem(ctx context.Context, name string, connectorUrl string, connectorHash string) (*domain.ManagedSystem, error)
+	CreateManagedSystem(ctx context.Context, name string, connectorUrl string, connectorHash string, spec *domain.ConnectorSpec) (*domain.ManagedSystem, error)
 	ListManagedSystems(ctx context.Context) ([]*domain.ManagedSystem, error)
 }
 

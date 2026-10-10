@@ -8,12 +8,18 @@ tasks:
     dev:
         cmds:
             - bun run dev
+    typecheck:
+        cmds:
+            - bun run typecheck
     test:
         cmds:
             - bun run test
     lint:
         cmds:
-            - bunx oxlint -c ../oxlint.config.ts src
+            - bun run lint
+    pretty:
+        cmds:
+            - bun run pretty
     build:
         cmds:
             - bun run build

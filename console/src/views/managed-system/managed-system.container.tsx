@@ -6,6 +6,8 @@ import { DataTable, type DataTableColumn, type DataTableProps } from '@/design-s
 import { useTranslation } from 'react-i18next';
 import { match, P } from 'ts-pattern';
 
+const shortHash = (hash: string) => `${hash.slice(0, 12)}…${hash.slice(-4)}`;
+
 export const ManagedSystemContainer = () => {
     const { t } = useTranslation();
     const query = useQuery({
@@ -21,12 +23,38 @@ export const ManagedSystemContainer = () => {
     const columns: DataTableColumn<(typeof managedSystems)[0]>[] = [
         { accessorKey: 'id', header: t('managedSystems.name'), meta: { hidden: true } },
         { accessorKey: 'name', header: t('managedSystems.name') },
-        { accessorKey: 'connectorUrl', header: t('managedSystems.onboard.connectorUrl.name') },
-        { accessorKey: 'connectorHash', header: t('managedSystems.onboard.connectorHash.name') },
+        {
+            accessorKey: 'connectorUrl',
+            header: t('managedSystems.onboard.connectorUrl.name'),
+            cell: ({ row }) => (
+                <span
+                    className="block max-w-72 truncate font-mono text-xs text-muted-foreground"
+                    title={row.original.connectorUrl}
+                >
+                    {row.original.connectorUrl}
+                </span>
+            ),
+        },
+        {
+            accessorKey: 'connectorHash',
+            header: t('managedSystems.onboard.connectorHash.name'),
+            cell: ({ row }) => (
+                <code className="font-mono text-xs text-muted-foreground" title={row.original.connectorHash}>
+                    {shortHash(row.original.connectorHash)}
+                </code>
+            ),
+        },
         {
             accessorKey: 'createdAt',
             header: t('managedSystems.onboard.createAt'),
-            cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
+            cell: ({ row }) => (
+                <span
+                    className="block font-mono text-xs text-muted-foreground"
+                    title={new Date(row.original.createdAt).toLocaleString()}
+                >
+                    {new Date(row.original.createdAt).toLocaleString()}
+                </span>
+            ),
         },
     ];
 

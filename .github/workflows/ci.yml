@@ -1,0 +1,45 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+
+concurrency:
+    group: ci-${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    console:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+            - uses: oven-sh/setup-bun@v2
+            - uses: arduino/setup-task@v3
+              with:
+                  version: 3.x
+                  repo-token: ${{ secrets.GITHUB_TOKEN }}
+            - run: bun install --frozen-lockfile
+            - run: task console:lint
+            - run: task console:typecheck
+            - run: task console:build
+            - run: task console:test
+
+    core:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-go@v5
+              with:
+                  go-version-file: core/go.mod
+                  cache-dependency-path: core/go.sum
+            - uses: arduino/setup-task@v2
+              with:
+                  version: 3.x
+                  repo-token: ${{ secrets.GITHUB_TOKEN }}
+            - uses: golangci/golangci-lint-action@v9
+              with:
+                  version: v2.12.2
+                  working-directory: core
+            - run: task core:build
+            - run: task core:test

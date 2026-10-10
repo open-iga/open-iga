@@ -31,7 +31,7 @@ func (m *ManagedSystemService) Onboard(ctx context.Context, connectorOnboardId s
 		return nil, fmt.Errorf("connector '%s' in state %s: %w", connectorOnboardId, connectorDetails.Status, domain.ErrConnectorNotOnboardable)
 	}
 
-	managedSystem, err := m.managedSystemRepository.CreateManagedSystem(ctx, connectorDetails.ConnectorSpec.Name, connectorDetails.ConnectorUrl, connectorDetails.ConnectorHash)
+	managedSystem, err := m.managedSystemRepository.CreateManagedSystem(ctx, connectorDetails.ConnectorSpec.Name, connectorDetails.ConnectorUrl, connectorDetails.ConnectorHash, connectorDetails.ConnectorSpec)
 	if err != nil {
 		m.logger.Warn("failed to create managed system", "connector", connectorDetails.ConnectorSpec.Name)
 		return nil, fmt.Errorf("failed to create managed system: %w", err)

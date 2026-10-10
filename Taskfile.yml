@@ -15,7 +15,11 @@ tasks:
         deps: [task: core:setup, task: console:setup]
     test:
         deps: [task: core:test, task: console:test]
+    typecheck:
+        deps: [task: console:typecheck]
     lint:
         deps: [task: core:lint, task: console:lint]
+    pretty:
+        deps: [task: core:pretty, task: console:pretty]
     build:
         deps: [task: core:build, task: console:build]

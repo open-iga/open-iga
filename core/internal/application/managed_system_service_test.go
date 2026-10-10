@@ -61,7 +61,7 @@ func TestManagedSystemService_Onboard(t *testing.T) {
 			ConnectorSpec: &domain.ConnectorSpec{Name: "aws"},
 		})
 		want := &domain.ManagedSystem{Id: "ms-1", Name: "aws"}
-		repo.EXPECT().CreateManagedSystem(gomock.Any(), "aws", "https://conn", "hash").Return(want, nil)
+		repo.EXPECT().CreateManagedSystem(gomock.Any(), "aws", "https://conn", "hash", &domain.ConnectorSpec{Name: "aws"}).Return(want, nil)
 
 		ms, err := svc.Onboard(context.TODO(), "ok-id")
 
@@ -77,7 +77,7 @@ func TestManagedSystemService_Onboard(t *testing.T) {
 			ConnectorHash: "hash",
 			ConnectorSpec: &domain.ConnectorSpec{Name: "aws"},
 		})
-		repo.EXPECT().CreateManagedSystem(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))
+		repo.EXPECT().CreateManagedSystem(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))
 
 		ms, err := svc.Onboard(context.TODO(), "ok-id")
 
