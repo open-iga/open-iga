@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "generate:openapi-fetch": "bunx openapi-typescript ../openapi-spec/openapi.yml -o src/utils/openapi/schema.d.ts",
-    "typecheck": "tsc -b --noEmit",
+    "typecheck": "tsc -b --force",
     "test": "vitest run"
   },
   "dependencies": {
