@@ -86,6 +86,56 @@ func TestHandler_OnboardManagedSystem(t *testing.T) {
 	})
 }
 
+func TestHandler_OnboardManagedSystemTenant(t *testing.T) {
+	const path = "/api/v1/managed-systems/system-id/tenant"
+	const body = `{"externalId": "realm-a", "name": "Realm A"}`
+
+	t.Run("returns 404 when the managed system is not found", func(t *testing.T) {
+		router, managedSystemServiceMock := setupRouterWithMockManagedSystemService(t)
+		managedSystemServiceMock.EXPECT().
+			OnboardTenant(gomock.Any(), "system-id", "realm-a", "Realm A", gomock.Any()).
+			Return(nil, false, domain.ErrManagedSystemNotFound)
+
+		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusNotFound, rec.Code)
+		assert.JSONEq(t, `{"message": "managed system not found"}`, rec.Body.String())
+	})
+
+	t.Run("returns 200 with the existing tenant id when the tenant already exists", func(t *testing.T) {
+		router, managedSystemServiceMock := setupRouterWithMockManagedSystemService(t)
+		managedSystemServiceMock.EXPECT().
+			OnboardTenant(gomock.Any(), "system-id", "realm-a", "Realm A", gomock.Any()).
+			Return(&domain.ManagedSystemTenant{Id: "tenant-id"}, false, nil)
+
+		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.JSONEq(t, `{"id": "tenant-id"}`, rec.Body.String())
+	})
+
+	t.Run("returns 201 with the tenant id when a new tenant is onboarded", func(t *testing.T) {
+		router, managedSystemServiceMock := setupRouterWithMockManagedSystemService(t)
+		managedSystemServiceMock.EXPECT().
+			OnboardTenant(gomock.Any(), "system-id", "realm-a", "Realm A", gomock.Any()).
+			Return(&domain.ManagedSystemTenant{Id: "tenant-id"}, true, nil)
+
+		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusCreated, rec.Code)
+		assert.JSONEq(t, `{"id": "tenant-id"}`, rec.Body.String())
+	})
+}
+
 func TestHandler_ListManagedSystems(t *testing.T) {
 	t.Run("returns 200 with the onboarded managed systems", func(t *testing.T) {
 		router, managedSystemServiceMock := setupRouterWithMockManagedSystemService(t)

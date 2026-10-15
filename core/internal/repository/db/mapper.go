@@ -33,3 +33,12 @@ func (m *ManagedSystem) ToDomain() *domain.ManagedSystem {
 		CreatedAt:     m.CreatedAt.Time,
 	}
 }
+
+func (t *ManagedSystemTenant) ToDomain() *domain.ManagedSystemTenant {
+	return &domain.ManagedSystemTenant{
+		Id:              t.ID.String(),
+		ManagedSystemId: t.ManagedSystemID.String(),
+		ExternalId:      t.ExternalID,
+		Name:            t.Name,
+	}
+}

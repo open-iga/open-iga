@@ -222,3 +222,19 @@ func (mr *MockManagedSystemServiceMockRecorder) Onboard(ctx, connectorOnboardId 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Onboard", reflect.TypeOf((*MockManagedSystemService)(nil).Onboard), ctx, connectorOnboardId)
 }
+
+// OnboardTenant mocks base method.
+func (m *MockManagedSystemService) OnboardTenant(ctx context.Context, managedSystemId, externalId, name string, metadata map[string]any) (*domain.ManagedSystemTenant, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OnboardTenant", ctx, managedSystemId, externalId, name, metadata)
+	ret0, _ := ret[0].(*domain.ManagedSystemTenant)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// OnboardTenant indicates an expected call of OnboardTenant.
+func (mr *MockManagedSystemServiceMockRecorder) OnboardTenant(ctx, managedSystemId, externalId, name, metadata any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnboardTenant", reflect.TypeOf((*MockManagedSystemService)(nil).OnboardTenant), ctx, managedSystemId, externalId, name, metadata)
+}
