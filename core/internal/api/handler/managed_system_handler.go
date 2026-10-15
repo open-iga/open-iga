@@ -28,6 +28,30 @@ func (h *Handler) OnboardManagedSystem(ctx context.Context, request generated.On
 	return generated.OnboardManagedSystem200JSONResponse{Id: managedSystem.Id}, nil
 }
 
+func (h *Handler) OnboardManagedSystemTenant(ctx context.Context, request generated.OnboardManagedSystemTenantRequestObject) (generated.OnboardManagedSystemTenantResponseObject, error) {
+	// for now, metadata is not provided by the UI
+	var metadata map[string]interface{}
+	if request.Body.Metadata != nil {
+		metadata = *request.Body.Metadata
+	}
+
+	tenant, created, err := h.application.ManagedSystemService.OnboardTenant(ctx, request.Id, request.Body.ExternalId, request.Body.Name, metadata)
+	if err != nil {
+		if errors.Is(err, domain.ErrManagedSystemNotFound) {
+			return generated.OnboardManagedSystemTenant404JSONResponse{Message: err.Error()}, nil
+		}
+
+		return generated.OnboardManagedSystemTenant500JSONResponse{Message: err.Error()}, nil
+	}
+
+	// 201 for a fresh tenant, 200 when it already existed (idempotent).
+	if !created {
+		return generated.OnboardManagedSystemTenant200JSONResponse{Id: tenant.Id}, nil
+	}
+
+	return generated.OnboardManagedSystemTenant201JSONResponse{Id: tenant.Id}, nil
+}
+
 func (h *Handler) ListManagedSystems(ctx context.Context, _ generated.ListManagedSystemsRequestObject) (generated.ListManagedSystemsResponseObject, error) {
 	managedSystems, err := h.application.ManagedSystemService.ListManagedSystems(ctx)
 	if err != nil {

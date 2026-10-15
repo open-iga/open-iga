@@ -25,6 +25,7 @@ type SessionRepository interface {
 type ManagedSystemRepository interface {
 	CreateManagedSystem(ctx context.Context, name string, connectorUrl string, connectorHash string, spec *domain.ConnectorSpec) (*domain.ManagedSystem, error)
 	ListManagedSystems(ctx context.Context) ([]*domain.ManagedSystem, error)
+	CreateManagedSystemTenant(ctx context.Context, managedSystemID string, externalID string, name string, metadata []byte) (tenant *domain.ManagedSystemTenant, created bool, err error)
 }
 
 type Repository struct {

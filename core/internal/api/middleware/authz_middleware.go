@@ -20,6 +20,7 @@ var operationRoles = map[string][]string{
 	"OnboardConnector":                     {domain.AdminRole},
 	"GetConnectorOnboardingRequestDetails": {domain.AdminRole, domain.DefaultIdentityRole},
 	"OnboardManagedSystem":                 {domain.AdminRole},
+	"OnboardManagedSystemTenant":           {domain.AdminRole},
 	"ListManagedSystems":                   {domain.AdminRole, domain.DefaultIdentityRole},
 }
 

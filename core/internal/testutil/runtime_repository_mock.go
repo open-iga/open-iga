@@ -241,6 +241,22 @@ func (mr *MockManagedSystemRepositoryMockRecorder) CreateManagedSystem(ctx, name
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateManagedSystem", reflect.TypeOf((*MockManagedSystemRepository)(nil).CreateManagedSystem), ctx, name, connectorUrl, connectorHash, spec)
 }
 
+// CreateManagedSystemTenant mocks base method.
+func (m *MockManagedSystemRepository) CreateManagedSystemTenant(ctx context.Context, managedSystemID, externalID, name string, metadata []byte) (*domain.ManagedSystemTenant, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateManagedSystemTenant", ctx, managedSystemID, externalID, name, metadata)
+	ret0, _ := ret[0].(*domain.ManagedSystemTenant)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// CreateManagedSystemTenant indicates an expected call of CreateManagedSystemTenant.
+func (mr *MockManagedSystemRepositoryMockRecorder) CreateManagedSystemTenant(ctx, managedSystemID, externalID, name, metadata any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateManagedSystemTenant", reflect.TypeOf((*MockManagedSystemRepository)(nil).CreateManagedSystemTenant), ctx, managedSystemID, externalID, name, metadata)
+}
+
 // ListManagedSystems mocks base method.
 func (m *MockManagedSystemRepository) ListManagedSystems(ctx context.Context) ([]*domain.ManagedSystem, error) {
 	m.ctrl.T.Helper()

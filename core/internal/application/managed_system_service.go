@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -38,6 +39,23 @@ func (m *ManagedSystemService) Onboard(ctx context.Context, connectorOnboardId s
 	}
 
 	return managedSystem, nil
+}
+
+func (m *ManagedSystemService) OnboardTenant(ctx context.Context, managedSystemId string, externalId string, name string, metadata map[string]interface{}) (*domain.ManagedSystemTenant, bool, error) {
+	if metadata == nil {
+		metadata = map[string]interface{}{}
+	}
+	metadataJSON, err := json.Marshal(metadata)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to marshal tenant metadata: %w", err)
+	}
+
+	tenant, created, err := m.managedSystemRepository.CreateManagedSystemTenant(ctx, managedSystemId, externalId, name, metadataJSON)
+	if err != nil {
+		return nil, false, fmt.Errorf("onboard tenant: %w", err)
+	}
+
+	return tenant, created, nil
 }
 
 func (m *ManagedSystemService) ListManagedSystems(ctx context.Context) ([]*domain.ManagedSystem, error) {
