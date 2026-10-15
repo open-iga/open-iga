@@ -21,3 +21,5 @@ paths:
         $ref: './paths/v1-connectors-onboarding-request-details.yml'
     '/api/v1/managed-systems':
         $ref: './paths/v1-managed-systems.yml'
+    '/api/v1/managed-systems/{id}/tenant':
+        $ref: './paths/v1-managed-system-tenant.yml'
