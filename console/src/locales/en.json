@@ -51,11 +51,26 @@
             "steps": {
                 "validate": "Validate",
                 "review": "Review",
+                "tenants": "Tenants",
                 "onboard": "Onboard"
             },
             "review": {
                 "heading": "{{name}} passed validation",
                 "description": "Review the capabilities this connector will be granted before onboarding it."
+            },
+            "next": "Next",
+            "back": "Back",
+            "tenants": {
+                "title": "Tenants",
+                "description": "Add one or more tenants (realms, accounts, ...) to onboard under this system.",
+                "externalId": "External ID",
+                "externalIdDescription": "Tenant id in the target system (realm name, account id, ...)",
+                "name": "Name",
+                "nameDescription": "Human readable tenant name",
+                "add": "Add tenant",
+                "remove": "Remove {{name}}",
+                "empty": "No tenants added yet.",
+                "duplicate": "A tenant with this external id is already added."
             },
             "capability": {
                 "required": "Required",

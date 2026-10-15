@@ -129,10 +129,46 @@ describe('useManagedSystemOnboarding', () => {
         await waitFor(() => expect(result.current.phase).toBe('review'));
 
         await act(async () => {
-            await result.current.onboard().catch(() => {});
+            await result.current.onboard([]).catch(() => {});
         });
 
         expect(mockedToastError).toHaveBeenCalledWith('managedSystems.onboard.onboardingError', expect.anything());
+    });
+
+    it('should onboard the managed system and create each tenant under it', async () => {
+        const tenantRequests: Array<{ id: string; body: unknown }> = [];
+        mockServer.use(
+            mockHttpHandlers.post('/api/v1/connectors/onboarding-requests', () =>
+                HttpResponse.json({ onboardingId: 'onboard-id' }, { status: 201 }),
+            ),
+            mockHttpHandlers.get('/api/v1/connectors/onboarding-requests/{onboarding-id}', () =>
+                HttpResponse.json({ status: 'success', connectorSpec: spec }, { status: 200 }),
+            ),
+            mockHttpHandlers.post('/api/v1/managed-systems', () =>
+                HttpResponse.json({ id: 'system-id' }, { status: 200 }),
+            ),
+            mockHttpHandlers.post('/api/v1/managed-systems/{id}/tenant', async ({ request, params }) => {
+                tenantRequests.push({ id: params.id as string, body: await request.json() });
+                return HttpResponse.json({ id: `tenant-${tenantRequests.length}` }, { status: 200 });
+            }),
+        );
+
+        const { result } = renderHook(useManagedSystemOnboarding, { wrapper: Wrapper });
+
+        result.current.validate(body).catch(() => {});
+        await waitFor(() => expect(result.current.phase).toBe('review'));
+
+        await act(async () => {
+            await result.current.onboard([
+                { externalId: 'realm-a', name: 'Realm A' },
+                { externalId: 'realm-b', name: 'Realm B' },
+            ]);
+        });
+
+        expect(tenantRequests).toEqual([
+            { id: 'system-id', body: { externalId: 'realm-a', name: 'Realm A' } },
+            { id: 'system-id', body: { externalId: 'realm-b', name: 'Realm B' } },
+        ]);
     });
 
     it('should error when validation times out', async () => {

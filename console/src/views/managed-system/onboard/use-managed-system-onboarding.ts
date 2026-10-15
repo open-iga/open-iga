@@ -10,6 +10,7 @@ const POLL_INTERVAL_MS = 2000;
 const MAX_POLLS = 90; // ~3 min at the poll interval; backend validation times out before this
 
 export type OnboardingPhase = 'input' | 'validating' | 'review' | 'onboarding';
+export type TenantInput = { externalId: string; name: string };
 type ValidationResult = { onboardingId: string; spec: ConnectorSpec };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -57,15 +58,26 @@ export const useManagedSystemOnboarding = () => {
         onError: (error) => toast.error(t('managedSystems.onboard.validationError'), { description: error.message }),
     });
 
-    // Step 2: onboard the managed system using the validated onboarding id.
+    // Step 2: onboard the managed system using the validated onboarding id, then
+    // create each tenant under the returned system id (one request per tenant).
     const onboarding = useMutation({
-        mutationFn: async () => {
+        mutationFn: async (tenants: TenantInput[]) => {
             if (!result) {
                 throw new Error(t('managedSystems.onboard.onboardingError'));
             }
             const created = await fetchClient.POST('/api/v1/managed-systems', {
                 body: { connectorOnboardingId: result.onboardingId },
             });
+            const managedSystemId = created.data?.id;
+            if (!managedSystemId) {
+                throw new Error(t('managedSystems.onboard.onboardingError'));
+            }
+            for (const tenant of tenants) {
+                await fetchClient.POST('/api/v1/managed-systems/{id}/tenant', {
+                    params: { path: { id: managedSystemId } },
+                    body: { externalId: tenant.externalId, name: tenant.name },
+                });
+            }
             return created.data;
         },
         onError: (error) => toast.error(t('managedSystems.onboard.onboardingError'), { description: error.message }),

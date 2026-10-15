@@ -10,7 +10,7 @@ import {
 } from '@/design-system/components/ui/sheet.tsx';
 import { Button } from '@/design-system/components/ui/button.tsx';
 import { useTranslation } from 'react-i18next';
-import { Check, CirclePlus, ShieldAlert } from 'lucide-react';
+import { Check, CirclePlus, Plus, ShieldAlert, Trash2 } from 'lucide-react';
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldSet } from '@/design-system/components/ui/field.tsx';
 import { Input } from '@/design-system/components/ui/input.tsx';
 import { Spinner } from '@/design-system/components/ui/spinner.tsx';
@@ -22,16 +22,14 @@ import { match } from 'ts-pattern';
 import { toast } from 'sonner';
 import { cn } from '@/design-system/lib/utils.ts';
 import { usePermission } from '@/hooks/use-permission.ts';
-import { useManagedSystemOnboarding, type OnboardingPhase } from './use-managed-system-onboarding.ts';
+import { useManagedSystemOnboarding, type TenantInput } from './use-managed-system-onboarding.ts';
 import { CapabilityReview } from './capability-review.tsx';
 import type { ConnectorSpec } from './types.ts';
 
-const STEPS = ['validate', 'review', 'onboard'] as const;
-const stepIndex: Record<OnboardingPhase, number> = { input: 0, validating: 0, review: 1, onboarding: 2 };
+const STEPS = ['validate', 'review', 'tenants', 'onboard'] as const;
 
-const Stepper = ({ phase }: { phase: OnboardingPhase }) => {
+const Stepper = ({ current }: { current: number }) => {
     const { t } = useTranslation();
-    const current = stepIndex[phase];
     return (
         <ol className="mt-3 flex items-center gap-2 text-xs">
             {STEPS.map((step, i) => (
@@ -82,14 +80,121 @@ const ReviewPanel = ({ spec }: { spec: ConnectorSpec }) => {
     );
 };
 
+const TenantsStep = ({
+    tenants,
+    onChange,
+    disabled,
+}: {
+    tenants: TenantInput[];
+    onChange: (next: TenantInput[]) => void;
+    disabled: boolean;
+}) => {
+    const { t } = useTranslation();
+    const [externalId, setExternalId] = useState('');
+    const [name, setName] = useState('');
+    const canAdd = externalId.trim() !== '' && name.trim() !== '';
+
+    const add = () => {
+        if (!canAdd) return;
+        const id = externalId.trim();
+        if (tenants.some((x) => x.externalId === id)) {
+            toast.error(t('managedSystems.onboard.tenants.duplicate'));
+            return;
+        }
+        onChange([...tenants, { externalId: id, name: name.trim() }]);
+        setExternalId('');
+        setName('');
+    };
+
+    return (
+        <div className="flex flex-col gap-5 px-4 mt-4">
+            <div className="flex flex-col gap-1">
+                <h3 className="text-sm font-medium">{t('managedSystems.onboard.tenants.title')}</h3>
+                <p className="text-xs text-muted-foreground">{t('managedSystems.onboard.tenants.description')}</p>
+            </div>
+            <FieldSet>
+                <FieldGroup>
+                    <Field>
+                        <FieldLabel htmlFor="tenant-external-id">
+                            {t('managedSystems.onboard.tenants.externalId')}
+                        </FieldLabel>
+                        <Input
+                            id="tenant-external-id"
+                            type="text"
+                            disabled={disabled}
+                            value={externalId}
+                            onChange={(e) => setExternalId(e.target.value)}
+                        />
+                        <FieldDescription>
+                            {t('managedSystems.onboard.tenants.externalIdDescription')}
+                        </FieldDescription>
+                    </Field>
+                    <Field>
+                        <FieldLabel htmlFor="tenant-name">{t('managedSystems.onboard.tenants.name')}</FieldLabel>
+                        <Input
+                            id="tenant-name"
+                            type="text"
+                            disabled={disabled}
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                        />
+                        <FieldDescription>{t('managedSystems.onboard.tenants.nameDescription')}</FieldDescription>
+                    </Field>
+                </FieldGroup>
+            </FieldSet>
+            <Button variant="outline" className="self-start" disabled={disabled || !canAdd} onClick={add}>
+                <Plus /> {t('managedSystems.onboard.tenants.add')}
+            </Button>
+            {tenants.length === 0 ? (
+                <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                    {t('managedSystems.onboard.tenants.empty')}
+                </p>
+            ) : (
+                <ul className="flex flex-col divide-y rounded-lg border">
+                    {tenants.map((tenant) => (
+                        <li
+                            key={tenant.externalId}
+                            className="flex items-center justify-between gap-3 py-1.5 pr-1.5 pl-3 text-sm"
+                        >
+                            <span className="font-medium">{tenant.name}</span>
+                            <div className="flex items-center gap-2">
+                                <code className="font-mono text-xs text-muted-foreground">{tenant.externalId}</code>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    disabled={disabled}
+                                    aria-label={t('managedSystems.onboard.tenants.remove', { name: tenant.name })}
+                                    onClick={() => onChange(tenants.filter((x) => x.externalId !== tenant.externalId))}
+                                >
+                                    <Trash2 />
+                                </Button>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
+};
+
 export const OnboardingSheet = () => {
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const { isAdmin } = usePermission();
     const queryClient = useQueryClient();
     const { phase, spec, error, validate, onboard, reset } = useManagedSystemOnboarding();
+    const [tenantStep, setTenantStep] = useState(false);
+    const [tenants, setTenants] = useState<TenantInput[]>([]);
 
     const busy = phase === 'validating' || phase === 'onboarding';
+
+    const current = match({ phase, tenantStep })
+        .with({ phase: 'onboarding' }, () => 3)
+        .with({ phase: 'review', tenantStep: true }, () => 2)
+        .with({ phase: 'review' }, () => 1)
+        .otherwise(() => 0);
+
+    const showTenants = (phase === 'review' && tenantStep) || phase === 'onboarding';
 
     const form = useForm({
         defaultValues: { connectorUrl: '', connectorSha: '' },
@@ -99,6 +204,8 @@ export const OnboardingSheet = () => {
     const close = () => {
         form.reset();
         reset();
+        setTenantStep(false);
+        setTenants([]);
         setOpen(false);
     };
 
@@ -110,7 +217,7 @@ export const OnboardingSheet = () => {
 
     const handleOnboard = async () => {
         try {
-            await onboard();
+            await onboard(tenants);
             await queryClient.invalidateQueries({ queryKey: ['managed-systems'] });
             toast.success(t('managedSystems.onboard.onboardedTitle'), {
                 description: t('managedSystems.onboard.onboardedDescription', { name: spec?.name }),
@@ -134,7 +241,7 @@ export const OnboardingSheet = () => {
                 <SheetHeader className="p-4">
                     <SheetTitle>{t('managedSystems.onboard.name')}</SheetTitle>
                     <SheetDescription>{t('managedSystems.onboard.description')}</SheetDescription>
-                    <Stepper phase={phase} />
+                    <Stepper current={current} />
                 </SheetHeader>
                 <Separator />
 
@@ -193,22 +300,46 @@ export const OnboardingSheet = () => {
                             {error && <p className="text-sm text-red-600">{error}</p>}
                         </form>
                     ))
-                    .with('review', 'onboarding', () => spec && <ReviewPanel spec={spec} />)
+                    .with('review', 'onboarding', () =>
+                        showTenants ? (
+                            <TenantsStep tenants={tenants} onChange={setTenants} disabled={busy} />
+                        ) : (
+                            spec && <ReviewPanel spec={spec} />
+                        ),
+                    )
                     .exhaustive()}
 
                 <SheetFooter className="sticky bottom-0 flex-row justify-end border-t bg-popover">
                     {match(phase)
-                        .with('review', 'onboarding', () => (
-                            <>
-                                <Button variant="outline" disabled={busy} onClick={reset}>
-                                    {t('managedSystems.onboard.reject')}
-                                </Button>
-                                <Button disabled={busy} onClick={handleOnboard}>
-                                    {phase === 'onboarding' && <Spinner />}
-                                    {t('managedSystems.onboard.approveAndOnboard')}
-                                </Button>
-                            </>
-                        ))
+                        .with('review', 'onboarding', () =>
+                            showTenants ? (
+                                <>
+                                    <Button variant="outline" disabled={busy} onClick={() => setTenantStep(false)}>
+                                        {t('managedSystems.onboard.back')}
+                                    </Button>
+                                    <Button disabled={busy} onClick={handleOnboard}>
+                                        {phase === 'onboarding' && <Spinner />}
+                                        {t('managedSystems.onboard.approveAndOnboard')}
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Button
+                                        variant="outline"
+                                        disabled={busy}
+                                        onClick={() => {
+                                            setTenants([]);
+                                            reset();
+                                        }}
+                                    >
+                                        {t('managedSystems.onboard.reject')}
+                                    </Button>
+                                    <Button disabled={busy} onClick={() => setTenantStep(true)}>
+                                        {t('managedSystems.onboard.next')}
+                                    </Button>
+                                </>
+                            ),
+                        )
                         .with('input', 'validating', () => (
                             <>
                                 <SheetClose
