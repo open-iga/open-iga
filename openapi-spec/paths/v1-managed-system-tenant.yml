@@ -1,3 +1,45 @@
+get:
+    operationId: listManagedSystemTenants
+    description: List the tenants onboarded under a managed system
+    parameters:
+        - name: id
+          in: path
+          required: true
+          description: Id of the managed system the tenants belong to
+          schema:
+              type: string
+    responses:
+        200:
+            description: Tenants onboarded under the managed system
+            content:
+                'application/json':
+                    schema:
+                        type: array
+                        items:
+                            type: object
+                            properties:
+                                id:
+                                    type: string
+                                externalId:
+                                    type: string
+                                    description: Tenant id in the target system (realm name, account id, ...)
+                                name:
+                                    type: string
+                                    description: Human readable tenant name
+                                metadata:
+                                    type: object
+                                    description: Arbitrary tenant metadata
+                                    additionalProperties: true
+                                createdAt:
+                                    type: string
+                                    format: date-time
+                            required: [id, externalId, name, createdAt]
+        401:
+            $ref: '../components/responses/unauthenticated-error.yml'
+        404:
+            $ref: '../components/responses/not-found-error.yml'
+        500:
+            $ref: '../components/responses/internal-server-error.yml'
 post:
     operationId: onboardManagedSystemTenant
     description: Onboard a tenant under a managed system. Call once per tenant.
