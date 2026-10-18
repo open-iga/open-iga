@@ -59,10 +59,12 @@ func (h *Handler) GetManagedSystem(ctx context.Context, request generated.GetMan
 		return generated.GetManagedSystem500JSONResponse{Message: err.Error()}, nil
 	}
 
-	var spec domain.ConnectorSpec
-	if managedSystem.ConnectorSpec != nil {
-		spec = *managedSystem.ConnectorSpec
+	// A managed system always has a stored spec (NOT NULL); nil means the stored JSON failed to decode (logged in ToDomain),
+	// so fail loudly rather than emit a spec whose required arrays/objects serialize as null and crash the client.
+	if managedSystem.ConnectorSpec == nil {
+		return generated.GetManagedSystem500JSONResponse{Message: "connector spec unavailable"}, nil
 	}
+	spec := *managedSystem.ConnectorSpec
 
 	return generated.GetManagedSystem200JSONResponse{
 		Id:            managedSystem.Id,
@@ -77,6 +79,9 @@ func (h *Handler) GetManagedSystem(ctx context.Context, request generated.GetMan
 func (h *Handler) ListManagedSystemTenants(ctx context.Context, request generated.ListManagedSystemTenantsRequestObject) (generated.ListManagedSystemTenantsResponseObject, error) {
 	tenants, err := h.application.ManagedSystemService.ListTenants(ctx, request.Id)
 	if err != nil {
+		if errors.Is(err, domain.ErrManagedSystemNotFound) {
+			return generated.ListManagedSystemTenants404JSONResponse{Message: err.Error()}, nil
+		}
 		return generated.ListManagedSystemTenants500JSONResponse{Message: err.Error()}, nil
 	}
 

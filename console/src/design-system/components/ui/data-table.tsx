@@ -115,7 +115,24 @@ export const DataTable = <TData extends RowData>(props: DataTableProps<TData>) =
                                 <TableRow
                                     key={row.id}
                                     onClick={onRowClick ? () => onRowClick(row.original) : undefined}
-                                    className={onRowClick ? 'cursor-pointer hover:text-primary' : undefined}
+                                    // Make clickable rows keyboard-reachable: focusable, acts as a button, Enter/Space activate.
+                                    role={onRowClick ? 'button' : undefined}
+                                    tabIndex={onRowClick ? 0 : undefined}
+                                    onKeyDown={
+                                        onRowClick
+                                            ? (e) => {
+                                                  if (e.key === 'Enter' || e.key === ' ') {
+                                                      e.preventDefault();
+                                                      onRowClick(row.original);
+                                                  }
+                                              }
+                                            : undefined
+                                    }
+                                    className={
+                                        onRowClick
+                                            ? 'cursor-pointer hover:text-primary focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring'
+                                            : undefined
+                                    }
                                 >
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell key={cell.id} className="overflow-hidden">
