@@ -113,7 +113,6 @@ type ManagedSystemTenant struct {
 	ManagedSystemID uuid.UUID
 	ExternalID      string
 	Name            string
-	Metadata        []byte
 	CreatedAt       pgtype.Timestamptz
 	UpdatedAt       pgtype.Timestamptz
 }

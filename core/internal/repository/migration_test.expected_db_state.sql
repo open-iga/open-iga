@@ -63,11 +63,11 @@ CREATE TABLE managed_system_tenant (
     managed_system_id uuid REFERENCES managed_system(id) NOT NULL,
     external_id       VARCHAR(255)   NOT NULL,
     name              VARCHAR(255)   NOT NULL,
-    metadata          JSONB          NOT NULL DEFAULT '{}',
     created_at        TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
     updated_at        TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP
 );
 CREATE UNIQUE INDEX idx_unique_managed_system_tenant ON managed_system_tenant(managed_system_id, external_id);
+CREATE UNIQUE INDEX idx_unique_managed_system_tenant_name ON managed_system_tenant(managed_system_id, name);
 
 -- Entitlements are exposed by business owners/admins. These are owned by the connectors
 CREATE TABLE entitlement (

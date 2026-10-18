@@ -4,12 +4,14 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchClient } from '@/utils/openapi/client.ts';
 import { DataTable, type DataTableColumn, type DataTableProps } from '@/design-system/components/ui/data-table.tsx';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from '@tanstack/react-router';
 import { match, P } from 'ts-pattern';
 
 const shortHash = (hash: string) => `${hash.slice(0, 12)}…${hash.slice(-4)}`;
 
 export const ManagedSystemContainer = () => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const query = useQuery({
         queryKey: ['managed-systems'],
         queryFn: async () => {
@@ -72,6 +74,7 @@ export const ManagedSystemContainer = () => {
             status: 'data',
             data: data.data,
             columns,
+            onRowClick: (row) => navigate({ to: '/managed-systems/$id', params: { id: row.id } }),
         }))
         .otherwise(() => ({ status: 'error', columns, errorMessage: t('error.generic') }));
 

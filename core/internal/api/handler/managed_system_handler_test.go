@@ -93,7 +93,7 @@ func TestHandler_OnboardManagedSystemTenant(t *testing.T) {
 	t.Run("returns 404 when the managed system is not found", func(t *testing.T) {
 		router, managedSystemServiceMock := setupRouterWithMockManagedSystemService(t)
 		managedSystemServiceMock.EXPECT().
-			OnboardTenant(gomock.Any(), "system-id", "realm-a", "Realm A", gomock.Any()).
+			OnboardTenant(gomock.Any(), "system-id", "realm-a", "Realm A").
 			Return(nil, false, domain.ErrManagedSystemNotFound)
 
 		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
@@ -108,7 +108,7 @@ func TestHandler_OnboardManagedSystemTenant(t *testing.T) {
 	t.Run("returns 200 with the existing tenant id when the tenant already exists", func(t *testing.T) {
 		router, managedSystemServiceMock := setupRouterWithMockManagedSystemService(t)
 		managedSystemServiceMock.EXPECT().
-			OnboardTenant(gomock.Any(), "system-id", "realm-a", "Realm A", gomock.Any()).
+			OnboardTenant(gomock.Any(), "system-id", "realm-a", "Realm A").
 			Return(&domain.ManagedSystemTenant{Id: "tenant-id"}, false, nil)
 
 		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
@@ -123,7 +123,7 @@ func TestHandler_OnboardManagedSystemTenant(t *testing.T) {
 	t.Run("returns 201 with the tenant id when a new tenant is onboarded", func(t *testing.T) {
 		router, managedSystemServiceMock := setupRouterWithMockManagedSystemService(t)
 		managedSystemServiceMock.EXPECT().
-			OnboardTenant(gomock.Any(), "system-id", "realm-a", "Realm A", gomock.Any()).
+			OnboardTenant(gomock.Any(), "system-id", "realm-a", "Realm A").
 			Return(&domain.ManagedSystemTenant{Id: "tenant-id"}, true, nil)
 
 		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))

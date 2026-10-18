@@ -22,8 +22,10 @@ type ConnectorService interface {
 
 type ManagedSystemService interface {
 	Onboard(ctx context.Context, connectorOnboardId string) (*domain.ManagedSystem, error)
+	GetManagedSystem(ctx context.Context, managedSystemId string) (*domain.ManagedSystem, error)
 	ListManagedSystems(ctx context.Context) ([]*domain.ManagedSystem, error)
-	OnboardTenant(ctx context.Context, managedSystemId string, externalId string, name string, metadata map[string]interface{}) (tenant *domain.ManagedSystemTenant, created bool, err error)
+	OnboardTenant(ctx context.Context, managedSystemId string, externalId string, name string) (tenant *domain.ManagedSystemTenant, created bool, err error)
+	ListTenants(ctx context.Context, managedSystemId string) ([]*domain.ManagedSystemTenant, error)
 }
 
 type RuntimeApplication struct {

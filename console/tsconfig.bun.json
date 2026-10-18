@@ -20,7 +20,8 @@
         "noFallthroughCasesInSwitch": true,
         "types": ["vitest/globals", "bun"],
         "paths": {
-            "@/*": ["./src/*"]
+            "@/*": ["./src/*"],
+            "cn": ["./src/design-system/lib/utils.ts"]
         }
     },
     "include": ["vite.config.ts", "vitest.config.ts", "vitest.setup.ts"]

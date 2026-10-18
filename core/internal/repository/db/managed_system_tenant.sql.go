@@ -12,32 +12,25 @@ import (
 )
 
 const createManagedSystemTenant = `-- name: CreateManagedSystemTenant :one
-INSERT INTO managed_system_tenant(managed_system_id, external_id, name, metadata)
-VALUES ($1, $2, $3, $4)
-RETURNING id, managed_system_id, external_id, name, metadata, created_at, updated_at
+INSERT INTO managed_system_tenant(managed_system_id, external_id, name)
+VALUES ($1, $2, $3)
+RETURNING id, managed_system_id, external_id, name, created_at, updated_at
 `
 
 type CreateManagedSystemTenantParams struct {
 	ManagedSystemID uuid.UUID
 	ExternalID      string
 	Name            string
-	Metadata        []byte
 }
 
 func (q *Queries) CreateManagedSystemTenant(ctx context.Context, arg CreateManagedSystemTenantParams) (ManagedSystemTenant, error) {
-	row := q.db.QueryRow(ctx, createManagedSystemTenant,
-		arg.ManagedSystemID,
-		arg.ExternalID,
-		arg.Name,
-		arg.Metadata,
-	)
+	row := q.db.QueryRow(ctx, createManagedSystemTenant, arg.ManagedSystemID, arg.ExternalID, arg.Name)
 	var i ManagedSystemTenant
 	err := row.Scan(
 		&i.ID,
 		&i.ManagedSystemID,
 		&i.ExternalID,
 		&i.Name,
-		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -45,7 +38,7 @@ func (q *Queries) CreateManagedSystemTenant(ctx context.Context, arg CreateManag
 }
 
 const getManagedSystemTenantByExternalId = `-- name: GetManagedSystemTenantByExternalId :one
-SELECT id, managed_system_id, external_id, name, metadata, created_at, updated_at
+SELECT id, managed_system_id, external_id, name, created_at, updated_at
 FROM managed_system_tenant
 WHERE managed_system_id = $1
   AND external_id = $2
@@ -64,9 +57,42 @@ func (q *Queries) GetManagedSystemTenantByExternalId(ctx context.Context, arg Ge
 		&i.ManagedSystemID,
 		&i.ExternalID,
 		&i.Name,
-		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const listManagedSystemTenants = `-- name: ListManagedSystemTenants :many
+SELECT id, managed_system_id, external_id, name, created_at, updated_at
+FROM managed_system_tenant
+WHERE managed_system_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListManagedSystemTenants(ctx context.Context, managedSystemID uuid.UUID) ([]ManagedSystemTenant, error) {
+	rows, err := q.db.Query(ctx, listManagedSystemTenants, managedSystemID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ManagedSystemTenant
+	for rows.Next() {
+		var i ManagedSystemTenant
+		if err := rows.Scan(
+			&i.ID,
+			&i.ManagedSystemID,
+			&i.ExternalID,
+			&i.Name,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

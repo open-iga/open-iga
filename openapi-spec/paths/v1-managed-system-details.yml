@@ -1,0 +1,38 @@
+get:
+    operationId: getManagedSystem
+    description: Get an onboarded managed system with its connector spec
+    parameters:
+        - name: id
+          in: path
+          required: true
+          description: Id of the managed system
+          schema:
+              type: string
+    responses:
+        200:
+            description: The managed system and its connector spec
+            content:
+                'application/json':
+                    schema:
+                        type: object
+                        properties:
+                            id:
+                                type: string
+                            name:
+                                type: string
+                            connectorUrl:
+                                type: string
+                            connectorHash:
+                                type: string
+                            createdAt:
+                                type: string
+                                format: date-time
+                            connectorSpec:
+                                $ref: '../schemas/connector-spec.yml'
+                        required: [id, name, connectorUrl, connectorHash, createdAt, connectorSpec]
+        401:
+            $ref: '../components/responses/unauthenticated-error.yml'
+        404:
+            $ref: '../components/responses/not-found-error.yml'
+        500:
+            $ref: '../components/responses/internal-server-error.yml'
