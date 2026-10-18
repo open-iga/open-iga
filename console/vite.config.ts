@@ -10,6 +10,8 @@ export default defineConfig({
         dedupe: ['react', 'react-dom'],
         alias: {
             '@': fileURLToPath(new URL('./src', import.meta.url)),
+            // shadcn's base-maia components import cn from the npm package `cn`; map it to our local util instead
+            cn: fileURLToPath(new URL('./src/design-system/lib/utils.ts', import.meta.url)),
         },
     },
     optimizeDeps: {

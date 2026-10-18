@@ -30,6 +30,7 @@ export type DataTableProps<TData extends RowData> =
           status: 'data';
           columns: DataTableColumn<TData>[];
           data: TData[];
+          onRowClick?: (row: TData) => void;
       }
     | {
           status: 'noData';
@@ -109,9 +110,13 @@ export const DataTable = <TData extends RowData>(props: DataTableProps<TData>) =
                                     ))}
                             </TableRow>
                         ))
-                        .with({ status: 'data' }, () =>
+                        .with({ status: 'data' }, ({ onRowClick }) =>
                             table.getRowModel().rows.map((row) => (
-                                <TableRow key={row.id}>
+                                <TableRow
+                                    key={row.id}
+                                    onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                                    className={onRowClick ? 'cursor-pointer hover:text-primary' : undefined}
+                                >
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell key={cell.id} className="overflow-hidden">
                                             <table.FlexRender cell={cell} />

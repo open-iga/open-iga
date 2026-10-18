@@ -95,6 +95,39 @@
                     "entitlement": "entitlement"
                 }
             }
+        },
+        "detail": {
+            "title": "Managed System",
+            "notFound": "Managed system not found",
+            "backToList": "Back to managed systems",
+            "tenants": "Tenants",
+            "onboarded": "Onboarded",
+            "tabs": {
+                "tenants": "Tenants",
+                "spec": "Connector Spec"
+            },
+            "tenantsPanel": {
+                "add": "Add tenant",
+                "batchChanges": "Batch changes",
+                "applyBatch_zero": "Apply changes",
+                "applyBatch_one": "Apply {{count}} change",
+                "applyBatch_other": "Apply {{count}} changes",
+                "addTitle": "Add tenant",
+                "addDescription": "Onboard a new tenant under this managed system.",
+                "added_one": "{{count}} tenant onboarded.",
+                "added_other": "{{count}} tenants onboarded.",
+                "addError": "Failed to onboard tenant",
+                "nameExists": "A tenant named \"{{name}}\" already exists in this system.",
+                "columns": {
+                    "name": "Name",
+                    "externalId": "External ID",
+                    "onboarded": "Onboarded"
+                },
+                "empty": {
+                    "name": "No tenants onboarded yet",
+                    "description": "Add a tenant (realm, account, ...) to onboard it under this system."
+                }
+            }
         }
     },
     "termsOfUse": {

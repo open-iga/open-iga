@@ -26,7 +26,8 @@
         "noUncheckedIndexedAccess": true,
 
         "paths": {
-            "@/*": ["./src/*"]
+            "@/*": ["./src/*"],
+            "cn": ["./src/design-system/lib/utils.ts"]
         }
     },
     "include": ["src"]

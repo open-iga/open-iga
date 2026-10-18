@@ -141,6 +141,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/managed-systems/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get an onboarded managed system with its connector spec */
+        get: operations["getManagedSystem"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/managed-systems/{id}/tenant": {
         parameters: {
             query?: never;
@@ -148,7 +165,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** @description List the tenants onboarded under a managed system */
+        get: operations["listManagedSystemTenants"];
         put?: never;
         /** @description Onboard a tenant under a managed system. Call once per tenant. */
         post: operations["onboardManagedSystemTenant"];
@@ -172,6 +190,141 @@ export interface components {
          * @enum {string}
          */
         role: "admin" | "member";
+        "connector-spec": {
+            name: string;
+            description: string;
+            config: {
+                name: string;
+                description: string;
+                required: boolean;
+            }[];
+            allowedDomains: string[];
+            actions: {
+                [key: string]: {
+                    create?: {
+                        endpoints: {
+                            method: string;
+                            url: string;
+                            description: string;
+                        }[];
+                        description: string;
+                        config: {
+                            name: string;
+                            description: string;
+                            required: boolean;
+                        }[];
+                    };
+                    enable?: {
+                        endpoints: {
+                            method: string;
+                            url: string;
+                            description: string;
+                        }[];
+                        description: string;
+                        config: {
+                            name: string;
+                            description: string;
+                            required: boolean;
+                        }[];
+                    };
+                    disable?: {
+                        endpoints: {
+                            method: string;
+                            url: string;
+                            description: string;
+                        }[];
+                        description: string;
+                        config: {
+                            name: string;
+                            description: string;
+                            required: boolean;
+                        }[];
+                    };
+                    delete?: {
+                        endpoints: {
+                            method: string;
+                            url: string;
+                            description: string;
+                        }[];
+                        description: string;
+                        config: {
+                            name: string;
+                            description: string;
+                            required: boolean;
+                        }[];
+                    };
+                    read?: {
+                        endpoints: {
+                            method: string;
+                            url: string;
+                            description: string;
+                        }[];
+                        description: string;
+                        config: {
+                            name: string;
+                            description: string;
+                            required: boolean;
+                        }[];
+                    };
+                };
+            };
+            entitlements: {
+                [key: string]: {
+                    discover?: {
+                        endpoints: {
+                            method: string;
+                            url: string;
+                            description: string;
+                        }[];
+                        description: string;
+                        config: {
+                            name: string;
+                            description: string;
+                            required: boolean;
+                        }[];
+                    };
+                    grant?: {
+                        endpoints: {
+                            method: string;
+                            url: string;
+                            description: string;
+                        }[];
+                        description: string;
+                        config: {
+                            name: string;
+                            description: string;
+                            required: boolean;
+                        }[];
+                    };
+                    revoke?: {
+                        endpoints: {
+                            method: string;
+                            url: string;
+                            description: string;
+                        }[];
+                        description: string;
+                        config: {
+                            name: string;
+                            description: string;
+                            required: boolean;
+                        }[];
+                    };
+                    read?: {
+                        endpoints: {
+                            method: string;
+                            url: string;
+                            description: string;
+                        }[];
+                        description: string;
+                        config: {
+                            name: string;
+                            description: string;
+                            required: boolean;
+                        }[];
+                    };
+                };
+            };
+        };
     };
     responses: {
         /** @description Internal Server error */
@@ -460,141 +613,7 @@ export interface operations {
                         /** @description Reason for failure; set when status is failed */
                         error?: string;
                         /** @description The connector spec; set when status is success */
-                        connectorSpec?: {
-                            name: string;
-                            description: string;
-                            config: {
-                                name: string;
-                                description: string;
-                                required: boolean;
-                            }[];
-                            allowedDomains: string[];
-                            actions: {
-                                [key: string]: {
-                                    create?: {
-                                        endpoints: {
-                                            method: string;
-                                            url: string;
-                                            description: string;
-                                        }[];
-                                        description: string;
-                                        config: {
-                                            name: string;
-                                            description: string;
-                                            required: boolean;
-                                        }[];
-                                    };
-                                    enable?: {
-                                        endpoints: {
-                                            method: string;
-                                            url: string;
-                                            description: string;
-                                        }[];
-                                        description: string;
-                                        config: {
-                                            name: string;
-                                            description: string;
-                                            required: boolean;
-                                        }[];
-                                    };
-                                    disable?: {
-                                        endpoints: {
-                                            method: string;
-                                            url: string;
-                                            description: string;
-                                        }[];
-                                        description: string;
-                                        config: {
-                                            name: string;
-                                            description: string;
-                                            required: boolean;
-                                        }[];
-                                    };
-                                    delete?: {
-                                        endpoints: {
-                                            method: string;
-                                            url: string;
-                                            description: string;
-                                        }[];
-                                        description: string;
-                                        config: {
-                                            name: string;
-                                            description: string;
-                                            required: boolean;
-                                        }[];
-                                    };
-                                    read?: {
-                                        endpoints: {
-                                            method: string;
-                                            url: string;
-                                            description: string;
-                                        }[];
-                                        description: string;
-                                        config: {
-                                            name: string;
-                                            description: string;
-                                            required: boolean;
-                                        }[];
-                                    };
-                                };
-                            };
-                            entitlements: {
-                                [key: string]: {
-                                    discover?: {
-                                        endpoints: {
-                                            method: string;
-                                            url: string;
-                                            description: string;
-                                        }[];
-                                        description: string;
-                                        config: {
-                                            name: string;
-                                            description: string;
-                                            required: boolean;
-                                        }[];
-                                    };
-                                    grant?: {
-                                        endpoints: {
-                                            method: string;
-                                            url: string;
-                                            description: string;
-                                        }[];
-                                        description: string;
-                                        config: {
-                                            name: string;
-                                            description: string;
-                                            required: boolean;
-                                        }[];
-                                    };
-                                    revoke?: {
-                                        endpoints: {
-                                            method: string;
-                                            url: string;
-                                            description: string;
-                                        }[];
-                                        description: string;
-                                        config: {
-                                            name: string;
-                                            description: string;
-                                            required: boolean;
-                                        }[];
-                                    };
-                                    read?: {
-                                        endpoints: {
-                                            method: string;
-                                            url: string;
-                                            description: string;
-                                        }[];
-                                        description: string;
-                                        config: {
-                                            name: string;
-                                            description: string;
-                                            required: boolean;
-                                        }[];
-                                    };
-                                };
-                            };
-                        };
+                        connectorSpec?: components["schemas"]["connector-spec"];
                     };
                 };
             };
@@ -665,6 +684,74 @@ export interface operations {
             500: components["responses"]["internal-server-error"];
         };
     };
+    getManagedSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Id of the managed system */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The managed system and its connector spec */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        connectorUrl: string;
+                        connectorHash: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        connectorSpec: components["schemas"]["connector-spec"];
+                    };
+                };
+            };
+            401: components["responses"]["unauthenticated-error"];
+            404: components["responses"]["not-found-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
+    listManagedSystemTenants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Id of the managed system the tenants belong to */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenants onboarded under the managed system */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** @description Tenant id in the target system (realm name, account id, ...) */
+                        externalId: string;
+                        /** @description Human readable tenant name */
+                        name: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                    }[];
+                };
+            };
+            401: components["responses"]["unauthenticated-error"];
+            404: components["responses"]["not-found-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
     onboardManagedSystemTenant: {
         parameters: {
             query?: never;
@@ -682,10 +769,6 @@ export interface operations {
                     externalId: string;
                     /** @description Human readable tenant name */
                     name: string;
-                    /** @description Arbitrary tenant metadata */
-                    metadata?: {
-                        [key: string]: unknown;
-                    };
                 };
             };
         };
@@ -716,6 +799,7 @@ export interface operations {
             };
             401: components["responses"]["unauthenticated-error"];
             404: components["responses"]["not-found-error"];
+            409: components["responses"]["conflict-error"];
             500: components["responses"]["internal-server-error"];
         };
     };
