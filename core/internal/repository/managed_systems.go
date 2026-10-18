@@ -75,6 +75,11 @@ func (m *ManagedSystemRepository) CreateManagedSystemTenant(ctx context.Context,
 		case pgForeignKeyViolation:
 			return nil, false, fmt.Errorf("%w: %s", domain.ErrManagedSystemNotFound, managedSystemID)
 		case pgUniqueViolation:
+			// A clashing name (distinct external id) is a real conflict, not an idempotent retry.
+			if pgErr.ConstraintName == "idx_unique_managed_system_tenant_name" {
+				return nil, false, fmt.Errorf("%w: %s", domain.ErrTenantNameExists, name)
+			}
+			// Same external id in the same system: idempotent, return the existing row.
 			existing, getErr := m.queries.GetManagedSystemTenantByExternalId(ctx, db.GetManagedSystemTenantByExternalIdParams{
 				ManagedSystemID: id,
 				ExternalID:      externalID,

@@ -67,6 +67,7 @@ CREATE TABLE managed_system_tenant (
     updated_at        TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP
 );
 CREATE UNIQUE INDEX idx_unique_managed_system_tenant ON managed_system_tenant(managed_system_id, external_id);
+CREATE UNIQUE INDEX idx_unique_managed_system_tenant_name ON managed_system_tenant(managed_system_id, name);
 
 -- Entitlements are exposed by business owners/admins. These are owned by the connectors
 CREATE TABLE entitlement (

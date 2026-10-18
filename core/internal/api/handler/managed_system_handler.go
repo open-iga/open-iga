@@ -35,6 +35,10 @@ func (h *Handler) OnboardManagedSystemTenant(ctx context.Context, request genera
 			return generated.OnboardManagedSystemTenant404JSONResponse{Message: err.Error()}, nil
 		}
 
+		if errors.Is(err, domain.ErrTenantNameExists) {
+			return generated.OnboardManagedSystemTenant409JSONResponse{Message: err.Error()}, nil
+		}
+
 		return generated.OnboardManagedSystemTenant500JSONResponse{Message: err.Error()}, nil
 	}
 

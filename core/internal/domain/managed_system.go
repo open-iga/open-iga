@@ -10,6 +10,7 @@ var (
 	ErrConnectorNotOnboardable = errors.New("connector cannot be onboarded")
 	ErrManagedSystemNameExists = errors.New("managed system name already exists")
 	ErrManagedSystemNotFound   = errors.New("managed system not found")
+	ErrTenantNameExists        = errors.New("tenant name already exists in this managed system")
 )
 
 type ManagedSystem struct {
