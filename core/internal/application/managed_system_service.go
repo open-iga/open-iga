@@ -2,7 +2,6 @@ package application
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -41,21 +40,31 @@ func (m *ManagedSystemService) Onboard(ctx context.Context, connectorOnboardId s
 	return managedSystem, nil
 }
 
-func (m *ManagedSystemService) OnboardTenant(ctx context.Context, managedSystemId string, externalId string, name string, metadata map[string]interface{}) (*domain.ManagedSystemTenant, bool, error) {
-	if metadata == nil {
-		metadata = map[string]interface{}{}
-	}
-	metadataJSON, err := json.Marshal(metadata)
-	if err != nil {
-		return nil, false, fmt.Errorf("failed to marshal tenant metadata: %w", err)
-	}
-
-	tenant, created, err := m.managedSystemRepository.CreateManagedSystemTenant(ctx, managedSystemId, externalId, name, metadataJSON)
+func (m *ManagedSystemService) OnboardTenant(ctx context.Context, managedSystemId string, externalId string, name string) (*domain.ManagedSystemTenant, bool, error) {
+	tenant, created, err := m.managedSystemRepository.CreateManagedSystemTenant(ctx, managedSystemId, externalId, name)
 	if err != nil {
 		return nil, false, fmt.Errorf("onboard tenant: %w", err)
 	}
 
 	return tenant, created, nil
+}
+
+func (m *ManagedSystemService) GetManagedSystem(ctx context.Context, managedSystemId string) (*domain.ManagedSystem, error) {
+	managedSystem, err := m.managedSystemRepository.GetManagedSystem(ctx, managedSystemId)
+	if err != nil {
+		return nil, fmt.Errorf("get managed system: %w", err)
+	}
+
+	return managedSystem, nil
+}
+
+func (m *ManagedSystemService) ListTenants(ctx context.Context, managedSystemId string) ([]*domain.ManagedSystemTenant, error) {
+	tenants, err := m.managedSystemRepository.ListManagedSystemTenants(ctx, managedSystemId)
+	if err != nil {
+		return nil, fmt.Errorf("list managed system tenants: %w", err)
+	}
+
+	return tenants, nil
 }
 
 func (m *ManagedSystemService) ListManagedSystems(ctx context.Context) ([]*domain.ManagedSystem, error) {

@@ -7,3 +7,8 @@ RETURNING *;
 SELECT *
 FROM managed_system
 ORDER BY created_at DESC;
+
+-- name: GetManagedSystem :one
+SELECT *
+FROM managed_system
+WHERE id = $1;

@@ -193,6 +193,21 @@ func (m *MockManagedSystemService) EXPECT() *MockManagedSystemServiceMockRecorde
 	return m.recorder
 }
 
+// GetManagedSystem mocks base method.
+func (m *MockManagedSystemService) GetManagedSystem(ctx context.Context, managedSystemId string) (*domain.ManagedSystem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetManagedSystem", ctx, managedSystemId)
+	ret0, _ := ret[0].(*domain.ManagedSystem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetManagedSystem indicates an expected call of GetManagedSystem.
+func (mr *MockManagedSystemServiceMockRecorder) GetManagedSystem(ctx, managedSystemId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManagedSystem", reflect.TypeOf((*MockManagedSystemService)(nil).GetManagedSystem), ctx, managedSystemId)
+}
+
 // ListManagedSystems mocks base method.
 func (m *MockManagedSystemService) ListManagedSystems(ctx context.Context) ([]*domain.ManagedSystem, error) {
 	m.ctrl.T.Helper()
@@ -206,6 +221,21 @@ func (m *MockManagedSystemService) ListManagedSystems(ctx context.Context) ([]*d
 func (mr *MockManagedSystemServiceMockRecorder) ListManagedSystems(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListManagedSystems", reflect.TypeOf((*MockManagedSystemService)(nil).ListManagedSystems), ctx)
+}
+
+// ListTenants mocks base method.
+func (m *MockManagedSystemService) ListTenants(ctx context.Context, managedSystemId string) ([]*domain.ManagedSystemTenant, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTenants", ctx, managedSystemId)
+	ret0, _ := ret[0].([]*domain.ManagedSystemTenant)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTenants indicates an expected call of ListTenants.
+func (mr *MockManagedSystemServiceMockRecorder) ListTenants(ctx, managedSystemId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTenants", reflect.TypeOf((*MockManagedSystemService)(nil).ListTenants), ctx, managedSystemId)
 }
 
 // Onboard mocks base method.
@@ -224,9 +254,9 @@ func (mr *MockManagedSystemServiceMockRecorder) Onboard(ctx, connectorOnboardId 
 }
 
 // OnboardTenant mocks base method.
-func (m *MockManagedSystemService) OnboardTenant(ctx context.Context, managedSystemId, externalId, name string, metadata map[string]any) (*domain.ManagedSystemTenant, bool, error) {
+func (m *MockManagedSystemService) OnboardTenant(ctx context.Context, managedSystemId, externalId, name string) (*domain.ManagedSystemTenant, bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OnboardTenant", ctx, managedSystemId, externalId, name, metadata)
+	ret := m.ctrl.Call(m, "OnboardTenant", ctx, managedSystemId, externalId, name)
 	ret0, _ := ret[0].(*domain.ManagedSystemTenant)
 	ret1, _ := ret[1].(bool)
 	ret2, _ := ret[2].(error)
@@ -234,7 +264,7 @@ func (m *MockManagedSystemService) OnboardTenant(ctx context.Context, managedSys
 }
 
 // OnboardTenant indicates an expected call of OnboardTenant.
-func (mr *MockManagedSystemServiceMockRecorder) OnboardTenant(ctx, managedSystemId, externalId, name, metadata any) *gomock.Call {
+func (mr *MockManagedSystemServiceMockRecorder) OnboardTenant(ctx, managedSystemId, externalId, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnboardTenant", reflect.TypeOf((*MockManagedSystemService)(nil).OnboardTenant), ctx, managedSystemId, externalId, name, metadata)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnboardTenant", reflect.TypeOf((*MockManagedSystemService)(nil).OnboardTenant), ctx, managedSystemId, externalId, name)
 }

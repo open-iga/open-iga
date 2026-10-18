@@ -130,9 +130,6 @@ type OnboardManagedSystemTenantJSONBody struct {
 	// ExternalId Tenant id in the target system (realm name, account id, ...)
 	ExternalId string `json:"externalId"`
 
-	// Metadata Arbitrary tenant metadata
-	Metadata *map[string]interface{} `json:"metadata,omitempty"`
-
 	// Name Human readable tenant name
 	Name string `json:"name"`
 }
@@ -175,6 +172,12 @@ type ServerInterface interface {
 
 	// (POST /api/v1/managed-systems)
 	OnboardManagedSystem(w http.ResponseWriter, r *http.Request)
+
+	// (GET /api/v1/managed-systems/{id})
+	GetManagedSystem(w http.ResponseWriter, r *http.Request, id string)
+
+	// (GET /api/v1/managed-systems/{id}/tenant)
+	ListManagedSystemTenants(w http.ResponseWriter, r *http.Request, id string)
 
 	// (POST /api/v1/managed-systems/{id}/tenant)
 	OnboardManagedSystemTenant(w http.ResponseWriter, r *http.Request, id string)
@@ -224,6 +227,16 @@ func (_ Unimplemented) ListManagedSystems(w http.ResponseWriter, r *http.Request
 
 // (POST /api/v1/managed-systems)
 func (_ Unimplemented) OnboardManagedSystem(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/managed-systems/{id})
+func (_ Unimplemented) GetManagedSystem(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/managed-systems/{id}/tenant)
+func (_ Unimplemented) ListManagedSystemTenants(w http.ResponseWriter, r *http.Request, id string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -438,6 +451,58 @@ func (siw *ServerInterfaceWrapper) OnboardManagedSystem(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// GetManagedSystem operation middleware
+func (siw *ServerInterfaceWrapper) GetManagedSystem(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetManagedSystem(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListManagedSystemTenants operation middleware
+func (siw *ServerInterfaceWrapper) ListManagedSystemTenants(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListManagedSystemTenants(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // OnboardManagedSystemTenant operation middleware
 func (siw *ServerInterfaceWrapper) OnboardManagedSystemTenant(w http.ResponseWriter, r *http.Request) {
 
@@ -614,6 +679,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/managed-systems", wrapper.OnboardManagedSystem)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/managed-systems/{id}", wrapper.GetManagedSystem)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/managed-systems/{id}/tenant", wrapper.ListManagedSystemTenants)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/managed-systems/{id}/tenant", wrapper.OnboardManagedSystemTenant)
@@ -897,7 +968,6 @@ type GetConnectorOnboardingRequestDetailsResponseObject interface {
 }
 
 type GetConnectorOnboardingRequestDetails200JSONResponse struct {
-	// ConnectorSpec The connector spec; set when status is success
 	ConnectorSpec *domain.ConnectorSpec `json:"connectorSpec,omitempty"`
 
 	// Error Reason for failure; set when status is failed
@@ -1116,6 +1186,164 @@ func (response OnboardManagedSystem500JSONResponse) VisitOnboardManagedSystemRes
 	return err
 }
 
+type GetManagedSystemRequestObject struct {
+	Id string `json:"id"`
+}
+
+type GetManagedSystemResponseObject interface {
+	VisitGetManagedSystemResponse(w http.ResponseWriter) error
+}
+
+type GetManagedSystem200JSONResponse struct {
+	ConnectorHash string               `json:"connectorHash"`
+	ConnectorSpec domain.ConnectorSpec `json:"connectorSpec"`
+	ConnectorUrl  string               `json:"connectorUrl"`
+	CreatedAt     time.Time            `json:"createdAt"`
+	Id            string               `json:"id"`
+	Name          string               `json:"name"`
+}
+
+func (response GetManagedSystem200JSONResponse) VisitGetManagedSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetManagedSystem401JSONResponse struct {
+	Message  string `json:"message"`
+	Redirect string `json:"redirect"`
+}
+
+func (response GetManagedSystem401JSONResponse) VisitGetManagedSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetManagedSystem404JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response GetManagedSystem404JSONResponse) VisitGetManagedSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetManagedSystem500JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response GetManagedSystem500JSONResponse) VisitGetManagedSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListManagedSystemTenantsRequestObject struct {
+	Id string `json:"id"`
+}
+
+type ListManagedSystemTenantsResponseObject interface {
+	VisitListManagedSystemTenantsResponse(w http.ResponseWriter) error
+}
+
+type ListManagedSystemTenants200JSONResponse []struct {
+	CreatedAt time.Time `json:"createdAt"`
+
+	// ExternalId Tenant id in the target system (realm name, account id, ...)
+	ExternalId string `json:"externalId"`
+	Id         string `json:"id"`
+
+	// Name Human readable tenant name
+	Name string `json:"name"`
+}
+
+func (response ListManagedSystemTenants200JSONResponse) VisitListManagedSystemTenantsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListManagedSystemTenants401JSONResponse struct {
+	Message  string `json:"message"`
+	Redirect string `json:"redirect"`
+}
+
+func (response ListManagedSystemTenants401JSONResponse) VisitListManagedSystemTenantsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListManagedSystemTenants404JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response ListManagedSystemTenants404JSONResponse) VisitListManagedSystemTenantsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListManagedSystemTenants500JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response ListManagedSystemTenants500JSONResponse) VisitListManagedSystemTenantsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type OnboardManagedSystemTenantRequestObject struct {
 	Id   string `json:"id"`
 	Body *OnboardManagedSystemTenantJSONRequestBody
@@ -1294,6 +1522,12 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/managed-systems)
 	OnboardManagedSystem(ctx context.Context, request OnboardManagedSystemRequestObject) (OnboardManagedSystemResponseObject, error)
+
+	// (GET /api/v1/managed-systems/{id})
+	GetManagedSystem(ctx context.Context, request GetManagedSystemRequestObject) (GetManagedSystemResponseObject, error)
+
+	// (GET /api/v1/managed-systems/{id}/tenant)
+	ListManagedSystemTenants(ctx context.Context, request ListManagedSystemTenantsRequestObject) (ListManagedSystemTenantsResponseObject, error)
 
 	// (POST /api/v1/managed-systems/{id}/tenant)
 	OnboardManagedSystemTenant(ctx context.Context, request OnboardManagedSystemTenantRequestObject) (OnboardManagedSystemTenantResponseObject, error)
@@ -1544,6 +1778,58 @@ func (sh *strictHandler) OnboardManagedSystem(w http.ResponseWriter, r *http.Req
 	}
 }
 
+// GetManagedSystem operation middleware
+func (sh *strictHandler) GetManagedSystem(w http.ResponseWriter, r *http.Request, id string) {
+	var request GetManagedSystemRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetManagedSystem(ctx, request.(GetManagedSystemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetManagedSystem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetManagedSystemResponseObject); ok {
+		if err := validResponse.VisitGetManagedSystemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListManagedSystemTenants operation middleware
+func (sh *strictHandler) ListManagedSystemTenants(w http.ResponseWriter, r *http.Request, id string) {
+	var request ListManagedSystemTenantsRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListManagedSystemTenants(ctx, request.(ListManagedSystemTenantsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListManagedSystemTenants")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListManagedSystemTenantsResponseObject); ok {
+		if err := validResponse.VisitListManagedSystemTenantsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // OnboardManagedSystemTenant operation middleware
 func (sh *strictHandler) OnboardManagedSystemTenant(w http.ResponseWriter, r *http.Request, id string) {
 	var request OnboardManagedSystemTenantRequestObject
@@ -1606,41 +1892,43 @@ func (sh *strictHandler) GetUserDetails(w http.ResponseWriter, r *http.Request) 
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
+	"6rTd/j8AAP//",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

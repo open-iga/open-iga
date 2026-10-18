@@ -17,6 +17,7 @@ type ManagedSystem struct {
 	Name          string
 	ConnectorUrl  string
 	ConnectorHash string
+	ConnectorSpec *ConnectorSpec
 	CreatedAt     time.Time
 }
 
@@ -25,4 +26,5 @@ type ManagedSystemTenant struct {
 	ManagedSystemId string
 	ExternalId      string
 	Name            string
+	CreatedAt       time.Time
 }

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/open-iga/core/internal/domain"
 	"github.com/open-iga/core/internal/repository/db"
@@ -48,12 +49,12 @@ func (m *ManagedSystemRepository) CreateManagedSystem(ctx context.Context, name 
 		return nil, fmt.Errorf("failed to create managed system: %w", err)
 	}
 
-	return managedSystem.ToDomain(), nil
+	return managedSystem.ToDomain(m.logger), nil
 }
 
 // CreateManagedSystemTenant is idempotent: if a tenant with the same external id
 // already exists for the managed system, the existing row is returned with created=false.
-func (m *ManagedSystemRepository) CreateManagedSystemTenant(ctx context.Context, managedSystemID string, externalID string, name string, metadata []byte) (tenant *domain.ManagedSystemTenant, created bool, err error) {
+func (m *ManagedSystemRepository) CreateManagedSystemTenant(ctx context.Context, managedSystemID string, externalID string, name string) (tenant *domain.ManagedSystemTenant, created bool, err error) {
 	id, err := uuid.Parse(managedSystemID)
 	if err != nil {
 		return nil, false, fmt.Errorf("%w: %s", domain.ErrManagedSystemNotFound, managedSystemID)
@@ -63,7 +64,6 @@ func (m *ManagedSystemRepository) CreateManagedSystemTenant(ctx context.Context,
 		ManagedSystemID: id,
 		ExternalID:      externalID,
 		Name:            name,
-		Metadata:        metadata,
 	})
 	if err == nil {
 		return row.ToDomain(), true, nil
@@ -90,15 +90,52 @@ func (m *ManagedSystemRepository) CreateManagedSystemTenant(ctx context.Context,
 	return nil, false, fmt.Errorf("failed to create managed system tenant: %w", err)
 }
 
+func (m *ManagedSystemRepository) GetManagedSystem(ctx context.Context, managedSystemID string) (*domain.ManagedSystem, error) {
+	id, err := uuid.Parse(managedSystemID)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", domain.ErrManagedSystemNotFound, managedSystemID)
+	}
+
+	row, err := m.queries.GetManagedSystem(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("%w: %s", domain.ErrManagedSystemNotFound, managedSystemID)
+		}
+		return nil, fmt.Errorf("failed to get managed system: %w", err)
+	}
+
+	return row.ToDomain(m.logger), nil
+}
+
+func (m *ManagedSystemRepository) ListManagedSystemTenants(ctx context.Context, managedSystemID string) ([]*domain.ManagedSystemTenant, error) {
+	id, err := uuid.Parse(managedSystemID)
+	if err != nil {
+		// Invalid UUID = not a valid managed system id
+		return nil, fmt.Errorf("%w: %s", domain.ErrManagedSystemNotFound, managedSystemID)
+	}
+
+	managedSystemTenants, err := m.queries.ListManagedSystemTenants(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list managed system tenants: %w", err)
+	}
+
+	tenants := make([]*domain.ManagedSystemTenant, len(managedSystemTenants))
+	for i := range managedSystemTenants {
+		tenants[i] = managedSystemTenants[i].ToDomain()
+	}
+
+	return tenants, nil
+}
+
 func (m *ManagedSystemRepository) ListManagedSystems(ctx context.Context) ([]*domain.ManagedSystem, error) {
-	rows, err := m.queries.ListManagedSystems(ctx)
+	listManagedSystems, err := m.queries.ListManagedSystems(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list managed systems: %w", err)
 	}
 
-	managedSystems := make([]*domain.ManagedSystem, len(rows))
-	for i := range rows {
-		managedSystems[i] = rows[i].ToDomain()
+	managedSystems := make([]*domain.ManagedSystem, len(listManagedSystems))
+	for i := range listManagedSystems {
+		managedSystems[i] = listManagedSystems[i].ToDomain(m.logger)
 	}
 
 	return managedSystems, nil

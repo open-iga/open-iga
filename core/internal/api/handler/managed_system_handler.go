@@ -29,13 +29,7 @@ func (h *Handler) OnboardManagedSystem(ctx context.Context, request generated.On
 }
 
 func (h *Handler) OnboardManagedSystemTenant(ctx context.Context, request generated.OnboardManagedSystemTenantRequestObject) (generated.OnboardManagedSystemTenantResponseObject, error) {
-	// for now, metadata is not provided by the UI
-	var metadata map[string]interface{}
-	if request.Body.Metadata != nil {
-		metadata = *request.Body.Metadata
-	}
-
-	tenant, created, err := h.application.ManagedSystemService.OnboardTenant(ctx, request.Id, request.Body.ExternalId, request.Body.Name, metadata)
+	tenant, created, err := h.application.ManagedSystemService.OnboardTenant(ctx, request.Id, request.Body.ExternalId, request.Body.Name)
 	if err != nil {
 		if errors.Is(err, domain.ErrManagedSystemNotFound) {
 			return generated.OnboardManagedSystemTenant404JSONResponse{Message: err.Error()}, nil
@@ -50,6 +44,47 @@ func (h *Handler) OnboardManagedSystemTenant(ctx context.Context, request genera
 	}
 
 	return generated.OnboardManagedSystemTenant201JSONResponse{Id: tenant.Id}, nil
+}
+
+func (h *Handler) GetManagedSystem(ctx context.Context, request generated.GetManagedSystemRequestObject) (generated.GetManagedSystemResponseObject, error) {
+	managedSystem, err := h.application.ManagedSystemService.GetManagedSystem(ctx, request.Id)
+	if err != nil {
+		if errors.Is(err, domain.ErrManagedSystemNotFound) {
+			return generated.GetManagedSystem404JSONResponse{Message: err.Error()}, nil
+		}
+		return generated.GetManagedSystem500JSONResponse{Message: err.Error()}, nil
+	}
+
+	var spec domain.ConnectorSpec
+	if managedSystem.ConnectorSpec != nil {
+		spec = *managedSystem.ConnectorSpec
+	}
+
+	return generated.GetManagedSystem200JSONResponse{
+		Id:            managedSystem.Id,
+		Name:          managedSystem.Name,
+		ConnectorUrl:  managedSystem.ConnectorUrl,
+		ConnectorHash: managedSystem.ConnectorHash,
+		ConnectorSpec: spec,
+		CreatedAt:     managedSystem.CreatedAt,
+	}, nil
+}
+
+func (h *Handler) ListManagedSystemTenants(ctx context.Context, request generated.ListManagedSystemTenantsRequestObject) (generated.ListManagedSystemTenantsResponseObject, error) {
+	tenants, err := h.application.ManagedSystemService.ListTenants(ctx, request.Id)
+	if err != nil {
+		return generated.ListManagedSystemTenants500JSONResponse{Message: err.Error()}, nil
+	}
+
+	response := make(generated.ListManagedSystemTenants200JSONResponse, len(tenants))
+	for i, tenant := range tenants {
+		response[i].Id = tenant.Id
+		response[i].ExternalId = tenant.ExternalId
+		response[i].Name = tenant.Name
+		response[i].CreatedAt = tenant.CreatedAt
+	}
+
+	return response, nil
 }
 
 func (h *Handler) ListManagedSystems(ctx context.Context, _ generated.ListManagedSystemsRequestObject) (generated.ListManagedSystemsResponseObject, error) {

@@ -7,6 +7,8 @@ package db
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 const createManagedSystem = `-- name: CreateManagedSystem :one
@@ -29,6 +31,27 @@ func (q *Queries) CreateManagedSystem(ctx context.Context, arg CreateManagedSyst
 		arg.ConnectorHash,
 		arg.ConnectorSpec,
 	)
+	var i ManagedSystem
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ConnectorUrl,
+		&i.ConnectorHash,
+		&i.ConnectorSpec,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getManagedSystem = `-- name: GetManagedSystem :one
+SELECT id, name, connector_url, connector_hash, connector_spec, created_at, updated_at
+FROM managed_system
+WHERE id = $1
+`
+
+func (q *Queries) GetManagedSystem(ctx context.Context, id uuid.UUID) (ManagedSystem, error) {
+	row := q.db.QueryRow(ctx, getManagedSystem, id)
 	var i ManagedSystem
 	err := row.Scan(
 		&i.ID,

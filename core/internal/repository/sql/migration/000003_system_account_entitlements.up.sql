@@ -17,7 +17,6 @@ CREATE TABLE managed_system_tenant (
     -- tenant id in the target system (realm name, account id, ...)
     external_id       VARCHAR(255)   NOT NULL,
     name              VARCHAR(255)   NOT NULL,
-    metadata          JSONB          NOT NULL DEFAULT '{}',
     created_at        TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
     updated_at        TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP
 );

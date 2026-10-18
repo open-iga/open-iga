@@ -63,7 +63,6 @@ CREATE TABLE managed_system_tenant (
     managed_system_id uuid REFERENCES managed_system(id) NOT NULL,
     external_id       VARCHAR(255)   NOT NULL,
     name              VARCHAR(255)   NOT NULL,
-    metadata          JSONB          NOT NULL DEFAULT '{}',
     created_at        TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
     updated_at        TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP
 );
