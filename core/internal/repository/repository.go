@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/exaring/otelpgx"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
@@ -29,6 +30,12 @@ func NewRepository(appConfig *common.AppConfig, logger *slog.Logger) (*contract.
 	}
 	config.MaxConns = MaxConnections
 	config.MinConns = MinConnections
+
+	// Trace DB queries when the traces signal is enabled; otelpgx uses the global
+	// tracer provider so spans nest under the active HTTP request span.
+	if appConfig.TracesEndpoint != "" {
+		config.ConnConfig.Tracer = otelpgx.NewTracer()
+	}
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {

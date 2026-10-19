@@ -56,6 +56,20 @@ func (mr *MockAuthServiceMockRecorder) DeactivateSession(ctx, sessionId any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateSession", reflect.TypeOf((*MockAuthService)(nil).DeactivateSession), ctx, sessionId)
 }
 
+// EnsureAdmin mocks base method.
+func (m *MockAuthService) EnsureAdmin(ctx context.Context, adminEmail string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnsureAdmin", ctx, adminEmail)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// EnsureAdmin indicates an expected call of EnsureAdmin.
+func (mr *MockAuthServiceMockRecorder) EnsureAdmin(ctx, adminEmail any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsureAdmin", reflect.TypeOf((*MockAuthService)(nil).EnsureAdmin), ctx, adminEmail)
+}
+
 // GenerateSession mocks base method.
 func (m *MockAuthService) GenerateSession(ctx context.Context, provider, authCode string) (*domain.Session, error) {
 	m.ctrl.T.Helper()

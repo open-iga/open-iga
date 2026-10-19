@@ -34,6 +34,14 @@ type (
 		Email string
 	}
 
+	// Telemetry holds per-signal OTLP endpoint URLs. Each is a full URL
+	// (e.g. http://localhost:4318/v1/traces); an empty value disables that signal.
+	Telemetry struct {
+		TracesEndpoint  string
+		MetricsEndpoint string
+		LogsEndpoint    string
+	}
+
 	AppConfig struct {
 		AdminUser AdminUser
 		Port      string
@@ -41,6 +49,7 @@ type (
 		Oauth     Oauth
 		Database  Database
 		Redirect  Redirect
+		Telemetry
 	}
 )
 
@@ -56,6 +65,7 @@ type (
 
 	ConfigFromEnv struct {
 		AdminUserEmail, Port, HostUrl, GoogleOauthClientId, GoogleOauthClientSecret, DatabaseUrl *EnvField[any]
+		OtelTracesEndpoint, OtelMetricsEndpoint, OtelLogsEndpoint                                *EnvField[any]
 	}
 )
 
@@ -109,8 +119,11 @@ var (
 	GoogleOauthClientId     = Var[any]("GOOGLE_OAUTH_CLIENT_ID").WithDescription("Google Client ID for Oauth2 flow").IsRequired()
 	GoogleOauthClientSecret = Var[any]("GOOGLE_OAUTH_CLIENT_SECRET").WithDescription("Google Client Secret for Oauth2 flow").IsRequired()
 	DatabaseUrl             = Var[any]("DATABASE_URL").WithDescription("PostgreSQL connection string").IsRequired()
+	OtelTracesEndpoint      = Var[any]("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT").WithDefault("").WithDescription("OTLP traces endpoint URL; empty disables tracing").WithValidationRules(is.URL)
+	OtelMetricsEndpoint     = Var[any]("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT").WithDefault("").WithDescription("OTLP metrics endpoint URL; empty disables metrics").WithValidationRules(is.URL)
+	OtelLogsEndpoint        = Var[any]("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT").WithDefault("").WithDescription("OTLP logs endpoint URL; empty disables log export").WithValidationRules(is.URL)
 
-	configFromEnv = ConfigFromEnv{AdminUserEmail, Port, HostUrl, GoogleOauthClientId, GoogleOauthClientSecret, DatabaseUrl}
+	configFromEnv = ConfigFromEnv{AdminUserEmail, Port, HostUrl, GoogleOauthClientId, GoogleOauthClientSecret, DatabaseUrl, OtelTracesEndpoint, OtelMetricsEndpoint, OtelLogsEndpoint}
 )
 
 func validateEnv() (*ConfigFromEnv, error) {
@@ -156,6 +169,11 @@ func NewAppConfig() *AppConfig {
 			Home:               "/",
 			SignIn:             "/auth/sign-in",
 			GoogleAuthCallback: "/auth/google/callback",
+		},
+		Telemetry: Telemetry{
+			TracesEndpoint:  validatedEnv.OtelTracesEndpoint.value.(string),
+			MetricsEndpoint: validatedEnv.OtelMetricsEndpoint.value.(string),
+			LogsEndpoint:    validatedEnv.OtelLogsEndpoint.value.(string),
 		},
 	}
 }

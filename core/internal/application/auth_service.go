@@ -24,6 +24,29 @@ func NewAuthService(oauth2Clients contract.Oauth2Clients, logger *slog.Logger, s
 	return &AuthService{oauth2Clients, logger, sessionRepository, identityRepository}
 }
 
+// EnsureAdmin onboards the admin identity on first run. If an admin already
+// exists it is a no-op. If none exists, adminEmail must be set so the admin can
+// be created, otherwise the application cannot be started.
+func (a *AuthService) EnsureAdmin(ctx context.Context, adminEmail string) error {
+	hasAdmin, err := a.identityRepository.HasAdmin(ctx)
+	if err != nil {
+		return fmt.Errorf("check if admin role exists: %w", err)
+	}
+	if hasAdmin {
+		return nil
+	}
+
+	if adminEmail == "" {
+		return errors.New("ADMIN_USER is required to start the application. Make sure to set a valid email")
+	}
+
+	_, err = a.identityRepository.FindOrCreateWithRole(ctx, domain.NewOauthUser("", "", adminEmail), domain.AdminRole)
+	if err != nil {
+		return fmt.Errorf("onboard admin: %w", err)
+	}
+	return nil
+}
+
 func (a *AuthService) GetConsentPageDetails(ctx context.Context, provider string) (*domain.ConsentDetails, error) {
 	client, ok := a.oauth2Clients[contract.Provider(provider)]
 
