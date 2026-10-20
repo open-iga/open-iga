@@ -59,6 +59,18 @@ func TestHandler_OnboardManagedSystem(t *testing.T) {
 		assert.JSONEq(t, `{"message": "connector cannot be onboarded"}`, rec.Body.String())
 	})
 
+	t.Run("returns 404 when required env vars are missing on the core", func(t *testing.T) {
+		router, managedSystemServiceMock := setupRouterWithMockManagedSystemService(t)
+		managedSystemServiceMock.EXPECT().Onboard(gomock.Any(), "onboard-id").Return(nil, domain.ErrMissingRequiredEnvVars)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/managed-systems", strings.NewReader(`{"connectorOnboardingId": "onboard-id"}`))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusNotFound, rec.Code)
+	})
+
 	t.Run("returns 500 when onboarding fails", func(t *testing.T) {
 		router, managedSystemServiceMock := setupRouterWithMockManagedSystemService(t)
 		managedSystemServiceMock.EXPECT().Onboard(gomock.Any(), "onboard-id").Return(nil, errors.New("failed to onboard"))

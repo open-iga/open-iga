@@ -22,10 +22,16 @@ func (h *Handler) GetConnectorOnboardingRequestDetails(ctx context.Context, requ
 		}, nil
 	}
 
+	missingEnvVars := connectorValidationResult.MissingEnvVars
+	if missingEnvVars == nil {
+		missingEnvVars = []string{} // always emit [], never null, for a non-success status
+	}
+
 	resp := generated.GetConnectorOnboardingRequestDetails200JSONResponse{
-		Status:        generated.GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus(connectorValidationResult.Status),
-		Error:         nil,
-		ConnectorSpec: nil,
+		Status:         generated.GetConnectorOnboardingRequestDetails200JSONResponseBodyStatus(connectorValidationResult.Status),
+		Error:          nil,
+		ConnectorSpec:  nil,
+		MissingEnvVars: missingEnvVars,
 	}
 
 	if connectorValidationResult.Error != nil {

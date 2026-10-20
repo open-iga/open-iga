@@ -68,4 +68,21 @@ func TestConnectorService_GetOnboardedConnectorDetails(t *testing.T) {
 		assert.False(t, ok)
 		assert.Nil(t, res)
 	})
+
+	t.Run("computes missing required env vars against the core environment on read", func(t *testing.T) {
+		cs, _ := setupConnectorServiceWithMocks(t)
+		required := true
+		cs.onboardingResults["id"] = domain.ConnectorValidationResult{
+			Status: domain.ConnectorValidationSuccess,
+			ConnectorSpec: &domain.ConnectorSpec{
+				EnvVars: []string{"OPEN_IGA_TEST_UNSET_ENV"},
+				Config:  []domain.Config{{Name: "OPEN_IGA_TEST_UNSET_ENV", Required: &required}},
+			},
+		}
+
+		res, ok := cs.GetOnboardedConnectorDetails(context.TODO(), "id")
+
+		assert.True(t, ok)
+		assert.Equal(t, []string{"OPEN_IGA_TEST_UNSET_ENV"}, res.MissingEnvVars)
+	})
 }

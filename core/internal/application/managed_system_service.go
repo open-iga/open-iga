@@ -31,6 +31,9 @@ func (m *ManagedSystemService) Onboard(ctx context.Context, connectorOnboardId s
 		return nil, fmt.Errorf("connector '%s' in state %s: %w", connectorOnboardId, connectorDetails.Status, domain.ErrConnectorNotOnboardable)
 	}
 
+	if len(connectorDetails.MissingEnvVars) > 0 {
+		return nil, fmt.Errorf("connector '%s' missing env vars %v: %w", connectorOnboardId, connectorDetails.MissingEnvVars, domain.ErrMissingRequiredEnvVars)
+	}
 	managedSystem, err := m.managedSystemRepository.CreateManagedSystem(ctx, connectorDetails.ConnectorSpec.Name, connectorDetails.ConnectorUrl, connectorDetails.ConnectorHash, connectorDetails.ConnectorSpec)
 	if err != nil {
 		m.logger.Warn("failed to create managed system", "connector", connectorDetails.ConnectorSpec.Name)
@@ -38,15 +41,6 @@ func (m *ManagedSystemService) Onboard(ctx context.Context, connectorOnboardId s
 	}
 
 	return managedSystem, nil
-}
-
-func (m *ManagedSystemService) OnboardTenant(ctx context.Context, managedSystemId string, externalId string, name string) (*domain.ManagedSystemTenant, bool, error) {
-	tenant, created, err := m.managedSystemRepository.CreateManagedSystemTenant(ctx, managedSystemId, externalId, name)
-	if err != nil {
-		return nil, false, fmt.Errorf("onboard tenant: %w", err)
-	}
-
-	return tenant, created, nil
 }
 
 func (m *ManagedSystemService) GetManagedSystem(ctx context.Context, managedSystemId string) (*domain.ManagedSystem, error) {
@@ -58,6 +52,15 @@ func (m *ManagedSystemService) GetManagedSystem(ctx context.Context, managedSyst
 	return managedSystem, nil
 }
 
+func (m *ManagedSystemService) ListManagedSystems(ctx context.Context) ([]*domain.ManagedSystem, error) {
+	managedSystems, err := m.managedSystemRepository.ListManagedSystems(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list managed systems: %w", err)
+	}
+
+	return managedSystems, nil
+}
+
 func (m *ManagedSystemService) ListTenants(ctx context.Context, managedSystemId string) ([]*domain.ManagedSystemTenant, error) {
 	tenants, err := m.managedSystemRepository.ListManagedSystemTenants(ctx, managedSystemId)
 	if err != nil {
@@ -67,11 +70,11 @@ func (m *ManagedSystemService) ListTenants(ctx context.Context, managedSystemId 
 	return tenants, nil
 }
 
-func (m *ManagedSystemService) ListManagedSystems(ctx context.Context) ([]*domain.ManagedSystem, error) {
-	managedSystems, err := m.managedSystemRepository.ListManagedSystems(ctx)
+func (m *ManagedSystemService) OnboardTenant(ctx context.Context, managedSystemId string, externalId string, name string) (*domain.ManagedSystemTenant, bool, error) {
+	tenant, created, err := m.managedSystemRepository.CreateManagedSystemTenant(ctx, managedSystemId, externalId, name)
 	if err != nil {
-		return nil, fmt.Errorf("list managed systems: %w", err)
+		return nil, false, fmt.Errorf("onboard tenant: %w", err)
 	}
 
-	return managedSystems, nil
+	return tenant, created, nil
 }

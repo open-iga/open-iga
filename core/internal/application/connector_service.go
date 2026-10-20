@@ -35,11 +35,12 @@ func (c *ConnectorService) ValidateByUrl(ctx context.Context, connectorUrl strin
 	c.mu.Lock()
 	id := uuid.New().String()
 	c.onboardingResults[id] = domain.ConnectorValidationResult{
-		Error:         nil,
-		ConnectorHash: connectorHash,
-		ConnectorUrl:  connectorUrl,
-		Status:        domain.ConnectorValidationPending,
-		ConnectorSpec: nil,
+		Error:          nil,
+		ConnectorHash:  connectorHash,
+		ConnectorUrl:   connectorUrl,
+		Status:         domain.ConnectorValidationPending,
+		ConnectorSpec:  nil,
+		MissingEnvVars: nil,
 	}
 	c.mu.Unlock()
 
@@ -57,11 +58,12 @@ func (c *ConnectorService) ValidateByUrl(ctx context.Context, connectorUrl strin
 		c.logger.Debug("Validation completed", "connectorUrl", connectorUrl, "id", id, "status", status)
 		c.mu.Lock()
 		c.onboardingResults[id] = domain.ConnectorValidationResult{
-			Error:         err,
-			ConnectorHash: connectorHash,
-			ConnectorUrl:  connectorUrl,
-			Status:        status,
-			ConnectorSpec: connectorSpec,
+			Error:          err,
+			ConnectorHash:  connectorHash,
+			ConnectorUrl:   connectorUrl,
+			Status:         status,
+			ConnectorSpec:  connectorSpec,
+			MissingEnvVars: nil,
 		}
 		c.mu.Unlock()
 	}()
@@ -76,6 +78,10 @@ func (c *ConnectorService) GetOnboardedConnectorDetails(_ context.Context, onboa
 	value, ok := c.onboardingResults[onboardingId]
 	if !ok {
 		return nil, false
+	}
+	// Computed on read: the core's environment can change between validation and onboarding.
+	if value.ConnectorSpec != nil {
+		value.MissingEnvVars = value.ConnectorSpec.MissingRequiredEnvVars()
 	}
 	return &value, true
 }

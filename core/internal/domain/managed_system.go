@@ -8,6 +8,7 @@ import (
 var (
 	ErrConnectorNotFound       = errors.New("connector not found")
 	ErrConnectorNotOnboardable = errors.New("connector cannot be onboarded")
+	ErrMissingRequiredEnvVars  = errors.New("required env variables are not set on the core")
 	ErrManagedSystemNameExists = errors.New("managed system name already exists")
 	ErrManagedSystemNotFound   = errors.New("managed system not found")
 	ErrTenantNameExists        = errors.New("tenant name already exists in this managed system")

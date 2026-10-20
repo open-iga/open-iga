@@ -52,6 +52,50 @@ func TestManagedSystemService_Onboard(t *testing.T) {
 		assert.ErrorIs(t, err, domain.ErrConnectorNotOnboardable)
 	})
 
+	t.Run("returns ErrMissingRequiredEnvVars when a required env var is not set on the core", func(t *testing.T) {
+		svc, cs, _ := setupManagedSystemServiceWithMocks(t)
+		required := true
+		seedConnector(cs, "missing-env-id", domain.ConnectorValidationResult{
+			Status:        domain.ConnectorValidationSuccess,
+			ConnectorUrl:  "https://conn",
+			ConnectorHash: "hash",
+			ConnectorSpec: &domain.ConnectorSpec{
+				Name:    "aws",
+				EnvVars: []string{"OPEN_IGA_TEST_UNSET_ENV"},
+				Config:  []domain.Config{{Name: "OPEN_IGA_TEST_UNSET_ENV", Required: &required}},
+			},
+		})
+
+		ms, err := svc.Onboard(context.TODO(), "missing-env-id")
+
+		assert.Nil(t, ms)
+		assert.ErrorIs(t, err, domain.ErrMissingRequiredEnvVars)
+	})
+
+	t.Run("onboards when the required env var is set on the core", func(t *testing.T) {
+		svc, cs, repo := setupManagedSystemServiceWithMocks(t)
+		t.Setenv("OPEN_IGA_TEST_SET_ENV", "value")
+		required := true
+		spec := &domain.ConnectorSpec{
+			Name:    "aws",
+			EnvVars: []string{"OPEN_IGA_TEST_SET_ENV"},
+			Config:  []domain.Config{{Name: "OPEN_IGA_TEST_SET_ENV", Required: &required}},
+		}
+		seedConnector(cs, "set-env-id", domain.ConnectorValidationResult{
+			Status:        domain.ConnectorValidationSuccess,
+			ConnectorUrl:  "https://conn",
+			ConnectorHash: "hash",
+			ConnectorSpec: spec,
+		})
+		want := &domain.ManagedSystem{Id: "ms-2", Name: "aws"}
+		repo.EXPECT().CreateManagedSystem(gomock.Any(), "aws", "https://conn", "hash", spec).Return(want, nil)
+
+		ms, err := svc.Onboard(context.TODO(), "set-env-id")
+
+		assert.NoError(t, err)
+		assert.Equal(t, want, ms)
+	})
+
 	t.Run("creates a managed system when the connector passed validation", func(t *testing.T) {
 		svc, cs, repo := setupManagedSystemServiceWithMocks(t)
 		seedConnector(cs, "ok-id", domain.ConnectorValidationResult{

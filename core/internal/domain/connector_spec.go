@@ -4,12 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
+	"slices"
 
 	validation "github.com/go-ozzo/ozzo-validation"
 )
 
 var templateUrl = regexp.MustCompile(`^https?://[\w.\-{}]+(/.*)?$`)
+
+// endpointVar captures env variable names from {{variable}} placeholders in endpoint URLs.
+var endpointVar = regexp.MustCompile(`{{\s*([\w-]+)\s*}}`)
 
 type Config struct {
 	Name        string `json:"name"`
@@ -100,6 +105,9 @@ type ConnectorSpec struct {
 	AllowedDomains []string                    `json:"allowedDomains"`
 	Actions        map[string]AccountActions   `json:"actions"`
 	Entitlements   map[string]UserEntitlements `json:"entitlements"`
+	// EnvVars holds the unique env variable names referenced as {{variable}} in endpoint URLs.
+	// Derived from the spec, not decoded from it.
+	EnvVars []string `json:"-"`
 }
 
 func (c ConnectorSpec) Validate() error {
@@ -127,5 +135,53 @@ func NewConnectorSpec(customSection []byte) (*ConnectorSpec, error) {
 		return nil, fmt.Errorf("connector spec validation failed: %w", err)
 	}
 
+	connectorSpec.EnvVars = connectorSpec.collectEnvVarsFromTemplateUrl()
+
 	return &connectorSpec, nil
+}
+
+// collectEnvVarsFromTemplateUrl scans every endpoint URL and returns the unique {{variable}} names referenced.
+func (c ConnectorSpec) collectEnvVarsFromTemplateUrl() []string {
+	envVars := make([]string, 0)
+	add := func(operations ...*Operation) {
+		for _, op := range operations {
+			if op == nil {
+				continue
+			}
+			for _, endpoint := range op.Endpoints {
+				for _, match := range endpointVar.FindAllStringSubmatch(endpoint.URL, -1) {
+					if !slices.Contains(envVars, match[1]) {
+						envVars = append(envVars, match[1])
+					}
+				}
+			}
+		}
+	}
+	for _, actions := range c.Actions {
+		add(actions.Create, actions.Enable, actions.Disable, actions.Delete, actions.Read)
+	}
+	for _, entitlements := range c.Entitlements {
+		add(entitlements.Discover, entitlements.Grant, entitlements.Revoke, entitlements.Read)
+	}
+	return envVars
+}
+
+// MissingRequiredEnvVars returns the required env variable names the core's environment
+// is missing. A var is required only when it is used in an endpoint URL and its config
+// entry is marked required; a missing one means os.LookupEnv does not have it set. Vars
+// that are not marked required are allowed to be absent.
+func (c ConnectorSpec) MissingRequiredEnvVars() []string {
+	missing := make([]string, 0)
+	for _, name := range c.EnvVars {
+		for _, cfg := range c.Config {
+			if cfg.Name != name || cfg.Required == nil || !*cfg.Required {
+				continue
+			}
+			if _, ok := os.LookupEnv(name); !ok {
+				missing = append(missing, name)
+			}
+			break
+		}
+	}
+	return missing
 }
