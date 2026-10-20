@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -12,23 +13,56 @@ import (
 )
 
 type ConnectorService struct {
-	connectorRuntime  contract.ConnectorRuntime
-	logger            *slog.Logger
-	mu                sync.RWMutex
-	onboardingResults map[string]domain.ConnectorValidationResult
+	connectorRuntime        contract.ConnectorRuntime
+	managedSystemRepository contract.ManagedSystemRepository
+	logger                  *slog.Logger
+	mu                      sync.RWMutex
+	onboardingResults       map[string]domain.ConnectorValidationResult
 }
 
 const validationTimeout = 2 * time.Minute
 
 var _ contract.ConnectorService = (*ConnectorService)(nil)
 
-func NewConnectorService(connectorRuntime contract.ConnectorRuntime, logger *slog.Logger) *ConnectorService {
+func NewConnectorService(connectorRuntime contract.ConnectorRuntime, managedSystemRepository contract.ManagedSystemRepository, logger *slog.Logger) *ConnectorService {
 	return &ConnectorService{
-		connectorRuntime:  connectorRuntime,
-		logger:            logger,
-		onboardingResults: make(map[string]domain.ConnectorValidationResult),
-		mu:                sync.RWMutex{}, // for exhaustruct lint
+		connectorRuntime:        connectorRuntime,
+		managedSystemRepository: managedSystemRepository,
+		logger:                  logger,
+		onboardingResults:       make(map[string]domain.ConnectorValidationResult),
+		mu:                      sync.RWMutex{}, // for exhaustruct lint
 	}
+}
+
+// LoadConnectorsOnStartup lists onboarded connectors and verifies each one's sha256 against
+// the stored hash. A missing required env var aborts startup (returns an error) so the
+// operator fixes the config before the server runs. A connector that has no spec, fails to
+// fetch, or whose hash no longer matches is skipped with an error log.
+func (c *ConnectorService) LoadConnectorsOnStartup(ctx context.Context) error {
+	managedSystems, err := c.managedSystemRepository.ListManagedSystems(ctx)
+	if err != nil {
+		return fmt.Errorf("list managed systems: %w", err)
+	}
+
+	for _, managedSystem := range managedSystems {
+		if managedSystem.ConnectorSpec == nil {
+			c.logger.Error("skipping connector with no spec", "managedSystemId", managedSystem.Id)
+			continue
+		}
+
+		if missing := managedSystem.ConnectorSpec.MissingRequiredEnvVars(); len(missing) > 0 {
+			return fmt.Errorf("connector %q (%s) missing required env vars %v", managedSystem.Name, managedSystem.Id, missing)
+		}
+
+		if _, err := c.connectorRuntime.FetchAndVerify(ctx, managedSystem.ConnectorUrl, managedSystem.ConnectorHash); err != nil {
+			c.logger.Error("skipping connector that failed fetch/verify",
+				"managedSystemId", managedSystem.Id, "name", managedSystem.Name, "err", err)
+			continue
+		}
+
+		c.logger.Info("verified connector", "managedSystemId", managedSystem.Id, "name", managedSystem.Name)
+	}
+	return nil
 }
 
 func (c *ConnectorService) ValidateByUrl(ctx context.Context, connectorUrl string, connectorHash string) string {

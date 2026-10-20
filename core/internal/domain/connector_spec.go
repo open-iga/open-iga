@@ -110,9 +110,9 @@ type ConnectorSpec struct {
 	EnvVars []string `json:"-"`
 }
 
-func (c ConnectorSpec) Validate() error {
+func (c *ConnectorSpec) Validate() error {
 	return validation.ValidateStruct(
-		&c,
+		c,
 		validation.Field(&c.Name, validation.Required),
 		validation.Field(&c.Description, validation.Required),
 		validation.Field(&c.Config, validation.Required, validation.Each()),
@@ -135,33 +135,47 @@ func NewConnectorSpec(customSection []byte) (*ConnectorSpec, error) {
 		return nil, fmt.Errorf("connector spec validation failed: %w", err)
 	}
 
-	connectorSpec.EnvVars = connectorSpec.collectEnvVarsFromTemplateUrl()
-
 	return &connectorSpec, nil
 }
 
+// UnmarshalJSON decodes the spec and recomputes the derived EnvVars, so a spec loaded
+// back from storage (where EnvVars is not persisted) still carries its env requirements.
+func (c *ConnectorSpec) UnmarshalJSON(data []byte) error {
+	type alias ConnectorSpec // alias drops the method set to avoid recursing into this UnmarshalJSON
+	var decoded alias
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	*c = ConnectorSpec(decoded)
+	c.EnvVars = c.collectEnvVarsFromTemplateUrl()
+	return nil
+}
+
 // collectEnvVarsFromTemplateUrl scans every endpoint URL and returns the unique {{variable}} names referenced.
-func (c ConnectorSpec) collectEnvVarsFromTemplateUrl() []string {
+func (c *ConnectorSpec) collectEnvVarsFromTemplateUrl() []string {
 	envVars := make([]string, 0)
-	add := func(operations ...*Operation) {
-		for _, op := range operations {
-			if op == nil {
-				continue
-			}
-			for _, endpoint := range op.Endpoints {
-				for _, match := range endpointVar.FindAllStringSubmatch(endpoint.URL, -1) {
-					if !slices.Contains(envVars, match[1]) {
-						envVars = append(envVars, match[1])
-					}
+	for _, actions := range c.Actions {
+		envVars = appendEndpointVars(envVars, actions.Create, actions.Enable, actions.Disable, actions.Delete, actions.Read)
+	}
+	for _, entitlements := range c.Entitlements {
+		envVars = appendEndpointVars(envVars, entitlements.Discover, entitlements.Grant, entitlements.Revoke, entitlements.Read)
+	}
+	return envVars
+}
+
+// appendEndpointVars adds the unique {{variable}} names found in the operations' endpoint URLs to envVars.
+func appendEndpointVars(envVars []string, operations ...*Operation) []string {
+	for _, op := range operations {
+		if op == nil {
+			continue
+		}
+		for _, endpoint := range op.Endpoints {
+			for _, match := range endpointVar.FindAllStringSubmatch(endpoint.URL, -1) {
+				if !slices.Contains(envVars, match[1]) {
+					envVars = append(envVars, match[1])
 				}
 			}
 		}
-	}
-	for _, actions := range c.Actions {
-		add(actions.Create, actions.Enable, actions.Disable, actions.Delete, actions.Read)
-	}
-	for _, entitlements := range c.Entitlements {
-		add(entitlements.Discover, entitlements.Grant, entitlements.Revoke, entitlements.Read)
 	}
 	return envVars
 }
@@ -170,7 +184,7 @@ func (c ConnectorSpec) collectEnvVarsFromTemplateUrl() []string {
 // is missing. A var is required only when it is used in an endpoint URL and its config
 // entry is marked required; a missing one means os.LookupEnv does not have it set. Vars
 // that are not marked required are allowed to be absent.
-func (c ConnectorSpec) MissingRequiredEnvVars() []string {
+func (c *ConnectorSpec) MissingRequiredEnvVars() []string {
 	missing := make([]string, 0)
 	for _, name := range c.EnvVars {
 		for _, cfg := range c.Config {

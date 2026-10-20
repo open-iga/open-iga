@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"slices"
 	"testing"
 )
@@ -47,5 +48,23 @@ func TestMissingRequiredEnvVars(t *testing.T) {
 
 	if !slices.Equal(got, []string{"AWS_ENDPOINT"}) {
 		t.Fatalf("expected only AWS_ENDPOINT missing, got %v", got)
+	}
+}
+
+// EnvVars is not persisted (json:"-"), so a spec reloaded from storage must recompute it
+// from the endpoint URLs on unmarshal — otherwise the startup env check is a silent no-op.
+func TestConnectorSpec_UnmarshalJSON_RecomputesEnvVars(t *testing.T) {
+	stored := `{
+		"actions": {"user": {"create": {"endpoints": [{"url": "https://{{AWS_ENDPOINT}}/users"}]}}},
+		"entitlements": {"role": {"read": {"endpoints": [{"url": "https://{{AWS_REGION}}/roles"}]}}}
+	}`
+
+	var spec ConnectorSpec
+	if err := json.Unmarshal([]byte(stored), &spec); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+
+	if !slices.Contains(spec.EnvVars, "AWS_ENDPOINT") || !slices.Contains(spec.EnvVars, "AWS_REGION") {
+		t.Fatalf("expected EnvVars recomputed from URLs, got %v", spec.EnvVars)
 	}
 }

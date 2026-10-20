@@ -18,8 +18,8 @@ func setupManagedSystemServiceWithMocks(t *testing.T) (*ManagedSystemService, *C
 	t.Cleanup(ctrl.Finish)
 
 	repo := testutil.NewMockManagedSystemRepository(ctrl)
-	// runtime is unused by the Onboard path (it only reads already-recorded results)
-	connectorService := NewConnectorService(nil, testutil.NewTestLogger())
+	// runtime and repo are unused by the Onboard path (it only reads already-recorded results)
+	connectorService := NewConnectorService(nil, repo, testutil.NewTestLogger())
 	svc := NewManagedSystemService(testutil.NewTestLogger(), connectorService, repo)
 
 	return svc, connectorService, repo
