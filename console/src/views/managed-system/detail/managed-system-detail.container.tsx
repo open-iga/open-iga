@@ -108,7 +108,7 @@ export const ManagedSystemDetailContainer = () => {
                     <TenantsPanel systemId={id} query={tenants} />
                 </TabsContent>
                 <TabsContent value={TAB.spec} className="pt-4">
-                    <CapabilityReview spec={connectorSpec} />
+                    <CapabilityReview spec={connectorSpec} missingEnvVars={[]} />
                 </TabsContent>
             </Tabs>
         </PageWrapper>

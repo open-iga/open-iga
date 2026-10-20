@@ -59,7 +59,7 @@ const Stepper = ({ current }: { current: number }) => {
     );
 };
 
-const ReviewPanel = ({ spec }: { spec: ConnectorSpec }) => {
+const ReviewPanel = ({ spec, missingEnvVars }: { spec: ConnectorSpec; missingEnvVars: string[] }) => {
     const { t } = useTranslation();
     return (
         <div className="flex flex-col gap-5 px-4 mt-4">
@@ -72,11 +72,24 @@ const ReviewPanel = ({ spec }: { spec: ConnectorSpec }) => {
                     </p>
                 </div>
             </div>
+            {missingEnvVars.length > 0 && (
+                <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                    <ShieldAlert className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
+                    <div className="flex flex-col gap-1 text-sm">
+                        <p className="font-medium">{t('managedSystems.onboard.review.missingEnvHeading')}</p>
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                            {t('managedSystems.onboard.review.missingEnvDescription', {
+                                vars: missingEnvVars.join(', '),
+                            })}
+                        </p>
+                    </div>
+                </div>
+            )}
             <div className="flex flex-col gap-1">
                 <h3 className="text-lg font-semibold">{spec.name}</h3>
                 <p className="text-sm text-muted-foreground">{spec.description}</p>
             </div>
-            <CapabilityReview spec={spec} />
+            <CapabilityReview spec={spec} missingEnvVars={missingEnvVars} />
         </div>
     );
 };
@@ -86,7 +99,7 @@ export const OnboardingSheet = () => {
     const [open, setOpen] = useState(false);
     const { isAdmin } = usePermission();
     const queryClient = useQueryClient();
-    const { phase, spec, error, validate, onboard, reset } = useManagedSystemOnboarding();
+    const { phase, spec, missingEnvVars, error, validate, onboard, reset } = useManagedSystemOnboarding();
     const [tenantStep, setTenantStep] = useState(false);
     const [tenants, setTenants] = useState<TenantInput[]>([]);
 
@@ -205,7 +218,7 @@ export const OnboardingSheet = () => {
                         showTenants ? (
                             <TenantsStep tenants={tenants} onChange={setTenants} disabled={busy} />
                         ) : (
-                            spec && <ReviewPanel spec={spec} />
+                            spec && <ReviewPanel spec={spec} missingEnvVars={missingEnvVars} />
                         ),
                     )
                     .exhaustive()}
@@ -235,7 +248,10 @@ export const OnboardingSheet = () => {
                                     >
                                         {t('managedSystems.onboard.reject')}
                                     </Button>
-                                    <Button disabled={busy} onClick={() => setTenantStep(true)}>
+                                    <Button
+                                        disabled={busy || missingEnvVars.length > 0}
+                                        onClick={() => setTenantStep(true)}
+                                    >
                                         {t('managedSystems.onboard.next')}
                                     </Button>
                                 </>

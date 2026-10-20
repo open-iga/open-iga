@@ -45,7 +45,7 @@ export const AppSidebarContent = () => {
                         {sidebarContent.map(({ label, link, icon: Icon, isActive }) => (
                             <SidebarMenuItem key={label}>
                                 <SidebarMenuButton
-                                    size="lg"
+                                    size="default"
                                     className={cn(
                                         'group-data-[collapsible=icon]:justify-center',
                                         isActive ? 'bg-sidebar-accent' : '',

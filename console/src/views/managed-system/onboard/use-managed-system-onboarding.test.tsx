@@ -37,7 +37,7 @@ describe('useManagedSystemOnboarding', () => {
                 HttpResponse.json({ onboardingId: 'onboard-id' }, { status: 201 }),
             ),
             mockHttpHandlers.get('/api/v1/connectors/onboarding-requests/{onboarding-id}', () =>
-                HttpResponse.json({ status: 'success', connectorSpec: spec }, { status: 200 }),
+                HttpResponse.json({ status: 'success', connectorSpec: spec, missingEnvVars: [] }, { status: 200 }),
             ),
         );
 
@@ -47,7 +47,29 @@ describe('useManagedSystemOnboarding', () => {
 
         await waitFor(() => expect(result.current.phase).toBe('review'));
         expect(result.current.spec?.name).toBe('slack');
+        expect(result.current.missingEnvVars).toEqual([]);
         expect(mockedToastError).not.toHaveBeenCalled();
+    });
+
+    it('should expose missing env vars when the core is missing required env', async () => {
+        mockServer.use(
+            mockHttpHandlers.post('/api/v1/connectors/onboarding-requests', () =>
+                HttpResponse.json({ onboardingId: 'onboard-id' }, { status: 201 }),
+            ),
+            mockHttpHandlers.get('/api/v1/connectors/onboarding-requests/{onboarding-id}', () =>
+                HttpResponse.json(
+                    { status: 'success', connectorSpec: spec, missingEnvVars: ['AWS_ENDPOINT'] },
+                    { status: 200 },
+                ),
+            ),
+        );
+
+        const { result } = renderHook(useManagedSystemOnboarding, { wrapper: Wrapper });
+
+        result.current.validate(body).catch(() => {});
+
+        await waitFor(() => expect(result.current.phase).toBe('review'));
+        expect(result.current.missingEnvVars).toEqual(['AWS_ENDPOINT']);
     });
 
     it('should stay on input and surface the error when validation fails', async () => {
@@ -56,7 +78,7 @@ describe('useManagedSystemOnboarding', () => {
                 HttpResponse.json({ onboardingId: 'onboard-id' }, { status: 201 }),
             ),
             mockHttpHandlers.get('/api/v1/connectors/onboarding-requests/{onboarding-id}', () =>
-                HttpResponse.json({ status: 'failed', error: 'validation failed' }, { status: 200 }),
+                HttpResponse.json({ status: 'failed', error: 'validation failed', missingEnvVars: [] }, { status: 200 }),
             ),
         );
 
@@ -79,7 +101,7 @@ describe('useManagedSystemOnboarding', () => {
                 return HttpResponse.json({ onboardingId: 'onboard-id' }, { status: 201 });
             }),
             mockHttpHandlers.get('/api/v1/connectors/onboarding-requests/{onboarding-id}', () =>
-                HttpResponse.json({ status: 'success', connectorSpec: spec }, { status: 200 }),
+                HttpResponse.json({ status: 'success', connectorSpec: spec, missingEnvVars: [] }, { status: 200 }),
             ),
         );
 
@@ -118,7 +140,7 @@ describe('useManagedSystemOnboarding', () => {
                 HttpResponse.json({ onboardingId: 'onboard-id' }, { status: 201 }),
             ),
             mockHttpHandlers.get('/api/v1/connectors/onboarding-requests/{onboarding-id}', () =>
-                HttpResponse.json({ status: 'success', connectorSpec: spec }, { status: 200 }),
+                HttpResponse.json({ status: 'success', connectorSpec: spec, missingEnvVars: [] }, { status: 200 }),
             ),
             mockHttpHandlers.post('/api/v1/managed-systems', () => HttpResponse.error()),
         );
@@ -142,7 +164,7 @@ describe('useManagedSystemOnboarding', () => {
                 HttpResponse.json({ onboardingId: 'onboard-id' }, { status: 201 }),
             ),
             mockHttpHandlers.get('/api/v1/connectors/onboarding-requests/{onboarding-id}', () =>
-                HttpResponse.json({ status: 'success', connectorSpec: spec }, { status: 200 }),
+                HttpResponse.json({ status: 'success', connectorSpec: spec, missingEnvVars: [] }, { status: 200 }),
             ),
             mockHttpHandlers.post('/api/v1/managed-systems', () =>
                 HttpResponse.json({ id: 'system-id' }, { status: 200 }),
@@ -179,7 +201,7 @@ describe('useManagedSystemOnboarding', () => {
                     HttpResponse.json({ onboardingId: 'onboard-id' }, { status: 201 }),
                 ),
                 mockHttpHandlers.get('/api/v1/connectors/onboarding-requests/{onboarding-id}', () =>
-                    HttpResponse.json({ status: 'pending' }, { status: 200 }),
+                    HttpResponse.json({ status: 'pending', missingEnvVars: [] }, { status: 200 }),
                 ),
             );
 

@@ -6,7 +6,7 @@ import { Toaster } from 'sonner';
 import { CircleCheckIcon, InfoIcon, Loader2Icon, OctagonXIcon, TriangleAlertIcon } from 'lucide-react';
 import { I18nextProvider, useTranslation } from 'react-i18next';
 import { useLocation } from '@tanstack/react-router';
-import { SidebarProvider } from '@/design-system/components/ui/sidebar.tsx';
+import { SidebarInset, SidebarProvider } from '@/design-system/components/ui/sidebar.tsx';
 import { ErrorDetails } from '@/components/error-boundary.tsx';
 import { SplashOverlay } from './splash-overlay.tsx';
 import { useCurrentUser } from '@/hooks/use-current-user.ts';
@@ -53,7 +53,7 @@ const ProtectedLayoutContainer = ({ children }: { children: ReactNode }) => {
         <>
             <SplashOverlay visible={isPending} />
             <AppSidebar />
-            <main>{children}</main>
+            <SidebarInset>{children}</SidebarInset>
         </>
     );
 };
