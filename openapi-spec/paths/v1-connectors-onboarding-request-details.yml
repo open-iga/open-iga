@@ -25,7 +25,14 @@ get:
                             connectorSpec:
                                 description: The connector spec; set when status is success
                                 $ref: '../schemas/connector-spec.yml'
-                        required: [status]
+                            missingEnvVars:
+                                type: array
+                                description: >-
+                                    Required env variables the connector needs that the core's environment
+                                    does not have set. Onboarding is blocked while this is non-empty.
+                                items:
+                                    type: string
+                        required: [status, missingEnvVars]
         401:
             $ref: '../components/responses/unauthenticated-error.yml'
         404:
