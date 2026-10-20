@@ -67,9 +67,8 @@ func TestConnectorService_LoadConnectorsOnStartup(t *testing.T) {
 		t.Setenv("OPEN_IGA_LOAD_ENV", "set")
 
 		okSpec := &domain.ConnectorSpec{
-			Name:    "ok",
-			EnvVars: []string{"OPEN_IGA_LOAD_ENV"},
-			Config:  []domain.Config{{Name: "OPEN_IGA_LOAD_ENV", Required: &required}},
+			Name:   "ok",
+			Config: []domain.Config{{Name: "OPEN_IGA_LOAD_ENV", Required: &required}},
 		}
 
 		systems := []*domain.ManagedSystem{
@@ -90,9 +89,8 @@ func TestConnectorService_LoadConnectorsOnStartup(t *testing.T) {
 		cs, _, repo := setupConnectorServiceWithMocks(t)
 		required := true
 		spec := &domain.ConnectorSpec{
-			Name:    "missing-env",
-			EnvVars: []string{"OPEN_IGA_LOAD_UNSET_ENV"},
-			Config:  []domain.Config{{Name: "OPEN_IGA_LOAD_UNSET_ENV", Required: &required}},
+			Name:   "missing-env",
+			Config: []domain.Config{{Name: "OPEN_IGA_LOAD_UNSET_ENV", Required: &required}},
 		}
 		repo.EXPECT().ListManagedSystems(gomock.Any()).Return([]*domain.ManagedSystem{
 			{Id: "me-id", Name: "missing-env", ConnectorUrl: "https://me", ConnectorHash: "h3", ConnectorSpec: spec},
@@ -120,8 +118,7 @@ func TestConnectorService_GetOnboardedConnectorDetails(t *testing.T) {
 		cs.onboardingResults["id"] = domain.ConnectorValidationResult{
 			Status: domain.ConnectorValidationSuccess,
 			ConnectorSpec: &domain.ConnectorSpec{
-				EnvVars: []string{"OPEN_IGA_TEST_UNSET_ENV"},
-				Config:  []domain.Config{{Name: "OPEN_IGA_TEST_UNSET_ENV", Required: &required}},
+				Config: []domain.Config{{Name: "OPEN_IGA_TEST_UNSET_ENV", Required: &required}},
 			},
 		}
 

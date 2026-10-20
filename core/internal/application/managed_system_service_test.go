@@ -60,9 +60,8 @@ func TestManagedSystemService_Onboard(t *testing.T) {
 			ConnectorUrl:  "https://conn",
 			ConnectorHash: "hash",
 			ConnectorSpec: &domain.ConnectorSpec{
-				Name:    "aws",
-				EnvVars: []string{"OPEN_IGA_TEST_UNSET_ENV"},
-				Config:  []domain.Config{{Name: "OPEN_IGA_TEST_UNSET_ENV", Required: &required}},
+				Name:   "aws",
+				Config: []domain.Config{{Name: "OPEN_IGA_TEST_UNSET_ENV", Required: &required}},
 			},
 		})
 
@@ -77,9 +76,8 @@ func TestManagedSystemService_Onboard(t *testing.T) {
 		t.Setenv("OPEN_IGA_TEST_SET_ENV", "value")
 		required := true
 		spec := &domain.ConnectorSpec{
-			Name:    "aws",
-			EnvVars: []string{"OPEN_IGA_TEST_SET_ENV"},
-			Config:  []domain.Config{{Name: "OPEN_IGA_TEST_SET_ENV", Required: &required}},
+			Name:   "aws",
+			Config: []domain.Config{{Name: "OPEN_IGA_TEST_SET_ENV", Required: &required}},
 		}
 		seedConnector(cs, "set-env-id", domain.ConnectorValidationResult{
 			Status:        domain.ConnectorValidationSuccess,
