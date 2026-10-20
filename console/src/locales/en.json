@@ -56,7 +56,9 @@
             },
             "review": {
                 "heading": "{{name}} passed validation",
-                "description": "Review the capabilities this connector will be granted before onboarding it."
+                "description": "Review the capabilities this connector will be granted before onboarding it.",
+                "missingEnvHeading": "Required environment variables are not set",
+                "missingEnvDescription": "This connector needs these environment variables set on the core before it can be onboarded: {{vars}}."
             },
             "next": "Next",
             "back": "Back",
@@ -75,6 +77,7 @@
             "capability": {
                 "required": "Required",
                 "optional": "Optional",
+                "envMissing": "Environment variable not set on the core",
                 "operationCount_one": "{{count}} operation",
                 "operationCount_other": "{{count}} operations",
                 "requiredConfig": "Required configuration",

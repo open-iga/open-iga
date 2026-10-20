@@ -11,7 +11,7 @@ const MAX_POLLS = 90; // ~3 min at the poll interval; backend validation times o
 
 export type OnboardingPhase = 'input' | 'validating' | 'review' | 'onboarding';
 export type TenantInput = { externalId: string; name: string };
-type ValidationResult = { onboardingId: string; spec: ConnectorSpec };
+type ValidationResult = { onboardingId: string; spec: ConnectorSpec; missingEnvVars: string[] };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -39,7 +39,11 @@ export const useManagedSystemOnboarding = () => {
                         if (!data?.connectorSpec) {
                             throw new Error(t('managedSystems.onboard.validationError'));
                         }
-                        return { onboardingId, spec: data.connectorSpec };
+                        return {
+                            onboardingId,
+                            spec: data.connectorSpec,
+                            missingEnvVars: data.missingEnvVars ?? [],
+                        };
                     })
                     .with('failed', () => {
                         throw new Error(data?.error ?? t('managedSystems.onboard.validationError'));
@@ -103,6 +107,7 @@ export const useManagedSystemOnboarding = () => {
     return {
         phase,
         spec: result?.spec ?? null,
+        missingEnvVars: result?.missingEnvVars ?? [],
         error: validation.isError ? validation.error.message : undefined,
         validate: validation.mutateAsync,
         onboard: onboarding.mutateAsync,

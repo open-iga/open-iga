@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next';
-import { Globe, KeyRound, Layers, UserCog } from 'lucide-react';
+import { AlertTriangle, Globe, KeyRound, Layers, UserCog } from 'lucide-react';
 import { cn } from '@/design-system/lib/utils.ts';
 import type { ConnectorSpec, Operation } from './types.ts';
+import type { ReactNode } from 'react';
 
 const methodTone: Record<string, string> = {
     GET: 'text-emerald-600 border-emerald-500/30 bg-emerald-500/10',
@@ -39,12 +40,13 @@ const OperationRow = ({ name, op }: { name: string; op: Operation }) => (
             <span className="text-right text-xs text-muted-foreground">{op.description}</span>
         </div>
         <ul className="flex flex-col gap-1.5">
-            {op.endpoints.map((ep, i) => (
+            {op.endpoints.map(({ url, description, method }, i) => (
+                // two different actions/entitlements can have endpoint (e.g.) AWS connector
                 <li key={i} className="flex min-w-0 items-start gap-2">
-                    <MethodBadge method={ep.method} />
+                    <MethodBadge method={method} />
                     <div className="flex min-w-0 flex-col">
-                        <code className="break-all font-mono text-xs text-foreground">{ep.url}</code>
-                        <span className="text-xs text-muted-foreground">{ep.description}</span>
+                        <code className="break-all font-mono text-xs text-foreground">{url}</code>
+                        <span className="text-xs text-muted-foreground">{description}</span>
                     </div>
                 </li>
             ))}
@@ -114,10 +116,10 @@ const Section = ({
     hint,
     children,
 }: {
-    icon: React.ReactNode;
+    icon: ReactNode;
     title: string;
     hint?: string;
-    children: React.ReactNode;
+    children: ReactNode;
 }) => (
     <section className="flex flex-col gap-2">
         <h3 className="flex items-center gap-2 text-sm font-medium">
@@ -129,9 +131,10 @@ const Section = ({
     </section>
 );
 
-export const CapabilityReview = ({ spec }: { spec: ConnectorSpec }) => {
+export const CapabilityReview = ({ spec, missingEnvVars }: { spec: ConnectorSpec; missingEnvVars: string[] }) => {
     const { t } = useTranslation();
     const iconCls = 'size-4 text-muted-foreground';
+    const missing = new Set(missingEnvVars);
     return (
         <div className="flex flex-col gap-6">
             <CapabilitySummary spec={spec} />
@@ -155,14 +158,22 @@ export const CapabilityReview = ({ spec }: { spec: ConnectorSpec }) => {
                 title={t('managedSystems.onboard.capability.requiredConfig')}
             >
                 <ul className="divide-y overflow-hidden rounded-lg border">
-                    {spec.config.map((c) => (
-                        <li key={c.name} className="flex items-center justify-between gap-3 px-3 py-2">
+                    {spec.config.map(({ name, description, required }) => (
+                        <li key={name} className="flex items-center justify-between gap-3 px-3 py-2">
                             <div className="flex min-w-0 flex-col">
-                                <code className="font-mono text-xs">{c.name}</code>
-                                <span className="text-xs text-muted-foreground">{c.description}</span>
+                                <code className="flex items-center gap-1.5 font-mono text-xs">
+                                    {missing.has(name) && (
+                                        <AlertTriangle
+                                            className="size-3.5 shrink-0 text-amber-500"
+                                            aria-label={t('managedSystems.onboard.capability.envMissing')}
+                                        />
+                                    )}
+                                    {name}
+                                </code>
+                                <span className="text-xs text-muted-foreground">{description}</span>
                             </div>
                             <span className="shrink-0 text-xs text-muted-foreground">
-                                {c.required
+                                {required
                                     ? t('managedSystems.onboard.capability.required')
                                     : t('managedSystems.onboard.capability.optional')}
                             </span>

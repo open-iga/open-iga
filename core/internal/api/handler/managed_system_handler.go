@@ -12,7 +12,7 @@ func (h *Handler) OnboardManagedSystem(ctx context.Context, request generated.On
 	managedSystem, err := h.application.ManagedSystemService.Onboard(ctx, request.Body.ConnectorOnboardingId)
 	if err != nil {
 
-		if errors.Is(err, domain.ErrConnectorNotFound) || errors.Is(err, domain.ErrConnectorNotOnboardable) {
+		if errors.Is(err, domain.ErrConnectorNotFound) || errors.Is(err, domain.ErrConnectorNotOnboardable) || errors.Is(err, domain.ErrMissingRequiredEnvVars) {
 			return generated.OnboardManagedSystem404JSONResponse{
 				Message: err.Error(),
 			}, nil

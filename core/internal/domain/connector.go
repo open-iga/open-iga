@@ -13,7 +13,10 @@ type ConnectorValidationResult struct {
 	ConnectorUrl  string
 	ConnectorHash string
 	ConnectorSpec *ConnectorSpec
-	Error         error
+	// MissingEnvVars are required env variables the connector needs that the core's
+	// environment does not have set. Onboarding is blocked while this is non-empty.
+	MissingEnvVars []string
+	Error          error
 }
 
 func (c *ConnectorValidationResult) CanBeOnboarded() bool {

@@ -169,6 +169,20 @@ func (mr *MockConnectorServiceMockRecorder) GetOnboardedConnectorDetails(ctx, on
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOnboardedConnectorDetails", reflect.TypeOf((*MockConnectorService)(nil).GetOnboardedConnectorDetails), ctx, onboardingId)
 }
 
+// LoadConnectorsOnStartup mocks base method.
+func (m *MockConnectorService) LoadConnectorsOnStartup(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadConnectorsOnStartup", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LoadConnectorsOnStartup indicates an expected call of LoadConnectorsOnStartup.
+func (mr *MockConnectorServiceMockRecorder) LoadConnectorsOnStartup(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadConnectorsOnStartup", reflect.TypeOf((*MockConnectorService)(nil).LoadConnectorsOnStartup), ctx)
+}
+
 // ValidateByUrl mocks base method.
 func (m *MockConnectorService) ValidateByUrl(ctx context.Context, connectorUrl, connectorHash string) string {
 	m.ctrl.T.Helper()

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 
 	validation "github.com/go-ozzo/ozzo-validation"
@@ -102,9 +103,9 @@ type ConnectorSpec struct {
 	Entitlements   map[string]UserEntitlements `json:"entitlements"`
 }
 
-func (c ConnectorSpec) Validate() error {
+func (c *ConnectorSpec) Validate() error {
 	return validation.ValidateStruct(
-		&c,
+		c,
 		validation.Field(&c.Name, validation.Required),
 		validation.Field(&c.Description, validation.Required),
 		validation.Field(&c.Config, validation.Required, validation.Each()),
@@ -128,4 +129,20 @@ func NewConnectorSpec(customSection []byte) (*ConnectorSpec, error) {
 	}
 
 	return &connectorSpec, nil
+}
+
+// MissingRequiredEnvVars returns the names of required config entries that the core's
+// environment does not have set (os.LookupEnv). Config entries not marked required are
+// allowed to be absent.
+func (c *ConnectorSpec) MissingRequiredEnvVars() []string {
+	missing := make([]string, 0)
+	for _, cfg := range c.Config {
+		if cfg.Required == nil || !*cfg.Required {
+			continue
+		}
+		if _, ok := os.LookupEnv(cfg.Name); !ok {
+			missing = append(missing, cfg.Name)
+		}
+	}
+	return missing
 }

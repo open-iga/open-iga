@@ -614,6 +614,8 @@ export interface operations {
                         error?: string;
                         /** @description The connector spec; set when status is success */
                         connectorSpec?: components["schemas"]["connector-spec"];
+                        /** @description Required env variables the connector needs that the core's environment does not have set. Onboarding is blocked while this is non-empty. */
+                        missingEnvVars: string[];
                     };
                 };
             };

@@ -85,21 +85,13 @@ func isPublicIP(ip net.IP) bool {
 	}
 }
 
-// ValidateConnectorByURL downloads the connector, verifies its hash, and extracts the
+// ValidateConnectorByURL fetches and hash-verifies the connector, then extracts the
 // manifest from the wasm custom section.
 func (c *ConnectorRuntime) ValidateConnectorByURL(ctx context.Context, connectorURL string, hash string) (*domain.ConnectorSpec, error) {
-	if hash == "" {
-		return nil, fmt.Errorf("hash required for the connector url %s", connectorURL)
-	}
-
 	c.logger.Info("validating connector by URL", "url", connectorURL)
-	wasmData, err := c.fetchConnector(ctx, connectorURL)
+	wasmData, err := c.FetchAndVerify(ctx, connectorURL, hash)
 	if err != nil {
 		return nil, err
-	}
-
-	if sha256Hex(wasmData) != hash {
-		return nil, errors.New("connector hash mismatch")
 	}
 
 	customSection, err := c.readCustomSection(ctx, connectorURL, wasmData)
@@ -113,6 +105,27 @@ func (c *ConnectorRuntime) ValidateConnectorByURL(ctx context.Context, connector
 	}
 
 	return spec, nil
+}
+
+// FetchAndVerify downloads the connector and returns its wasm bytes only when the sha256
+// of the download matches hash. A mismatch means the stored spec can no longer be trusted,
+// so the bytes are withheld. This is the shared fetch+verify step both onboarding
+// (ValidateConnectorByURL) and startup loading build on.
+func (c *ConnectorRuntime) FetchAndVerify(ctx context.Context, connectorURL string, hash string) ([]byte, error) {
+	if hash == "" {
+		return nil, fmt.Errorf("hash required for the connector url %s", connectorURL)
+	}
+
+	wasmData, err := c.fetchConnector(ctx, connectorURL)
+	if err != nil {
+		return nil, err
+	}
+
+	if sha256Hex(wasmData) != hash {
+		return nil, errors.New("connector hash mismatch")
+	}
+
+	return wasmData, nil
 }
 
 // fetchConnector downloads the connector over HTTPS with a size cap. Network-level
