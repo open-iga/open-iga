@@ -33,6 +33,32 @@ func setupAuthServiceWithMocks(t *testing.T) (*AuthService, *testutil.MockOauth2
 	return authService, oauth2Client, sessionRepoMock, identityRepoMock
 }
 
+func TestAuthService_EnsureAdmin(t *testing.T) {
+	t.Run("is a no-op when an admin already exists", func(t *testing.T) {
+		authService, _, _, identityRepoMock := setupAuthServiceWithMocks(t)
+		identityRepoMock.EXPECT().HasAdmin(gomock.Any()).Return(true, nil)
+
+		assert.NoError(t, authService.EnsureAdmin(context.TODO(), ""))
+	})
+
+	t.Run("onboards the admin when none exists and an email is given", func(t *testing.T) {
+		authService, _, _, identityRepoMock := setupAuthServiceWithMocks(t)
+		identityRepoMock.EXPECT().HasAdmin(gomock.Any()).Return(false, nil)
+		identityRepoMock.EXPECT().
+			FindOrCreateWithRole(gomock.Any(), domain.NewOauthUser("", "", "admin@open-iga.dev"), domain.AdminRole).
+			Return(&domain.Identity{}, nil)
+
+		assert.NoError(t, authService.EnsureAdmin(context.TODO(), "admin@open-iga.dev"))
+	})
+
+	t.Run("returns error when no admin exists and no email is given", func(t *testing.T) {
+		authService, _, _, identityRepoMock := setupAuthServiceWithMocks(t)
+		identityRepoMock.EXPECT().HasAdmin(gomock.Any()).Return(false, nil)
+
+		assert.ErrorContains(t, authService.EnsureAdmin(context.TODO(), ""), "ADMIN_USER is required")
+	})
+}
+
 func TestAuthService_GetConsentPageDetails(t *testing.T) {
 	t.Run("returns error when the provider is unsupported", func(t *testing.T) {
 		authService, _, _, _ := setupAuthServiceWithMocks(t)
