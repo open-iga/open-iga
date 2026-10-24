@@ -24,9 +24,8 @@ type Oauth2Clients map[Provider]Oauth2ClientAdapter
 
 type ConnectorRuntime interface {
 	ValidateConnectorByURL(ctx context.Context, url string, hash string) (*domain.ConnectorSpec, error)
-	// FetchAndVerify downloads the connector and returns its wasm bytes only if the
-	// sha256 of the download matches hash.
-	FetchAndVerify(ctx context.Context, url string, hash string) ([]byte, error)
+	// Execute runs one invocation on the connector cached for url+hash, returning its raw JSON output.
+	Execute(ctx context.Context, url string, hash string, envelope domain.ConnectorDispatchEnvelope) ([]byte, error)
 }
 
 type RuntimeRemote struct {

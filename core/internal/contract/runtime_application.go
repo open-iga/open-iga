@@ -20,6 +20,7 @@ type ConnectorService interface {
 	ValidateByUrl(ctx context.Context, connectorUrl string, connectorHash string) string
 	GetOnboardedConnectorDetails(ctx context.Context, onboardingId string) (*domain.ConnectorValidationResult, bool)
 	LoadConnectorsOnStartup(ctx context.Context) error
+	Execute(ctx context.Context, connectorUrl string, connectorHash string, envelope domain.ConnectorDispatchEnvelope) ([]byte, error)
 }
 
 type ManagedSystemService interface {

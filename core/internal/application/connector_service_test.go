@@ -78,9 +78,9 @@ func TestConnectorService_LoadConnectorsOnStartup(t *testing.T) {
 		}
 
 		repo.EXPECT().ListManagedSystems(gomock.Any()).Return(systems, nil)
-		// no-spec is skipped before fetch; ok and bad-hash are fetched (bad-hash skipped, not fatal).
-		runtime.EXPECT().FetchAndVerify(gomock.Any(), "https://ok", "h1").Return([]byte("wasm-ok"), nil)
-		runtime.EXPECT().FetchAndVerify(gomock.Any(), "https://bad", "h2").Return(nil, errors.New("connector hash mismatch"))
+		// no-spec is skipped before validation; ok and bad-hash are validated (bad-hash skipped, not fatal).
+		runtime.EXPECT().ValidateConnectorByURL(gomock.Any(), "https://ok", "h1").Return(okSpec, nil)
+		runtime.EXPECT().ValidateConnectorByURL(gomock.Any(), "https://bad", "h2").Return(nil, errors.New("connector hash mismatch"))
 
 		assert.NoError(t, cs.LoadConnectorsOnStartup(context.TODO()))
 	})

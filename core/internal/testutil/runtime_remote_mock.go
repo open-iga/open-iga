@@ -95,19 +95,19 @@ func (m *MockConnectorRuntime) EXPECT() *MockConnectorRuntimeMockRecorder {
 	return m.recorder
 }
 
-// FetchAndVerify mocks base method.
-func (m *MockConnectorRuntime) FetchAndVerify(ctx context.Context, url, hash string) ([]byte, error) {
+// Execute mocks base method.
+func (m *MockConnectorRuntime) Execute(ctx context.Context, url, hash string, envelope domain.ConnectorDispatchEnvelope) ([]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchAndVerify", ctx, url, hash)
+	ret := m.ctrl.Call(m, "Execute", ctx, url, hash, envelope)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// FetchAndVerify indicates an expected call of FetchAndVerify.
-func (mr *MockConnectorRuntimeMockRecorder) FetchAndVerify(ctx, url, hash any) *gomock.Call {
+// Execute indicates an expected call of Execute.
+func (mr *MockConnectorRuntimeMockRecorder) Execute(ctx, url, hash, envelope any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchAndVerify", reflect.TypeOf((*MockConnectorRuntime)(nil).FetchAndVerify), ctx, url, hash)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockConnectorRuntime)(nil).Execute), ctx, url, hash, envelope)
 }
 
 // ValidateConnectorByURL mocks base method.
