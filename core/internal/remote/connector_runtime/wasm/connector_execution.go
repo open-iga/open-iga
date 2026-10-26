@@ -4,75 +4,92 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sync"
+	"log/slog"
+	"time"
 
 	extism "github.com/extism/go-sdk"
+	"github.com/open-iga/core/internal/common"
+	"github.com/open-iga/core/internal/contract"
 	"github.com/open-iga/core/internal/domain"
 )
 
+var _ contract.ConnectorRuntime = (*ConnectorRuntime)(nil)
+
+func NewConnectorRuntime(logger *slog.Logger) *ConnectorRuntime {
+	return &ConnectorRuntime{logger: logger, httpClient: newSecureClient(), verifiedWasmBytes: common.SyncMap[string, []byte]{}}
+}
+
+// ConnectorDispatchEnvelope is the JSON sent as the wasm `dispatch` input: an invocation plus the
+// config the runtime scoped to it. The json tags are the connector SDK dispatcher's wire contract.
+type ConnectorDispatchEnvelope struct {
+	Kind            domain.ConnectorKind `json:"__kind"`
+	ManagedResource string               `json:"__managedResource"`
+	Type            string               `json:"__type"`
+	Config          map[string]string    `json:"config"`
+	Input           any                  `json:"input"`
+}
+
 // connectorEntry is a one-shot future for a compile: ready closes when the compile finishes,
 // after which compiled/err are set and safe to read (the close establishes happens-before).
-// Execute waits on ready instead of racing the background compile.
+// Execute waits on ready instead of racing the background compile. configs and endpoints are
+// resolved synchronously up front (not gated by the compile), keyed by domain.OperationKey:
+// configs are what the dispatcher receives, endpoints gate egress per operation. Both are
+// read-only and shared by every Execute.
 type connectorEntry struct {
-	ready    chan struct{}
-	compiled *extism.CompiledPlugin
-	err      error
+	ready     chan struct{}
+	compiled  *extism.CompiledPlugin
+	err       error
+	configs   map[string]map[string]string
+	endpoints map[string][]domain.ResolvedEndpoint
 }
 
-// connectorCache keeps compiled connectors keyed by url+hash so repeat invocations skip the
-// CPU-expensive wasm compile. Hash in the key means a connector upgrade compiles fresh.
-// A CompiledPlugin is safe to share; callers derive a per-invocation Instance (own linear
-// memory) from it, since its Call is not goroutine-safe.
-type connectorCache struct {
-	mu      sync.Mutex
-	entries map[string]*connectorEntry
-}
-
-func newConnectorCache() *connectorCache {
-	return &connectorCache{entries: make(map[string]*connectorEntry)}
-}
+// connectors keeps connectorEntry values keyed by url+hash so repeat invocations skip the
+// CPU-expensive wasm compile. Hash in the key means a connector upgrade compiles fresh. A
+// CompiledPlugin is safe to share; callers derive a per-invocation Instance (own linear memory)
+// from it, since its Call is not goroutine-safe.
+var connectors common.SyncMap[string, *connectorEntry]
 
 func cacheKey(connectorURL string, hash string) string {
 	return connectorURL + "@" + hash
 }
 
-// cacheConnector compiles the verified wasm and stores it under url+hash, in the background.
-// Called from validation, which already holds the verified bytes, so execution never re-downloads.
-// spec.AllowedDomains gates the connector's outbound HTTP.
+// CompileConnector resolves the connector's endpoints from the environment and caches a compiled
+// plugin under url+hash. Called post-approval (onboarding) and at startup — by which point the
+// required env is guaranteed set (MissingRequiredEnvVars), and every endpoint var is required.
 //
-// Compile is CPU-heavy, so it runs off the caller's path (startup/onboarding returns fast) on a
-// detached context (the caller's timeout/cancel must not abort a warm-up). The entry is published
-// before the compile starts so an Execute that arrives mid-compile waits rather than missing; a
-// failed compile is dropped from the cache so a later validation retries.
-func (c *ConnectorRuntime) cacheConnector(ctx context.Context, connectorURL string, hash string, wasmData []byte, spec *domain.ConnectorSpec) {
+// Endpoints resolve synchronously (fast, and available immediately for egress gating). The
+// CPU-heavy compile — fetch+verify+NewCompiledPlugin — runs in the background on a detached
+// context so startup/onboarding returns fast; the entry is published before it starts, so an
+// Execute arriving mid-compile waits (on ready) rather than missing. A failed compile is dropped
+// so a later call retries. No-op if already cached.
+func (c *ConnectorRuntime) CompileConnector(ctx context.Context, connectorURL string, hash string, spec *domain.ConnectorSpec) {
 	key := cacheKey(connectorURL, hash)
-
-	c.cache.mu.Lock()
-	if _, exists := c.cache.entries[key]; exists {
-		c.cache.mu.Unlock()
+	entry := &connectorEntry{ready: make(chan struct{}), configs: spec.ScopedConfigs(), endpoints: spec.ResolveEndpoints(c.logger), err: nil, compiled: nil}
+	if _, loaded := connectors.LoadOrStore(key, entry); loaded {
 		return
 	}
-	entry := &connectorEntry{ready: make(chan struct{})}
-	c.cache.entries[key] = entry
-	c.cache.mu.Unlock()
 
 	go func() {
-		ctx := context.WithoutCancel(ctx)
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Minute)
+		defer cancel()
+
 		c.logger.Info("compiling connector into cache", "key", key)
 
-		manifest := extism.Manifest{
-			Wasm:         []extism.Wasm{extism.WasmData{Data: wasmData}},
-			AllowedHosts: spec.AllowedDomains,
+		var wasmData []byte
+		if wasmData, entry.err = c.fetchAndVerify(ctx, connectorURL, hash); entry.err == nil {
+			manifest := extism.Manifest{
+				Wasm: []extism.Wasm{extism.WasmData{Data: wasmData}},
+				// Extism's built-in HTTP is disabled so all egress must go through our gated fetch host function
+				AllowedHosts: nil,
+				Memory:       &extism.ManifestMemory{MaxPages: maxConnectorMemoryPages},
+			}
+			entry.compiled, entry.err = extism.NewCompiledPlugin(ctx, manifest, extism.PluginConfig{EnableWasi: true}, c.hostFunctions(spec))
 		}
-
-		entry.compiled, entry.err = extism.NewCompiledPlugin(ctx, manifest, extism.PluginConfig{EnableWasi: true}, c.hostFunctions())
 		close(entry.ready)
 
 		if entry.err != nil {
 			c.logger.Error("failed to compile connector", "url", connectorURL, "hash", hash, "err", entry.err)
-			c.cache.mu.Lock()
-			delete(c.cache.entries, key)
-			c.cache.mu.Unlock()
+			connectors.Delete(key)
 			return
 		}
 		c.logger.Info("compiled connector into cache", "key", key)
@@ -81,35 +98,47 @@ func (c *ConnectorRuntime) cacheConnector(ctx context.Context, connectorURL stri
 
 // Execute runs one invocation on the connector cached for url+hash. It derives a fresh instance
 // (own linear memory, so concurrent Executes don't collide), calls the wasm `dispatch` export
-// with the envelope, and returns the connector's raw JSON output.
-func (c *ConnectorRuntime) Execute(ctx context.Context, connectorURL string, hash string, envelope domain.ConnectorDispatchEnvelope) ([]byte, error) {
-	c.cache.mu.Lock()
-	entry, ok := c.cache.entries[cacheKey(connectorURL, hash)]
-	c.cache.mu.Unlock()
+// with the invocation, and returns the connector's raw JSON output.
+// TODO: Gate execution until all the connectors are complied and limit maximum number of execution
+func (c *ConnectorRuntime) Execute(ctx context.Context, connectorURL string, hash string, invocation domain.ConnectorInvocation) ([]byte, error) {
+	entry, ok := connectors.Load(cacheKey(connectorURL, hash))
 	if !ok {
 		return nil, fmt.Errorf("connector not loaded for %s", connectorURL)
 	}
 
-	// Wait for an in-flight background compile rather than racing it.
+	// Wait for an in-flight background compile rather than racing it
 	select {
-	case <-entry.ready:
 	case <-ctx.Done():
 		return nil, ctx.Err()
+	case <-entry.ready:
 	}
 	if entry.err != nil {
 		return nil, fmt.Errorf("connector not compiled for %s: %w", connectorURL, entry.err)
 	}
-	compiled := entry.compiled
 
-	if envelope.Config == nil {
-		envelope.Config = map[string]string{} // dispatcher requires an object, not null
+	// Config is the Host's isolation boundary: the runtime looks it up itself, scoped to this
+	// operation (module + operation config, from env) — never taken from the caller.
+	key := domain.OperationKey(invocation.Kind, invocation.ManagedResource, invocation.Type)
+	config, ok := entry.configs[key]
+	if !ok {
+		return nil, fmt.Errorf("connector %s declares no operation %s", connectorURL, key)
+	}
+	envelope := ConnectorDispatchEnvelope{
+		Kind:            invocation.Kind,
+		ManagedResource: invocation.ManagedResource,
+		Type:            invocation.Type,
+		Config:          config,
+		Input:           invocation.Input,
 	}
 	payload, err := json.Marshal(envelope)
 	if err != nil {
 		return nil, fmt.Errorf("marshal dispatch envelope: %w", err)
 	}
 
-	instance, err := compiled.Instance(ctx, extism.PluginInstanceConfig{})
+	// Scope egress to this operation's endpoints: the fetch host function reads them off the ctx.
+	ctx = context.WithValue(ctx, egressEndpointsKey{}, entry.endpoints[key])
+
+	instance, err := entry.compiled.Instance(ctx, extism.PluginInstanceConfig{})
 	if err != nil {
 		return nil, fmt.Errorf("instantiate connector: %w", err)
 	}
@@ -125,19 +154,4 @@ func (c *ConnectorRuntime) Execute(ctx context.Context, connectorURL string, has
 	}
 
 	return out, nil
-}
-
-// hostFunctions are the capabilities exposed to connectors (namespace extism:host/user).
-//
-// TODO: remove sendEmail. Email capability withdrawn (phishing vector). No-op stub kept only so connectors still importing it instantiate; returns ok without sending.
-func (c *ConnectorRuntime) hostFunctions() []extism.HostFunction {
-	sendEmail := extism.NewHostFunctionWithStack(
-		"sendEmail",
-		func(_ context.Context, _ *extism.CurrentPlugin, stack []uint64) {
-			stack[0] = 0 // 0 = ok
-		},
-		[]extism.ValueType{extism.ValueTypeI64},
-		[]extism.ValueType{extism.ValueTypeI64},
-	)
-	return []extism.HostFunction{sendEmail}
 }
