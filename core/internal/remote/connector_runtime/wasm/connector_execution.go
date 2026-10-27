@@ -136,7 +136,7 @@ func (c *ConnectorRuntime) Execute(ctx context.Context, connectorURL string, has
 	}
 
 	// Scope egress to this operation's endpoints: the fetch host function reads them off the ctx.
-	ctx = context.WithValue(ctx, egressEndpointsKey{}, entry.endpoints[key])
+	ctx = withAllowedEndpoints(ctx, entry.endpoints[key])
 
 	instance, err := entry.compiled.Instance(ctx, extism.PluginInstanceConfig{})
 	if err != nil {

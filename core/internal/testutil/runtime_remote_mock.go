@@ -95,19 +95,31 @@ func (m *MockConnectorRuntime) EXPECT() *MockConnectorRuntimeMockRecorder {
 	return m.recorder
 }
 
-// Execute mocks base method.
-func (m *MockConnectorRuntime) Execute(ctx context.Context, url, hash string, envelope domain.ConnectorDispatchEnvelope) ([]byte, error) {
+// CompileConnector mocks base method.
+func (m *MockConnectorRuntime) CompileConnector(ctx context.Context, url, hash string, spec *domain.ConnectorSpec) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Execute", ctx, url, hash, envelope)
+	m.ctrl.Call(m, "CompileConnector", ctx, url, hash, spec)
+}
+
+// CompileConnector indicates an expected call of CompileConnector.
+func (mr *MockConnectorRuntimeMockRecorder) CompileConnector(ctx, url, hash, spec any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompileConnector", reflect.TypeOf((*MockConnectorRuntime)(nil).CompileConnector), ctx, url, hash, spec)
+}
+
+// Execute mocks base method.
+func (m *MockConnectorRuntime) Execute(ctx context.Context, url, hash string, invocation domain.ConnectorInvocation) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Execute", ctx, url, hash, invocation)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Execute indicates an expected call of Execute.
-func (mr *MockConnectorRuntimeMockRecorder) Execute(ctx, url, hash, envelope any) *gomock.Call {
+func (mr *MockConnectorRuntimeMockRecorder) Execute(ctx, url, hash, invocation any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockConnectorRuntime)(nil).Execute), ctx, url, hash, envelope)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockConnectorRuntime)(nil).Execute), ctx, url, hash, invocation)
 }
 
 // ValidateConnectorByURL mocks base method.
