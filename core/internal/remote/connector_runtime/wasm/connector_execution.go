@@ -109,7 +109,7 @@ func (c *ConnectorRuntime) Execute(ctx context.Context, connectorURL string, has
 	// Wait for an in-flight background compile rather than racing it
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, fmt.Errorf("waiting for connector %s: %w", connectorURL, ctx.Err())
 	case <-entry.ready:
 	}
 	if entry.err != nil {

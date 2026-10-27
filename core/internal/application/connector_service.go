@@ -106,7 +106,11 @@ func (c *ConnectorService) CompileConnector(ctx context.Context, connectorUrl st
 
 // Execute routes an invocation to the connector runtime, which runs it against the cached connector.
 func (c *ConnectorService) Execute(ctx context.Context, connectorUrl string, connectorHash string, invocation domain.ConnectorInvocation) ([]byte, error) {
-	return c.connectorRuntime.Execute(ctx, connectorUrl, connectorHash, invocation)
+	output, err := c.connectorRuntime.Execute(ctx, connectorUrl, connectorHash, invocation)
+	if err != nil {
+		return nil, fmt.Errorf("execute connector %s: %w", connectorUrl, err)
+	}
+	return output, nil
 }
 
 func (c *ConnectorService) GetOnboardedConnectorDetails(_ context.Context, onboardingId string) (*domain.ConnectorValidationResult, bool) {

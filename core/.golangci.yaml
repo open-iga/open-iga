@@ -43,6 +43,12 @@ linters:
                 - net/http.Client
                 - net/http.Transport
                 - net.Dialer
+                - github.com/extism/go-sdk.Manifest
+                - github.com/extism/go-sdk.WasmData
+                - github.com/extism/go-sdk.ManifestMemory
+                - github.com/extism/go-sdk.PluginConfig
+                - github.com/extism/go-sdk.PluginInstanceConfig
+                - github.com/open-iga/core/internal/common.SyncMap
     exclusions:
         rules:
             - path: (.*_test\.go|.*internal/testutil/.*)

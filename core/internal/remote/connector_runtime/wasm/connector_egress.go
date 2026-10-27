@@ -34,6 +34,12 @@ type egressResponse struct {
 	Error  string `json:"error,omitempty"`
 }
 
+// egressError logs and builds a failed fetch response with the given message.
+func (c *ConnectorRuntime) egressError(status int, message string) egressResponse {
+	c.logger.Error("connector egress failed", "status", status, "error", message)
+	return egressResponse{Status: status, Body: "", Error: message}
+}
+
 // hostFunctions are the capabilities exposed to connectors (namespace extism:host/user). fetch is
 // the sole egress: it routes connector HTTP through the host's SSRF-guarded client and allows only
 // the connector's declared domains and the resolved endpoints of the operation being executed.
@@ -85,21 +91,21 @@ func (c *ConnectorRuntime) handleFetch(ctx context.Context, cp *extism.CurrentPl
 func (c *ConnectorRuntime) doFetch(ctx context.Context, cp *extism.CurrentPlugin, globs []glob.Glob, reqOffset uint64) egressResponse {
 	reqBytes, err := cp.ReadBytes(reqOffset)
 	if err != nil {
-		return egressResponse{Status: http.StatusBadRequest, Error: fmt.Sprintf("failed to read request from guest memory at offset %d: %v", reqOffset, err)}
+		return c.egressError(http.StatusBadRequest, fmt.Sprintf("failed to read request from guest memory at offset %d: %v", reqOffset, err))
 	}
 	var request egressRequest
 	if err := json.Unmarshal(reqBytes, &request); err != nil {
-		return egressResponse{Status: http.StatusBadRequest, Error: fmt.Sprintf("invalid request json: %v", err)}
+		return c.egressError(http.StatusBadRequest, fmt.Sprintf("invalid request json: %v", err))
 	}
 
 	parsed, err := url.Parse(request.URL)
 	if err != nil || parsed.Scheme != "https" {
-		return egressResponse{Status: http.StatusForbidden, Error: fmt.Sprintf("url %q must be a valid https url", request.URL)}
+		return c.egressError(http.StatusForbidden, fmt.Sprintf("url %q must be a valid https url", request.URL))
 	}
 
 	// Domain level: host must match one of the connector's allowed domains.
 	if !matchesAnyGlob(globs, parsed.Hostname()) {
-		return egressResponse{Status: http.StatusForbidden, Error: fmt.Sprintf("egress blocked: host %s not in allowed domains %s", parsed.Hostname(), globs)}
+		return c.egressError(http.StatusForbidden, fmt.Sprintf("egress blocked: host %s not in allowed domains %s", parsed.Hostname(), globs))
 	}
 
 	// Action level: host+method must match a resolved endpoint of the operation being executed
@@ -110,16 +116,21 @@ func (c *ConnectorRuntime) doFetch(ctx context.Context, cp *extism.CurrentPlugin
 		method = http.MethodGet
 	}
 	if !allowedByEndpoints(allowedEndpoints, parsed.Hostname(), method) {
-		return egressResponse{Status: http.StatusForbidden, Error: fmt.Sprintf("egress blocked: %s method on %s does not match any endpoint declared for this operation", method, parsed.Hostname())}
+		return c.egressError(http.StatusForbidden, fmt.Sprintf("egress blocked: %s method on %s does not match any endpoint declared for this operation", method, parsed.Hostname()))
 	}
 
+	return c.send(ctx, request, method, parsed.Hostname())
+}
+
+// send performs the already-gated request and returns the upstream status and body.
+func (c *ConnectorRuntime) send(ctx context.Context, request egressRequest, method string, host string) egressResponse {
 	var body io.Reader
 	if request.Body != "" {
 		body = strings.NewReader(request.Body)
 	}
 	httpReq, err := http.NewRequestWithContext(ctx, method, request.URL, body)
 	if err != nil {
-		return egressResponse{Status: http.StatusInternalServerError, Error: fmt.Sprintf("failed to build %s request to %s: %v", method, parsed.Hostname(), err)}
+		return c.egressError(http.StatusInternalServerError, fmt.Sprintf("failed to build %s request to %s: %v", method, host, err))
 	}
 	for key, value := range request.Headers {
 		httpReq.Header.Set(key, value)
@@ -127,16 +138,15 @@ func (c *ConnectorRuntime) doFetch(ctx context.Context, cp *extism.CurrentPlugin
 
 	httpResp, err := c.httpClient.Do(httpReq)
 	if err != nil {
-		c.logger.Error("connector egress request failed", "host", parsed.Hostname(), "err", err)
-		return egressResponse{Status: http.StatusBadGateway, Error: fmt.Sprintf("%s request to %s failed: %v", method, parsed.Hostname(), err)}
+		return c.egressError(http.StatusBadGateway, fmt.Sprintf("%s request to %s failed: %v", method, host, err))
 	}
 	defer func() { _ = httpResp.Body.Close() }()
 
 	data, err := io.ReadAll(io.LimitReader(httpResp.Body, maxEgressResponseBytes))
 	if err != nil {
-		return egressResponse{Status: http.StatusBadGateway, Error: fmt.Sprintf("failed to read response from %s: %v", parsed.Hostname(), err)}
+		return c.egressError(http.StatusBadGateway, fmt.Sprintf("failed to read response from %s: %v", host, err))
 	}
-	return egressResponse{Status: httpResp.StatusCode, Body: string(data)}
+	return egressResponse{Status: httpResp.StatusCode, Body: string(data), Error: ""}
 }
 
 // allowedByEndpoints reports whether host+method matches any resolved endpoint. Empty endpoints
