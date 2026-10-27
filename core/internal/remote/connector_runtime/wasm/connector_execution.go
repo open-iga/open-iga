@@ -82,6 +82,7 @@ func (c *ConnectorRuntime) CompileConnector(ctx context.Context, connectorURL st
 				// Extism's built-in HTTP is disabled so all egress must go through our gated fetch host function
 				AllowedHosts: nil,
 				Memory:       &extism.ManifestMemory{MaxPages: maxConnectorMemoryPages},
+				Timeout:      connectorExecutionTimeoutMs,
 			}
 			entry.compiled, entry.err = extism.NewCompiledPlugin(ctx, manifest, extism.PluginConfig{EnableWasi: true}, c.hostFunctions(spec))
 		}
@@ -138,6 +139,9 @@ func (c *ConnectorRuntime) Execute(ctx context.Context, connectorURL string, has
 	// Scope egress to this operation's endpoints: the fetch host function reads them off the ctx.
 	ctx = withAllowedEndpoints(ctx, entry.endpoints[key])
 
+	// TODO: do not pass the request context; pass a new context with a timeout. A client
+	// disconnect would otherwise cancel a mutating action mid-flight and leave the target system
+	// half-updated.
 	instance, err := entry.compiled.Instance(ctx, extism.PluginInstanceConfig{})
 	if err != nil {
 		return nil, fmt.Errorf("instantiate connector: %w", err)

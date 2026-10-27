@@ -20,6 +20,10 @@ const maxEgressResponseBytes = 16 * 1024 * 1024
 // maxConnectorMemoryPages caps each instance's wasm linear memory (page = 64 KiB): 800 × 64 KiB = 50 MiB.
 const maxConnectorMemoryPages = 800
 
+// connectorExecutionTimeoutMs is the maximum time one dispatch call may run. Setting it is also
+// what lets a cancelled context stop a running guest; never set it to 0.
+const connectorExecutionTimeoutMs = 60_000
+
 // egressRequest / egressResponse are the JSON the guest `fetch` polyfill exchanges with the host.
 type egressRequest struct {
 	URL     string            `json:"url"`
@@ -49,7 +53,7 @@ func (c *ConnectorRuntime) hostFunctions(spec *domain.ConnectorSpec) []extism.Ho
 	fetch := extism.NewHostFunctionWithStack(
 		"fetch",
 		func(ctx context.Context, cp *extism.CurrentPlugin, stack []uint64) {
-			stack[0] = c.handleFetch(ctx, cp, globs, stack[0])
+			stack[0] = c.handleFetch(ctx, cp, spec.AllowedDomains, globs, stack[0])
 		},
 		[]extism.ValueType{extism.ValueTypeI64},
 		[]extism.ValueType{extism.ValueTypeI64},
@@ -71,8 +75,8 @@ func (c *ConnectorRuntime) hostFunctions(spec *domain.ConnectorSpec) []extism.Ho
 
 // handleFetch reads the request from guest memory, performs the gated request, and writes the
 // response back into guest memory, returning its offset (0 on a memory write failure).
-func (c *ConnectorRuntime) handleFetch(ctx context.Context, cp *extism.CurrentPlugin, globs []glob.Glob, reqOffset uint64) uint64 {
-	response := c.doFetch(ctx, cp, globs, reqOffset)
+func (c *ConnectorRuntime) handleFetch(ctx context.Context, cp *extism.CurrentPlugin, allowedDomains []string, globs []glob.Glob, reqOffset uint64) uint64 {
+	response := c.doFetch(ctx, cp, allowedDomains, globs, reqOffset)
 
 	out, err := json.Marshal(response)
 	if err != nil {
@@ -88,7 +92,7 @@ func (c *ConnectorRuntime) handleFetch(ctx context.Context, cp *extism.CurrentPl
 
 // doFetch applies both egress filters then performs the request. Any denial or failure is returned
 // as an egressResponse with Error set, never a panic — the connector sees a failed fetch.
-func (c *ConnectorRuntime) doFetch(ctx context.Context, cp *extism.CurrentPlugin, globs []glob.Glob, reqOffset uint64) egressResponse {
+func (c *ConnectorRuntime) doFetch(ctx context.Context, cp *extism.CurrentPlugin, allowedDomains []string, globs []glob.Glob, reqOffset uint64) egressResponse {
 	reqBytes, err := cp.ReadBytes(reqOffset)
 	if err != nil {
 		return c.egressError(http.StatusBadRequest, fmt.Sprintf("failed to read request from guest memory at offset %d: %v", reqOffset, err))
@@ -105,7 +109,7 @@ func (c *ConnectorRuntime) doFetch(ctx context.Context, cp *extism.CurrentPlugin
 
 	// Domain level: host must match one of the connector's allowed domains.
 	if !matchesAnyGlob(globs, parsed.Hostname()) {
-		return c.egressError(http.StatusForbidden, fmt.Sprintf("egress blocked: host %s not in allowed domains %s", parsed.Hostname(), globs))
+		return c.egressError(http.StatusForbidden, fmt.Sprintf("egress blocked: host %s is not in the connector's allowed domains %v", parsed.Hostname(), allowedDomains))
 	}
 
 	// Action level: host+method must match a resolved endpoint of the operation being executed
