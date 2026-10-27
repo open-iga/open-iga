@@ -1,9 +1,13 @@
 package wasm
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/open-iga/core/internal/domain"
+	"github.com/open-iga/core/internal/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,4 +41,23 @@ func TestAllowedByEndpoints(t *testing.T) {
 	t.Run("fails closed on empty endpoints", func(t *testing.T) {
 		assert.False(t, allowedByEndpoints(nil, "iam.amazonaws.com", "POST"))
 	})
+}
+
+func TestSend_DoesNotFollowRedirects(t *testing.T) {
+	var followed bool
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/elsewhere" {
+			followed = true
+			return
+		}
+		http.Redirect(w, r, "/elsewhere", http.StatusFound)
+	}))
+	t.Cleanup(srv.Close)
+	rt := NewConnectorRuntime(testutil.NewTestLogger())
+	rt.httpClient = srv.Client()
+
+	response := rt.send(context.Background(), egressRequest{URL: srv.URL}, http.MethodGet, "127.0.0.1")
+
+	assert.Equal(t, http.StatusFound, response.Status)
+	assert.False(t, followed)
 }

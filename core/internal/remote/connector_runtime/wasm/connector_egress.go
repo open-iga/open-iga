@@ -136,7 +136,13 @@ func (c *ConnectorRuntime) send(ctx context.Context, request egressRequest, meth
 		httpReq.Header.Set(key, value)
 	}
 
-	httpResp, err := c.httpClient.Do(httpReq)
+	// Redirects bypass the domain and endpoint filters (checked on request.URL only), so they are
+	// not followed: the connector receives the 3xx and must call the new URL through fetch, where
+	// it is gated. A shallow copy keeps the shared transport; the wasm download still follows redirects.
+	client := *c.httpClient
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+
+	httpResp, err := client.Do(httpReq)
 	if err != nil {
 		return c.egressError(http.StatusBadGateway, fmt.Sprintf("%s request to %s failed: %v", method, host, err))
 	}
