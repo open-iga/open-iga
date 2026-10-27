@@ -34,11 +34,10 @@ func NewConnectorService(connectorRuntime contract.ConnectorRuntime, managedSyst
 	}
 }
 
-// LoadConnectorsOnStartup lists onboarded connectors and validates each one against the stored
-// hash, which also compiles and caches the wasm so later invocations skip the download+compile.
-// A missing required env var aborts startup (returns an error) so the operator fixes the config
-// before the server runs. A connector that has no spec, fails to fetch, or whose hash no longer
-// matches is skipped with an error log.
+// LoadConnectorsOnStartup lists onboarded connectors and compiles each into the runtime cache
+// (resolving its endpoints from the environment). A missing required env var aborts startup
+// (returns an error) so the operator fixes the config before the server runs. A connector with
+// no spec is skipped with an error log.
 func (c *ConnectorService) LoadConnectorsOnStartup(ctx context.Context) error {
 	managedSystems, err := c.managedSystemRepository.ListManagedSystems(ctx)
 	if err != nil {
@@ -55,13 +54,8 @@ func (c *ConnectorService) LoadConnectorsOnStartup(ctx context.Context) error {
 			return fmt.Errorf("connector %q (%s) missing required env vars %v", managedSystem.Name, managedSystem.Id, missing)
 		}
 
-		if _, err := c.connectorRuntime.ValidateConnectorByURL(ctx, managedSystem.ConnectorUrl, managedSystem.ConnectorHash); err != nil {
-			c.logger.Error("skipping connector that failed validation",
-				"managedSystemId", managedSystem.Id, "name", managedSystem.Name, "err", err)
-			continue
-		}
-
-		c.logger.Info("loaded connector", "managedSystemId", managedSystem.Id, "name", managedSystem.Name)
+		c.CompileConnector(ctx, managedSystem.ConnectorUrl, managedSystem.ConnectorHash, managedSystem.ConnectorSpec)
+		c.logger.Info("loading connector", "managedSystemId", managedSystem.Id, "name", managedSystem.Name)
 	}
 	return nil
 }
@@ -70,12 +64,11 @@ func (c *ConnectorService) ValidateByUrl(ctx context.Context, connectorUrl strin
 	c.mu.Lock()
 	id := uuid.New().String()
 	c.onboardingResults[id] = domain.ConnectorValidationResult{
-		Error:          nil,
-		ConnectorHash:  connectorHash,
-		ConnectorUrl:   connectorUrl,
-		Status:         domain.ConnectorValidationPending,
-		ConnectorSpec:  nil,
-		MissingEnvVars: nil,
+		Error:         nil,
+		ConnectorHash: connectorHash,
+		ConnectorUrl:  connectorUrl,
+		Status:        domain.ConnectorValidationPending,
+		ConnectorSpec: nil,
 	}
 	c.mu.Unlock()
 
@@ -93,12 +86,11 @@ func (c *ConnectorService) ValidateByUrl(ctx context.Context, connectorUrl strin
 		c.logger.Debug("Validation completed", "connectorUrl", connectorUrl, "id", id, "status", status)
 		c.mu.Lock()
 		c.onboardingResults[id] = domain.ConnectorValidationResult{
-			Error:          err,
-			ConnectorHash:  connectorHash,
-			ConnectorUrl:   connectorUrl,
-			Status:         status,
-			ConnectorSpec:  connectorSpec,
-			MissingEnvVars: nil,
+			Error:         err,
+			ConnectorHash: connectorHash,
+			ConnectorUrl:  connectorUrl,
+			Status:        status,
+			ConnectorSpec: connectorSpec,
 		}
 		c.mu.Unlock()
 	}()
@@ -106,9 +98,15 @@ func (c *ConnectorService) ValidateByUrl(ctx context.Context, connectorUrl strin
 	return id
 }
 
+// CompileConnector compiles the connector into the runtime cache (which resolves its endpoints
+// from the environment). Called post-approval (onboarding) and at startup.
+func (c *ConnectorService) CompileConnector(ctx context.Context, connectorUrl string, connectorHash string, spec *domain.ConnectorSpec) {
+	c.connectorRuntime.CompileConnector(ctx, connectorUrl, connectorHash, spec)
+}
+
 // Execute routes an invocation to the connector runtime, which runs it against the cached connector.
-func (c *ConnectorService) Execute(ctx context.Context, connectorUrl string, connectorHash string, envelope domain.ConnectorDispatchEnvelope) ([]byte, error) {
-	return c.connectorRuntime.Execute(ctx, connectorUrl, connectorHash, envelope)
+func (c *ConnectorService) Execute(ctx context.Context, connectorUrl string, connectorHash string, invocation domain.ConnectorInvocation) ([]byte, error) {
+	return c.connectorRuntime.Execute(ctx, connectorUrl, connectorHash, invocation)
 }
 
 func (c *ConnectorService) GetOnboardedConnectorDetails(_ context.Context, onboardingId string) (*domain.ConnectorValidationResult, bool) {
@@ -118,10 +116,6 @@ func (c *ConnectorService) GetOnboardedConnectorDetails(_ context.Context, onboa
 	value, ok := c.onboardingResults[onboardingId]
 	if !ok {
 		return nil, false
-	}
-	// Computed on read: the core's environment can change between validation and onboarding.
-	if value.ConnectorSpec != nil {
-		value.MissingEnvVars = value.ConnectorSpec.MissingRequiredEnvVars()
 	}
 	return &value, true
 }
