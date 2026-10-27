@@ -134,15 +134,15 @@ func NewConnectorSpec(customSection []byte) (*ConnectorSpec, error) {
 }
 
 // MissingRequiredEnvVars returns the names of required config entries that the core's
-// environment does not have set (os.LookupEnv). Config entries not marked required are
-// allowed to be absent.
+// environment has unset or empty, matching how endpoint templates treat an empty value. Config
+// entries not marked required are allowed to be absent.
 func (c *ConnectorSpec) MissingRequiredEnvVars() []string {
 	missing := make([]string, 0)
 	for _, cfg := range c.Config {
 		if cfg.Required == nil || !*cfg.Required {
 			continue
 		}
-		if _, ok := os.LookupEnv(cfg.Name); !ok {
+		if value, ok := os.LookupEnv(cfg.Name); !ok || value == "" {
 			missing = append(missing, cfg.Name)
 		}
 	}
