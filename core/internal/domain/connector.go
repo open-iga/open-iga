@@ -9,19 +9,15 @@ const (
 	EntitlementKind   ConnectorKind = "entitlement"
 )
 
-// ConnectorDispatchEnvelope is one invocation routed to a connector: which managed resource and
-// operation to run (Type, e.g. create/grant), the scoped config, and the handler input. The
-// remote marshals it straight to the wasm `dispatch` input, so the json tags are the dispatcher's
-// wire contract.
-//
-// Note: this is the extism wire format living in domain. Fine while wasm is the only runtime;
-// split into a domain type + wire DTO if a non-wasm runtime ever appears.
-type ConnectorDispatchEnvelope struct {
-	Kind            ConnectorKind     `json:"__kind"`
-	ManagedResource string            `json:"__managedResource"`
-	Type            string            `json:"__type"`
-	Config          map[string]string `json:"config"`
-	Input           any               `json:"input"`
+// ConnectorInvocation is a caller's request to run one operation on a connector: which managed
+// resource and operation (Type, e.g. create/grant), and the handler input. It has no config —
+// config is never the caller's to set; the runtime looks it up itself, scoped to this operation,
+// when it builds the wire envelope.
+type ConnectorInvocation struct {
+	Kind            ConnectorKind
+	ManagedResource string
+	Type            string
+	Input           any
 }
 
 type ConnectorValidationStatus string
@@ -37,10 +33,7 @@ type ConnectorValidationResult struct {
 	ConnectorUrl  string
 	ConnectorHash string
 	ConnectorSpec *ConnectorSpec
-	// MissingEnvVars are required env variables the connector needs that the core's
-	// environment does not have set. Onboarding is blocked while this is non-empty.
-	MissingEnvVars []string
-	Error          error
+	Error         error
 }
 
 func (c *ConnectorValidationResult) CanBeOnboarded() bool {
