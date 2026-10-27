@@ -22,9 +22,10 @@ func (h *Handler) GetConnectorOnboardingRequestDetails(ctx context.Context, requ
 		}, nil
 	}
 
-	missingEnvVars := connectorValidationResult.MissingEnvVars
-	if missingEnvVars == nil {
-		missingEnvVars = []string{} // always emit [], never null, for a non-success status
+	// Computed on read: the core's environment can change between validation and onboarding.
+	missingEnvVars := []string{} // always emit [], never null
+	if connectorValidationResult.ConnectorSpec != nil {
+		missingEnvVars = connectorValidationResult.ConnectorSpec.MissingRequiredEnvVars()
 	}
 
 	resp := generated.GetConnectorOnboardingRequestDetails200JSONResponse{

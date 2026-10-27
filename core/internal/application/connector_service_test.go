@@ -61,7 +61,7 @@ func TestConnectorService_ValidateByUrl(t *testing.T) {
 }
 
 func TestConnectorService_LoadConnectorsOnStartup(t *testing.T) {
-	t.Run("verifies connectors and skips no-spec / bad-hash without erroring", func(t *testing.T) {
+	t.Run("compiles connectors and skips ones with no spec", func(t *testing.T) {
 		cs, runtime, repo := setupConnectorServiceWithMocks(t)
 		required := true
 		t.Setenv("OPEN_IGA_LOAD_ENV", "set")
@@ -73,14 +73,12 @@ func TestConnectorService_LoadConnectorsOnStartup(t *testing.T) {
 
 		systems := []*domain.ManagedSystem{
 			{Id: "ok-id", Name: "ok", ConnectorUrl: "https://ok", ConnectorHash: "h1", ConnectorSpec: okSpec},
-			{Id: "bad-hash-id", Name: "bad-hash", ConnectorUrl: "https://bad", ConnectorHash: "h2", ConnectorSpec: &domain.ConnectorSpec{Name: "bad"}},
 			{Id: "no-spec-id", Name: "no-spec", ConnectorUrl: "https://ns", ConnectorHash: "h4", ConnectorSpec: nil},
 		}
 
 		repo.EXPECT().ListManagedSystems(gomock.Any()).Return(systems, nil)
-		// no-spec is skipped before fetch; ok and bad-hash are fetched (bad-hash skipped, not fatal).
-		runtime.EXPECT().FetchAndVerify(gomock.Any(), "https://ok", "h1").Return([]byte("wasm-ok"), nil)
-		runtime.EXPECT().FetchAndVerify(gomock.Any(), "https://bad", "h2").Return(nil, errors.New("connector hash mismatch"))
+		// no-spec is skipped before compile; only ok is compiled.
+		runtime.EXPECT().CompileConnector(gomock.Any(), "https://ok", "h1", gomock.Any())
 
 		assert.NoError(t, cs.LoadConnectorsOnStartup(context.TODO()))
 	})
@@ -125,6 +123,6 @@ func TestConnectorService_GetOnboardedConnectorDetails(t *testing.T) {
 		res, ok := cs.GetOnboardedConnectorDetails(context.TODO(), "id")
 
 		assert.True(t, ok)
-		assert.Equal(t, []string{"OPEN_IGA_TEST_UNSET_ENV"}, res.MissingEnvVars)
+		assert.Equal(t, []string{"OPEN_IGA_TEST_UNSET_ENV"}, res.ConnectorSpec.MissingRequiredEnvVars())
 	})
 }

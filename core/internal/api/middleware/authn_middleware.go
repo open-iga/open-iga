@@ -70,7 +70,6 @@ func (m *Middleware) authenticate(w http.ResponseWriter, r *http.Request, next h
 	cookie, err := r.Cookie(common.SessionCookieName)
 	if err != nil && !isRequestToAuthEndpoint(r) {
 		// no session on a protected resource: send the user to sign in
-		m.logger.Debug("unable to read session cookie from the request")
 		m.redirectResponseToSignIn(w)
 		return nil, false
 	}

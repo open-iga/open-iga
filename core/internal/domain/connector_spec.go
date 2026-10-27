@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"regexp"
+	"strings"
 
 	validation "github.com/go-ozzo/ozzo-validation"
 )
@@ -132,17 +134,112 @@ func NewConnectorSpec(customSection []byte) (*ConnectorSpec, error) {
 }
 
 // MissingRequiredEnvVars returns the names of required config entries that the core's
-// environment does not have set (os.LookupEnv). Config entries not marked required are
-// allowed to be absent.
+// environment has unset or empty, matching how endpoint templates treat an empty value. Config
+// entries not marked required are allowed to be absent.
 func (c *ConnectorSpec) MissingRequiredEnvVars() []string {
 	missing := make([]string, 0)
 	for _, cfg := range c.Config {
 		if cfg.Required == nil || !*cfg.Required {
 			continue
 		}
-		if _, ok := os.LookupEnv(cfg.Name); !ok {
+		if value, ok := os.LookupEnv(cfg.Name); !ok || value == "" {
 			missing = append(missing, cfg.Name)
 		}
 	}
 	return missing
+}
+
+// endpointVar matches a `{{VAR}}` placeholder in an endpoint URL (e.g. https://sts.{{AWS_REGION}}...).
+var endpointVar = regexp.MustCompile(`{{\s*([A-Za-z0-9_]+)\s*}}`)
+
+// ResolvedEndpoint is a spec endpoint with its {{VAR}} placeholders substituted.
+type ResolvedEndpoint struct {
+	Method string
+	URL    string
+}
+
+// OperationKey is the key of an operation in the ResolveEndpoints and ScopedConfigs results:
+// "<kind>.<resource>.<operation>", e.g. "account-action.iam-user.create". The kind is part of it
+// because a resource name or an operation like read can exist under both account actions and
+// entitlements.
+func OperationKey(kind ConnectorKind, resource string, operation string) string {
+	return string(kind) + "." + resource + "." + operation
+}
+
+// ScopedConfigs returns, per operation (keyed by OperationKey), the env values the Host must send
+// for an invocation: the module-level config plus that operation's own declared config. Only keys
+// set in the environment are included (required ones are guaranteed present by the onboarding
+// gate). Scoping is the Host's isolation boundary — an operation only ever receives the config
+// keys it declared, so e.g. an entitlement never sees an account-action's role ARN.
+//
+// The result is shared by every invocation, so callers must treat it as read-only.
+func (c *ConnectorSpec) ScopedConfigs() map[string]map[string]string {
+	scoped := map[string]map[string]string{}
+	c.forEachOperation(func(kind ConnectorKind, resource, operation string, op *Operation) {
+		config := map[string]string{}
+		for _, declared := range [][]Config{c.Config, op.Config} {
+			for _, cfg := range declared {
+				if value, ok := os.LookupEnv(cfg.Name); ok {
+					config[cfg.Name] = value
+				}
+			}
+		}
+		scoped[OperationKey(kind, resource, operation)] = config
+	})
+	return scoped
+}
+
+// forEachOperation visits every declared operation across actions and entitlements.
+func (c *ConnectorSpec) forEachOperation(visit func(kind ConnectorKind, resource, operation string, op *Operation)) {
+	for resource, actions := range c.Actions {
+		for name, op := range map[string]*Operation{
+			"create": actions.Create, "enable": actions.Enable, "disable": actions.Disable,
+			"delete": actions.Delete, "read": actions.Read,
+		} {
+			if op != nil {
+				visit(AccountActionKind, resource, name, op)
+			}
+		}
+	}
+	for resource, ents := range c.Entitlements {
+		for name, op := range map[string]*Operation{
+			"discover": ents.Discover, "grant": ents.Grant, "revoke": ents.Revoke, "read": ents.Read,
+		} {
+			if op != nil {
+				visit(EntitlementKind, resource, name, op)
+			}
+		}
+	}
+}
+
+// substituteURL replaces each {{VAR}} in rawURL with its env value. The connector SDK guarantees
+// every endpoint var is a required config entry, so the MissingRequiredEnvVars gate guarantees it
+// is set by the time endpoints are resolved.
+func substituteURL(rawURL string, logger *slog.Logger) string {
+	resolved := rawURL
+	for _, match := range endpointVar.FindAllStringSubmatch(rawURL, -1) {
+		placeholder, name := match[0], match[1] // "{{AWS_REGION}}", "AWS_REGION"
+		value := os.Getenv(name)
+		if value == "" {
+			logger.Error("endpoint template var is unset or empty; connectors must be built with the connector SDK", "var", name, "url", rawURL)
+		}
+		resolved = strings.ReplaceAll(resolved, placeholder, value)
+	}
+	return resolved
+}
+
+// ResolveEndpoints substitutes every endpoint's {{VAR}} placeholders from the core's environment
+// and returns the concrete endpoints, keyed by OperationKey(kind, resource, operation), so egress
+// can be gated per operation.
+func (c *ConnectorSpec) ResolveEndpoints(logger *slog.Logger) map[string][]ResolvedEndpoint {
+	resolved := map[string][]ResolvedEndpoint{}
+	c.forEachOperation(func(kind ConnectorKind, resource, operation string, op *Operation) {
+		key := OperationKey(kind, resource, operation)
+		for _, endpoint := range op.Endpoints {
+			resolved[key] = append(resolved[key], ResolvedEndpoint{
+				Method: strings.ToUpper(endpoint.Method), URL: substituteURL(endpoint.URL, logger),
+			})
+		}
+	})
+	return resolved
 }

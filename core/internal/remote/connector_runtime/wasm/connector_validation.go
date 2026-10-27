@@ -15,28 +15,22 @@ import (
 	"time"
 
 	"github.com/open-iga/core/internal/common"
-	"github.com/open-iga/core/internal/contract"
 	"github.com/open-iga/core/internal/domain"
 	"github.com/tetratelabs/wazero"
 )
 
 var CustomSectionName = "openiga:manifest"
 
+type ConnectorRuntime struct {
+	logger            *slog.Logger
+	httpClient        *http.Client
+	verifiedWasmBytes common.SyncMap[string, []byte]
+}
+
 const (
 	maxConnectorSize = 32 * 1024 * 1024 // 32 MiB cap on a downloaded connector
 	fetchTimeout     = 30 * time.Second
 )
-
-type ConnectorRuntime struct {
-	logger     *slog.Logger
-	httpClient *http.Client
-}
-
-var _ contract.ConnectorRuntime = (*ConnectorRuntime)(nil)
-
-func NewConnectorRuntime(logger *slog.Logger) *ConnectorRuntime {
-	return &ConnectorRuntime{logger: logger, httpClient: newSecureClient()}
-}
 
 // maxRedirects bounds redirect following; GitHub release URLs 302 to a signed CDN host.
 const maxRedirects = 5
@@ -89,7 +83,7 @@ func isPublicIP(ip net.IP) bool {
 // manifest from the wasm custom section.
 func (c *ConnectorRuntime) ValidateConnectorByURL(ctx context.Context, connectorURL string, hash string) (*domain.ConnectorSpec, error) {
 	c.logger.Info("validating connector by URL", "url", connectorURL)
-	wasmData, err := c.FetchAndVerify(ctx, connectorURL, hash)
+	wasmData, err := c.fetchAndVerify(ctx, connectorURL, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -104,16 +98,22 @@ func (c *ConnectorRuntime) ValidateConnectorByURL(ctx context.Context, connector
 		return nil, fmt.Errorf("invalid connector spec: %w", err)
 	}
 
+	// Validation only verifies the spec; compilation happens post-approval via CompileConnector,
+	// once the admin has confirmed and the template vars are guaranteed present.
 	return spec, nil
 }
 
-// FetchAndVerify downloads the connector and returns its wasm bytes only when the sha256
+// fetchAndVerify downloads the connector and returns its wasm bytes only when the sha256
 // of the download matches hash. A mismatch means the stored spec can no longer be trusted,
-// so the bytes are withheld. This is the shared fetch+verify step both onboarding
-// (ValidateConnectorByURL) and startup loading build on.
-func (c *ConnectorRuntime) FetchAndVerify(ctx context.Context, connectorURL string, hash string) ([]byte, error) {
+// so the bytes are withheld.
+func (c *ConnectorRuntime) fetchAndVerify(ctx context.Context, connectorURL string, hash string) ([]byte, error) {
 	if hash == "" {
 		return nil, fmt.Errorf("hash required for the connector url %s", connectorURL)
+	}
+
+	key := cacheKey(connectorURL, hash)
+	if cached, ok := c.verifiedWasmBytes.Load(key); ok {
+		return cached, nil
 	}
 
 	wasmData, err := c.fetchConnector(ctx, connectorURL)
@@ -125,6 +125,7 @@ func (c *ConnectorRuntime) FetchAndVerify(ctx context.Context, connectorURL stri
 		return nil, errors.New("connector hash mismatch")
 	}
 
+	c.verifiedWasmBytes.LoadOrStore(key, wasmData)
 	return wasmData, nil
 }
 
