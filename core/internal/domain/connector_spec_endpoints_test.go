@@ -91,3 +91,24 @@ func TestScopedConfigs(t *testing.T) {
 		assert.Equal(t, map[string]string{"AWS_REGION": "us-east-1"}, configs["account-action.iam-user.create"])
 	})
 }
+
+func TestListActionIsOptionalButScoped(t *testing.T) {
+	required := true
+	list := &Operation{Config: []Config{{Name: "AWS_USER_MANAGEMENT_ROLE", Required: &required}}}
+
+	t.Run("a declared list operation is scoped like any other", func(t *testing.T) {
+		t.Setenv("AWS_USER_MANAGEMENT_ROLE", "arn:user")
+		spec := specWith(map[string]AccountActions{"iam-user": {List: list}}, nil)
+
+		assert.Equal(t,
+			map[string]map[string]string{"account-action.iam-user.list": {"AWS_USER_MANAGEMENT_ROLE": "arn:user"}},
+			spec.ScopedConfigs(),
+		)
+	})
+
+	t.Run("a spec without list still has no list operation", func(t *testing.T) {
+		spec := specWith(map[string]AccountActions{"iam-user": {Create: list}}, nil)
+
+		assert.NotContains(t, spec.ScopedConfigs(), "account-action.iam-user.list")
+	})
+}
