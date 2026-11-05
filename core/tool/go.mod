@@ -1,6 +1,6 @@
 module github.com/open-iga/core/tool
 
-go 1.26.2
+go 1.27.3
 
 tool (
 	github.com/air-verse/air
