@@ -75,7 +75,7 @@ func (c *ConnectorRuntime) hostFunctions(spec *domain.ConnectorSpec) []extism.Ho
 
 // handleFetch reads the request from guest memory, performs the gated request, and writes the
 // response back into guest memory, returning its offset (0 on a memory write failure).
-func (c *ConnectorRuntime) handleFetch(ctx context.Context, cp *extism.CurrentPlugin, allowedDomains []string, globs []glob.Glob, reqOffset uint64) uint64 {
+func (c *ConnectorRuntime) handleFetch(ctx context.Context, cp *extism.CurrentPlugin, allowedDomains []string, globs []*glob.Pattern, reqOffset uint64) uint64 {
 	response := c.doFetch(ctx, cp, allowedDomains, globs, reqOffset)
 
 	out, err := json.Marshal(response)
@@ -92,7 +92,7 @@ func (c *ConnectorRuntime) handleFetch(ctx context.Context, cp *extism.CurrentPl
 
 // doFetch applies both egress filters then performs the request. Any denial or failure is returned
 // as an egressResponse with Error set, never a panic — the connector sees a failed fetch.
-func (c *ConnectorRuntime) doFetch(ctx context.Context, cp *extism.CurrentPlugin, allowedDomains []string, globs []glob.Glob, reqOffset uint64) egressResponse {
+func (c *ConnectorRuntime) doFetch(ctx context.Context, cp *extism.CurrentPlugin, allowedDomains []string, globs []*glob.Pattern, reqOffset uint64) egressResponse {
 	reqBytes, err := cp.ReadBytes(reqOffset)
 	if err != nil {
 		return c.egressError(http.StatusBadRequest, fmt.Sprintf("failed to read request from guest memory at offset %d: %v", reqOffset, err))
@@ -174,8 +174,8 @@ func allowedByEndpoints(endpoints []domain.ResolvedEndpoint, host string, method
 	return false
 }
 
-func compileGlobs(patterns []string) []glob.Glob {
-	globs := make([]glob.Glob, 0, len(patterns))
+func compileGlobs(patterns []string) []*glob.Pattern {
+	globs := make([]*glob.Pattern, 0, len(patterns))
 	for _, pattern := range patterns {
 		if compiled, err := glob.Compile(pattern); err == nil {
 			globs = append(globs, compiled)
@@ -184,7 +184,7 @@ func compileGlobs(patterns []string) []glob.Glob {
 	return globs
 }
 
-func matchesAnyGlob(globs []glob.Glob, host string) bool {
+func matchesAnyGlob(globs []*glob.Pattern, host string) bool {
 	for _, g := range globs {
 		if g.Match(host) {
 			return true
