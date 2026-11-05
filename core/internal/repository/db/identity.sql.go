@@ -13,8 +13,7 @@ import (
 )
 
 const getIdentityById = `-- name: GetIdentityById :one
-SELECT id, first_name, last_name, type, email, created_at, updated_at
-FROM identity
+SELECT id, first_name, last_name, type, email, created_at, updated_at FROM identity
 WHERE id = $1
 `
 
