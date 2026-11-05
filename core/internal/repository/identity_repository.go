@@ -110,3 +110,14 @@ func (i *IdentityRepository) HasAdmin(ctx context.Context) (bool, error) {
 	}
 	return count > 0, nil
 }
+
+func (i *IdentityRepository) GetIdentityById(ctx context.Context, identityId uuid.UUID) (*domain.Identity, error) {
+	row, err := i.queries.GetIdentityById(ctx, identityId)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("%w: %s", domain.ErrNoIdentityFound, identityId)
+		}
+		return nil, fmt.Errorf("failed to get identity: %w", err)
+	}
+	return row.ToDomain(), nil
+}

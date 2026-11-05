@@ -2,10 +2,12 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/open-iga/core/internal/domain"
 	"github.com/open-iga/core/internal/testutil"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +22,7 @@ func setupConnectorServiceWithMocks(t *testing.T) (*ConnectorService, *testutil.
 
 	runtime := testutil.NewMockConnectorRuntime(ctrl)
 	repo := testutil.NewMockManagedSystemRepository(ctrl)
-	return NewConnectorService(runtime, repo, testutil.NewTestLogger()), runtime, repo
+	return NewConnectorService(runtime, repo, nil, nil, nil, testutil.NewTestLogger()), runtime, repo
 }
 
 func TestConnectorService_ValidateByUrl(t *testing.T) {
@@ -125,4 +127,107 @@ func TestConnectorService_GetOnboardedConnectorDetails(t *testing.T) {
 		assert.True(t, ok)
 		assert.Equal(t, []string{"OPEN_IGA_TEST_UNSET_ENV"}, res.ConnectorSpec.MissingRequiredEnvVars())
 	})
+}
+
+func TestConnectorService_Execute_BuildsInputFromDB(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	runtime := testutil.NewMockConnectorRuntime(ctrl)
+	systems := testutil.NewMockManagedSystemRepository(ctrl)
+	identities := testutil.NewMockIdentityRepository(ctrl)
+	accounts := testutil.NewMockAccountRepository(ctrl)
+	service := NewConnectorService(runtime, systems, identities, accounts, testutil.NewMockEntitlementRepository(ctrl), testutil.NewTestLogger())
+
+	tenantID, identityID := uuid.New(), uuid.New()
+	systems.EXPECT().GetManagedSystemByName(gomock.Any(), "aws").Return(&domain.ManagedSystem{
+		Id: "ms1", ConnectorUrl: "u", ConnectorHash: "h",
+	}, nil)
+	systems.EXPECT().GetManagedSystemTenant(gomock.Any(), tenantID).Return(&domain.ManagedSystemTenant{Id: tenantID.String(), ManagedSystemId: "ms1", ExternalId: "acct-1"}, nil)
+	identities.EXPECT().GetIdentityById(gomock.Any(), identityID).Return(&domain.Identity{Email: "a@b.c", FirstName: "Ada", LastName: "L"}, nil)
+	runtime.EXPECT().Execute(gomock.Any(), "u", "h", domain.ConnectorInvocation{
+		Kind: domain.AccountActionKind, ManagedResource: "iam-user", Type: "create",
+		Input: json.RawMessage(`{"tenant":{"id":"acct-1"},"email":"a@b.c","firstname":"Ada","lastname":"L"}`),
+	}).Return([]byte(`{"accountId":"arn:1","created":true}`), nil)
+
+	output, err := service.Execute(context.Background(), "aws", "iam-user", domain.AccountActionKind, "create", domain.OperationRef{TenantId: tenantID, IdentityId: identityID})
+
+	assert.NoError(t, err)
+	assert.Equal(t, domain.AccountCreateOutput{AccountID: "arn:1", Created: true}, output)
+}
+
+func TestConnectorService_Execute_RejectsTenantOfAnotherSystem(t *testing.T) {
+	service, _, systems := setupConnectorServiceWithMocks(t)
+	tenantID := uuid.New()
+	systems.EXPECT().GetManagedSystemByName(gomock.Any(), "aws").Return(&domain.ManagedSystem{
+		Id: "ms1",
+	}, nil)
+	systems.EXPECT().GetManagedSystemTenant(gomock.Any(), tenantID).Return(&domain.ManagedSystemTenant{ManagedSystemId: "other"}, nil)
+
+	_, err := service.Execute(context.Background(), "aws", "iam-user", domain.AccountActionKind, "list", domain.OperationRef{TenantId: tenantID})
+
+	assert.ErrorIs(t, err, domain.ErrTenantNotFound)
+}
+
+func TestConnectorService_Execute_SendsEmptyTenantWhenNoneGiven(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	runtime := testutil.NewMockConnectorRuntime(ctrl)
+	systems := testutil.NewMockManagedSystemRepository(ctrl)
+	service := NewConnectorService(runtime, systems, nil, nil, nil, testutil.NewTestLogger())
+
+	systems.EXPECT().GetManagedSystemByName(gomock.Any(), "aws").Return(&domain.ManagedSystem{Id: "ms1", ConnectorUrl: "u", ConnectorHash: "h"}, nil)
+	runtime.EXPECT().Execute(gomock.Any(), "u", "h", domain.ConnectorInvocation{
+		Kind: domain.AccountActionKind, ManagedResource: "iam-user", Type: "list",
+		Input: json.RawMessage(`{"tenant":{"id":""}}`),
+	}).Return([]byte(`{"accounts":[]}`), nil)
+
+	_, err := service.Execute(context.Background(), "aws", "iam-user", domain.AccountActionKind, "list", domain.OperationRef{})
+
+	assert.NoError(t, err)
+}
+
+func TestConnectorService_Execute_GrantUsesAccountAndEntitlementFromDB(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	runtime := testutil.NewMockConnectorRuntime(ctrl)
+	systems := testutil.NewMockManagedSystemRepository(ctrl)
+	identities := testutil.NewMockIdentityRepository(ctrl)
+	accounts := testutil.NewMockAccountRepository(ctrl)
+	entitlements := testutil.NewMockEntitlementRepository(ctrl)
+	service := NewConnectorService(runtime, systems, identities, accounts, entitlements, testutil.NewTestLogger())
+
+	tenantID, identityID, entitlementID := uuid.New(), uuid.New(), uuid.New()
+	systems.EXPECT().GetManagedSystemByName(gomock.Any(), "aws").Return(&domain.ManagedSystem{Id: "ms1", ConnectorUrl: "u", ConnectorHash: "h"}, nil)
+	systems.EXPECT().GetManagedSystemTenant(gomock.Any(), tenantID).Return(&domain.ManagedSystemTenant{Id: tenantID.String(), ManagedSystemId: "ms1", ExternalId: "acct-1"}, nil)
+	identities.EXPECT().GetIdentityById(gomock.Any(), identityID).Return(&domain.Identity{}, nil)
+	accounts.EXPECT().GetAccountByTenantAndIdentity(gomock.Any(), tenantID, identityID).Return(&domain.Account{ExternalId: "arn:user"}, nil)
+	entitlements.EXPECT().GetEntitlement(gomock.Any(), entitlementID).Return(&domain.Entitlement{TenantId: tenantID.String(), Name: "group-1"}, nil)
+	runtime.EXPECT().Execute(gomock.Any(), "u", "h", domain.ConnectorInvocation{
+		Kind: domain.EntitlementKind, ManagedResource: "iam-user-groups", Type: "grant",
+		Input: json.RawMessage(`{"tenant":{"id":"acct-1"},"accountId":"arn:user","entitlementId":"group-1"}`),
+	}).Return([]byte(`{"granted":true}`), nil)
+
+	output, err := service.Execute(context.Background(), "aws", "iam-user-groups", domain.EntitlementKind, "grant",
+		domain.OperationRef{TenantId: tenantID, IdentityId: identityID, EntitlementId: entitlementID})
+
+	assert.NoError(t, err)
+	assert.Equal(t, domain.EntitlementGrantOutput{Granted: true}, output)
+}
+
+func TestConnectorService_Execute_RejectsEntitlementOfAnotherTenant(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	systems := testutil.NewMockManagedSystemRepository(ctrl)
+	identities := testutil.NewMockIdentityRepository(ctrl)
+	accounts := testutil.NewMockAccountRepository(ctrl)
+	entitlements := testutil.NewMockEntitlementRepository(ctrl)
+	service := NewConnectorService(testutil.NewMockConnectorRuntime(ctrl), systems, identities, accounts, entitlements, testutil.NewTestLogger())
+
+	tenantID, identityID, entitlementID := uuid.New(), uuid.New(), uuid.New()
+	systems.EXPECT().GetManagedSystemByName(gomock.Any(), "aws").Return(&domain.ManagedSystem{Id: "ms1"}, nil)
+	systems.EXPECT().GetManagedSystemTenant(gomock.Any(), tenantID).Return(&domain.ManagedSystemTenant{Id: tenantID.String(), ManagedSystemId: "ms1"}, nil)
+	identities.EXPECT().GetIdentityById(gomock.Any(), identityID).Return(&domain.Identity{}, nil)
+	accounts.EXPECT().GetAccountByTenantAndIdentity(gomock.Any(), tenantID, identityID).Return(&domain.Account{ExternalId: "arn:user"}, nil)
+	entitlements.EXPECT().GetEntitlement(gomock.Any(), entitlementID).Return(&domain.Entitlement{TenantId: uuid.NewString()}, nil)
+
+	_, err := service.Execute(context.Background(), "aws", "iam-user-groups", domain.EntitlementKind, "grant",
+		domain.OperationRef{TenantId: tenantID, IdentityId: identityID, EntitlementId: entitlementID})
+
+	assert.ErrorIs(t, err, domain.ErrEntitlementNotFound)
 }

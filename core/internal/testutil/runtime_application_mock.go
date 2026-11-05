@@ -155,18 +155,18 @@ func (m *MockConnectorService) EXPECT() *MockConnectorServiceMockRecorder {
 }
 
 // Execute mocks base method.
-func (m *MockConnectorService) Execute(ctx context.Context, connectorUrl, connectorHash string, invocation domain.ConnectorInvocation) ([]byte, error) {
+func (m *MockConnectorService) Execute(ctx context.Context, connectorName, managedResource string, kind domain.ConnectorKind, action string, ref domain.OperationRef) (domain.ConnectorOutput, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Execute", ctx, connectorUrl, connectorHash, invocation)
-	ret0, _ := ret[0].([]byte)
+	ret := m.ctrl.Call(m, "Execute", ctx, connectorName, managedResource, kind, action, ref)
+	ret0, _ := ret[0].(domain.ConnectorOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Execute indicates an expected call of Execute.
-func (mr *MockConnectorServiceMockRecorder) Execute(ctx, connectorUrl, connectorHash, invocation any) *gomock.Call {
+func (mr *MockConnectorServiceMockRecorder) Execute(ctx, connectorName, managedResource, kind, action, ref any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockConnectorService)(nil).Execute), ctx, connectorUrl, connectorHash, invocation)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockConnectorService)(nil).Execute), ctx, connectorName, managedResource, kind, action, ref)
 }
 
 // GetOnboardedConnectorDetails mocks base method.

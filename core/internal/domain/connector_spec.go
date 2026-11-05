@@ -66,6 +66,8 @@ type AccountActions struct {
 	Disable *Operation `json:"disable"`
 	Delete  *Operation `json:"delete"`
 	Read    *Operation `json:"read"`
+	// List is optional: connectors without it cannot be backfilled.
+	List *Operation `json:"list"`
 }
 
 func (a AccountActions) Validate() error {
@@ -194,7 +196,7 @@ func (c *ConnectorSpec) forEachOperation(visit func(kind ConnectorKind, resource
 	for resource, actions := range c.Actions {
 		for name, op := range map[string]*Operation{
 			"create": actions.Create, "enable": actions.Enable, "disable": actions.Disable,
-			"delete": actions.Delete, "read": actions.Read,
+			"delete": actions.Delete, "read": actions.Read, "list": actions.List,
 		} {
 			if op != nil {
 				visit(AccountActionKind, resource, name, op)

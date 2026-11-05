@@ -19,7 +19,7 @@ func setupManagedSystemServiceWithMocks(t *testing.T) (*ManagedSystemService, *C
 
 	repo := testutil.NewMockManagedSystemRepository(ctrl)
 	runtime := testutil.NewMockConnectorRuntime(ctrl)
-	connectorService := NewConnectorService(runtime, repo, testutil.NewTestLogger())
+	connectorService := NewConnectorService(runtime, repo, nil, nil, nil, testutil.NewTestLogger())
 	svc := NewManagedSystemService(testutil.NewTestLogger(), connectorService, repo)
 
 	return svc, connectorService, repo, runtime

@@ -37,6 +37,26 @@ func (q *Queries) CreateManagedSystemTenant(ctx context.Context, arg CreateManag
 	return i, err
 }
 
+const getManagedSystemTenant = `-- name: GetManagedSystemTenant :one
+SELECT id, managed_system_id, external_id, name, created_at, updated_at
+FROM managed_system_tenant
+WHERE id = $1
+`
+
+func (q *Queries) GetManagedSystemTenant(ctx context.Context, id uuid.UUID) (ManagedSystemTenant, error) {
+	row := q.db.QueryRow(ctx, getManagedSystemTenant, id)
+	var i ManagedSystemTenant
+	err := row.Scan(
+		&i.ID,
+		&i.ManagedSystemID,
+		&i.ExternalID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getManagedSystemTenantByExternalId = `-- name: GetManagedSystemTenantByExternalId :one
 SELECT id, managed_system_id, external_id, name, created_at, updated_at
 FROM managed_system_tenant

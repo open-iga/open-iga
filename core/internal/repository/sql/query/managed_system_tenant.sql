@@ -4,13 +4,15 @@ VALUES ($1, $2, $3)
 RETURNING *;
 
 -- name: ListManagedSystemTenants :many
-SELECT *
-FROM managed_system_tenant
+SELECT * FROM managed_system_tenant
 WHERE managed_system_id = $1
 ORDER BY created_at DESC;
 
 -- name: GetManagedSystemTenantByExternalId :one
-SELECT *
-FROM managed_system_tenant
+SELECT * FROM managed_system_tenant
 WHERE managed_system_id = $1
   AND external_id = $2;
+
+-- name: GetManagedSystemTenant :one
+SELECT * FROM managed_system_tenant
+WHERE id = $1;

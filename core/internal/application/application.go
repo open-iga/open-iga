@@ -10,7 +10,7 @@ import (
 )
 
 func NewApplication(ctx context.Context, appConfig *common.AppConfig, logger *slog.Logger, remotes *contract.RuntimeRemote, repository *contract.Repository) (*contract.RuntimeApplication, error) {
-	connectorService := NewConnectorService(remotes.ConnectorRuntime, repository.ManagedSystemRepository, logger)
+	connectorService := NewConnectorService(remotes.ConnectorRuntime, repository.ManagedSystemRepository, repository.IdentityRepository, repository.AccountRepository, repository.EntitlementRepository, logger)
 
 	application := &contract.RuntimeApplication{
 		AuthService:          NewAuthService(remotes.Oauth2Clients, logger, repository.SessionRepository, repository.IdentityRepository),

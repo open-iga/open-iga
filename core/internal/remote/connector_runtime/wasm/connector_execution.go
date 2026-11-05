@@ -26,7 +26,7 @@ type ConnectorDispatchEnvelope struct {
 	ManagedResource string               `json:"__managedResource"`
 	Type            string               `json:"__type"`
 	Config          map[string]string    `json:"config"`
-	Input           any                  `json:"input"`
+	Input           json.RawMessage      `json:"input"`
 }
 
 // connectorEntry is a one-shot future for a compile: ready closes when the compile finishes,
@@ -148,14 +148,47 @@ func (c *ConnectorRuntime) Execute(ctx context.Context, connectorURL string, has
 	}
 	defer func() { _ = instance.Close(ctx) }()
 
-	// dispatch returns 0 ok / 1 error; on error the output holds {"error": ...}.
+	return callDispatch(ctx, instance, payload)
+}
+
+// callDispatch calls the wasm `dispatch` export. It returns 0 ok / 1 error; on error the output
+// holds {"error": ...}. The runtime can also return its own error next to that output, so the
+// connector's message is read either way.
+func callDispatch(ctx context.Context, instance *extism.Plugin, payload []byte) ([]byte, error) {
 	exit, out, err := instance.CallWithContext(ctx, "dispatch", payload)
-	if err != nil {
-		return nil, fmt.Errorf("connector dispatch: %w", err)
+	if exit != 0 || err != nil {
+		return nil, dispatchError(out, err)
 	}
-	if exit != 0 {
-		return nil, fmt.Errorf("connector dispatch failed: %s", out)
+	// The connector can also report a failure with exit 0, so an {"error": ...} output always counts as one.
+	if _, failed := connectorErrorMessage(out); failed {
+		return nil, dispatchError(out, nil)
 	}
 
 	return out, nil
+}
+
+// connectorErrorMessage returns the message of an {"error": ...} output; no operation's success
+// output has an error field.
+func connectorErrorMessage(out []byte) (string, bool) {
+	var failure struct {
+		Error string `json:"error"`
+	}
+	if json.Unmarshal(out, &failure) != nil || failure.Error == "" {
+		return "", false
+	}
+	return failure.Error, true
+}
+
+// dispatchError builds the error of a failed dispatch: the connector's {"error": ...} message when
+// the output has one (else the raw output), plus the runtime's own error when there is one.
+func dispatchError(out []byte, runtimeErr error) error {
+	message, ok := connectorErrorMessage(out)
+	if !ok {
+		message = string(out)
+	}
+
+	if runtimeErr != nil {
+		return fmt.Errorf("connector dispatch failed: %s: %w", message, runtimeErr)
+	}
+	return fmt.Errorf("connector dispatch failed: %s", message)
 }

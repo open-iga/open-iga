@@ -8,8 +8,30 @@ package db
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const getIdentityById = `-- name: GetIdentityById :one
+SELECT id, first_name, last_name, type, email, created_at, updated_at
+FROM identity
+WHERE id = $1
+`
+
+func (q *Queries) GetIdentityById(ctx context.Context, id uuid.UUID) (Identity, error) {
+	row := q.db.QueryRow(ctx, getIdentityById, id)
+	var i Identity
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Type,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
 
 const upsertIdentity = `-- name: UpsertIdentity :one
 INSERT INTO identity (first_name, last_name, type, email)

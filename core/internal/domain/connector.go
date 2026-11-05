@@ -1,5 +1,7 @@
 package domain
 
+import "encoding/json"
+
 // ConnectorKind distinguishes the two operation families a connector exposes. `read` exists in
 // both, so kind is what disambiguates them at dispatch.
 type ConnectorKind string
@@ -17,7 +19,7 @@ type ConnectorInvocation struct {
 	Kind            ConnectorKind
 	ManagedResource string
 	Type            string
-	Input           any
+	Input           json.RawMessage
 }
 
 type ConnectorValidationStatus string

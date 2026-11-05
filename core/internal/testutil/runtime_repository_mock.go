@@ -57,6 +57,21 @@ func (mr *MockIdentityRepositoryMockRecorder) FindOrCreateWithRole(ctx, user, ro
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindOrCreateWithRole", reflect.TypeOf((*MockIdentityRepository)(nil).FindOrCreateWithRole), ctx, user, role)
 }
 
+// GetIdentityById mocks base method.
+func (m *MockIdentityRepository) GetIdentityById(ctx context.Context, identityId uuid.UUID) (*domain.Identity, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetIdentityById", ctx, identityId)
+	ret0, _ := ret[0].(*domain.Identity)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetIdentityById indicates an expected call of GetIdentityById.
+func (mr *MockIdentityRepositoryMockRecorder) GetIdentityById(ctx, identityId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdentityById", reflect.TypeOf((*MockIdentityRepository)(nil).GetIdentityById), ctx, identityId)
+}
+
 // GetRolesByIdentityId mocks base method.
 func (m *MockIdentityRepository) GetRolesByIdentityId(ctx context.Context, identityId uuid.UUID) (*domain.IdentityRole, error) {
 	m.ctrl.T.Helper()
@@ -272,6 +287,36 @@ func (mr *MockManagedSystemRepositoryMockRecorder) GetManagedSystem(ctx, managed
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManagedSystem", reflect.TypeOf((*MockManagedSystemRepository)(nil).GetManagedSystem), ctx, managedSystemID)
 }
 
+// GetManagedSystemByName mocks base method.
+func (m *MockManagedSystemRepository) GetManagedSystemByName(ctx context.Context, name string) (*domain.ManagedSystem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetManagedSystemByName", ctx, name)
+	ret0, _ := ret[0].(*domain.ManagedSystem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetManagedSystemByName indicates an expected call of GetManagedSystemByName.
+func (mr *MockManagedSystemRepositoryMockRecorder) GetManagedSystemByName(ctx, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManagedSystemByName", reflect.TypeOf((*MockManagedSystemRepository)(nil).GetManagedSystemByName), ctx, name)
+}
+
+// GetManagedSystemTenant mocks base method.
+func (m *MockManagedSystemRepository) GetManagedSystemTenant(ctx context.Context, tenantId uuid.UUID) (*domain.ManagedSystemTenant, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetManagedSystemTenant", ctx, tenantId)
+	ret0, _ := ret[0].(*domain.ManagedSystemTenant)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetManagedSystemTenant indicates an expected call of GetManagedSystemTenant.
+func (mr *MockManagedSystemRepositoryMockRecorder) GetManagedSystemTenant(ctx, tenantId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManagedSystemTenant", reflect.TypeOf((*MockManagedSystemRepository)(nil).GetManagedSystemTenant), ctx, tenantId)
+}
+
 // ListManagedSystemTenants mocks base method.
 func (m *MockManagedSystemRepository) ListManagedSystemTenants(ctx context.Context, managedSystemID string) ([]*domain.ManagedSystemTenant, error) {
 	m.ctrl.T.Helper()
@@ -300,4 +345,82 @@ func (m *MockManagedSystemRepository) ListManagedSystems(ctx context.Context) ([
 func (mr *MockManagedSystemRepositoryMockRecorder) ListManagedSystems(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListManagedSystems", reflect.TypeOf((*MockManagedSystemRepository)(nil).ListManagedSystems), ctx)
+}
+
+// MockAccountRepository is a mock of AccountRepository interface.
+type MockAccountRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockAccountRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockAccountRepositoryMockRecorder is the mock recorder for MockAccountRepository.
+type MockAccountRepositoryMockRecorder struct {
+	mock *MockAccountRepository
+}
+
+// NewMockAccountRepository creates a new mock instance.
+func NewMockAccountRepository(ctrl *gomock.Controller) *MockAccountRepository {
+	mock := &MockAccountRepository{ctrl: ctrl}
+	mock.recorder = &MockAccountRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockAccountRepository) EXPECT() *MockAccountRepositoryMockRecorder {
+	return m.recorder
+}
+
+// GetAccountByTenantAndIdentity mocks base method.
+func (m *MockAccountRepository) GetAccountByTenantAndIdentity(ctx context.Context, tenantId, identityId uuid.UUID) (*domain.Account, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAccountByTenantAndIdentity", ctx, tenantId, identityId)
+	ret0, _ := ret[0].(*domain.Account)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAccountByTenantAndIdentity indicates an expected call of GetAccountByTenantAndIdentity.
+func (mr *MockAccountRepositoryMockRecorder) GetAccountByTenantAndIdentity(ctx, tenantId, identityId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountByTenantAndIdentity", reflect.TypeOf((*MockAccountRepository)(nil).GetAccountByTenantAndIdentity), ctx, tenantId, identityId)
+}
+
+// MockEntitlementRepository is a mock of EntitlementRepository interface.
+type MockEntitlementRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockEntitlementRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockEntitlementRepositoryMockRecorder is the mock recorder for MockEntitlementRepository.
+type MockEntitlementRepositoryMockRecorder struct {
+	mock *MockEntitlementRepository
+}
+
+// NewMockEntitlementRepository creates a new mock instance.
+func NewMockEntitlementRepository(ctrl *gomock.Controller) *MockEntitlementRepository {
+	mock := &MockEntitlementRepository{ctrl: ctrl}
+	mock.recorder = &MockEntitlementRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockEntitlementRepository) EXPECT() *MockEntitlementRepositoryMockRecorder {
+	return m.recorder
+}
+
+// GetEntitlement mocks base method.
+func (m *MockEntitlementRepository) GetEntitlement(ctx context.Context, entitlementId uuid.UUID) (*domain.Entitlement, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEntitlement", ctx, entitlementId)
+	ret0, _ := ret[0].(*domain.Entitlement)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEntitlement indicates an expected call of GetEntitlement.
+func (mr *MockEntitlementRepositoryMockRecorder) GetEntitlement(ctx, entitlementId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEntitlement", reflect.TypeOf((*MockEntitlementRepository)(nil).GetEntitlement), ctx, entitlementId)
 }

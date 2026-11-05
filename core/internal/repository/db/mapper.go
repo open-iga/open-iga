@@ -54,3 +54,17 @@ func (t *ManagedSystemTenant) ToDomain() *domain.ManagedSystemTenant {
 		CreatedAt:       t.CreatedAt.Time,
 	}
 }
+
+func (a *Account) ToDomain() *domain.Account {
+	return &domain.Account{
+		Id:         a.ID.String(),
+		TenantId:   a.TenantID.String(),
+		IdentityId: a.IdentityID.String(),
+		ExternalId: a.ExternalID.String,
+		Enabled:    a.Enabled,
+	}
+}
+
+func (e *Entitlement) ToDomain() *domain.Entitlement {
+	return &domain.Entitlement{Id: e.ID.String(), TenantId: e.TenantID.String(), Name: e.Name}
+}
