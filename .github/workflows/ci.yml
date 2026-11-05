@@ -40,6 +40,7 @@ jobs:
             - uses: golangci/golangci-lint-action@v9
               with:
                   version: v2.12.2
+                  install-mode: goinstall
                   working-directory: core
             - run: task core:build
             - run: task core:test
