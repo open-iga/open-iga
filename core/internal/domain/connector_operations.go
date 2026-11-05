@@ -16,8 +16,17 @@ type ConnectorOperation interface {
 // connectorOutput is an empty marker method: it does nothing, it only limits the interface to the output types in this package.
 type ConnectorOutput interface{ connectorOutput() }
 
+// decodeOutput rejects null and {}: every operation's output has at least one field.
 func decodeOutput[Out ConnectorOutput](raw []byte) (ConnectorOutput, error) {
 	var out Out
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return nil, fmt.Errorf("decode %T: %w", out, err)
+	}
+	if len(fields) == 0 {
+		return nil, fmt.Errorf("decode %T: %w", out, ErrEmptyOutput)
+	}
+
 	if err := json.Unmarshal(raw, &out); err != nil {
 		return nil, fmt.Errorf("decode %T: %w", out, err)
 	}

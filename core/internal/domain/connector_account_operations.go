@@ -1,5 +1,7 @@
 package domain
 
+import "fmt"
+
 // AccountIDInput is the input shape of every account operation on an existing account.
 // Each operation below gets its own type from it, because the type names the operation.
 type AccountIDInput struct {
@@ -25,7 +27,14 @@ type AccountCreateOutput struct {
 func (AccountCreateInput) Kind() ConnectorKind { return AccountActionKind }
 func (AccountCreateInput) Type() string        { return "create" }
 func (AccountCreateInput) DecodeOutput(raw []byte) (ConnectorOutput, error) {
-	return decodeOutput[AccountCreateOutput](raw)
+	output, err := decodeOutput[AccountCreateOutput](raw)
+	if err != nil {
+		return nil, err
+	}
+	if output.(AccountCreateOutput).AccountID == "" {
+		return nil, fmt.Errorf("decode %T: %w: accountId", output, ErrEmptyOutput)
+	}
+	return output, nil
 }
 func (AccountCreateOutput) connectorOutput() {} // marker only, no behavior
 

@@ -94,3 +94,21 @@ func TestOperationRefNeeds(t *testing.T) {
 	assert.False(t, ref.NeedsEntitlement(EntitlementKind, "read"))
 	assert.False(t, OperationRef{}.NeedsEntitlement(EntitlementKind, "grant"))
 }
+
+func TestDecodeOutputRejectsEmptyOutput(t *testing.T) {
+	for _, raw := range []string{`null`, `{}`, ``} {
+		_, err := AccountEnableInput{}.DecodeOutput([]byte(raw))
+		assert.Error(t, err, "raw %q", raw)
+	}
+
+	// An empty account id would be saved as a provisioned account, so create refuses it.
+	for _, raw := range []string{`{"created":true}`, `{"accountId":"","created":true}`} {
+		_, err := AccountCreateInput{}.DecodeOutput([]byte(raw))
+		assert.ErrorIs(t, err, ErrEmptyOutput, "raw %q", raw)
+	}
+
+	// false is a real answer, not an empty output.
+	output, err := AccountEnableInput{}.DecodeOutput([]byte(`{"enabled":false}`))
+	require.NoError(t, err)
+	assert.Equal(t, AccountEnableOutput{Enabled: false}, output)
+}

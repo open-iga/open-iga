@@ -16,6 +16,7 @@ var (
 	ErrTenantNotFound          = errors.New("tenant not found")
 	ErrAccountNotFound         = errors.New("account not found")
 	ErrEntitlementNotFound     = errors.New("entitlement not found")
+	ErrEmptyOutput             = errors.New("connector returned an empty output")
 	ErrUnknownOperation        = errors.New("unknown connector operation")
 	ErrMissingOperationData    = errors.New("missing data for connector operation")
 	ErrTenantNameExists        = errors.New("tenant name already exists in this managed system")
