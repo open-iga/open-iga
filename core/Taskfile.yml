@@ -3,7 +3,7 @@ version: 3
 tasks:
     dev:
         cmds:
-            - go tool air
+            - air
     generate:migration:
         preconditions:
             - sh: test -n "{{.NAME}}"
@@ -12,25 +12,25 @@ tasks:
             - go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1 create -ext sql -dir internal/repository/sql/migration -seq {{.NAME}}
     generate:sqlc:
         cmds:
-            - go tool sqlc generate
+            - sqlc generate
             - echo "SQLC generation completed ✨"
     generate:oapi-codegen:
         cmds:
-            - go tool oapi-codegen -config oapi-codegen.yaml ../openapi-spec/openapi.yml
+            - oapi-codegen -config oapi-codegen.yaml ../openapi-spec/openapi.yml
     generate:test-mocks:
         cmds:
-            - go tool mockgen -source=internal/contract/runtime_application.go -destination=internal/testutil/runtime_application_mock.go -package=testutil
-            - go tool mockgen -source=internal/contract/runtime_remote.go -destination=internal/testutil/runtime_remote_mock.go -package=testutil
-            - go tool mockgen -source=internal/contract/runtime_repository.go -destination=internal/testutil/runtime_repository_mock.go -package=testutil
+            - mockgen -source=internal/contract/runtime_application.go -destination=internal/testutil/runtime_application_mock.go -package=testutil
+            - mockgen -source=internal/contract/runtime_remote.go -destination=internal/testutil/runtime_remote_mock.go -package=testutil
+            - mockgen -source=internal/contract/runtime_repository.go -destination=internal/testutil/runtime_repository_mock.go -package=testutil
     lint:
         cmds:
-            - go tool golangci-lint run
+            - golangci-lint run
     vulncheck:
         cmds:
-            - go tool govulncheck ./...
+            - govulncheck ./...
     pretty:
         cmds:
-            - go tool gofumpt -l -w .
+            - gofumpt -l -w .
     setup:
         cmds:
             - go get

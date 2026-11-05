@@ -1,8 +1,0 @@
-go 1.27.3
-
-use (
-	.
-	./tool
-)
-
-replace cloud.google.com/go/compute => cloud.google.com/go/compute v1.65.0
