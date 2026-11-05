@@ -112,6 +112,29 @@ func (m *ManagedSystemRepository) GetManagedSystem(ctx context.Context, managedS
 	return row.ToDomain(m.logger), nil
 }
 
+func (m *ManagedSystemRepository) GetManagedSystemByName(ctx context.Context, name string) (*domain.ManagedSystem, error) {
+	row, err := m.queries.GetManagedSystemByName(ctx, name)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("%w: %s", domain.ErrManagedSystemNotFound, name)
+		}
+		return nil, fmt.Errorf("failed to get managed system by name: %w", err)
+	}
+
+	return row.ToDomain(m.logger), nil
+}
+
+func (m *ManagedSystemRepository) GetManagedSystemTenant(ctx context.Context, tenantId uuid.UUID) (*domain.ManagedSystemTenant, error) {
+	row, err := m.queries.GetManagedSystemTenant(ctx, tenantId)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("%w: %s", domain.ErrTenantNotFound, tenantId)
+		}
+		return nil, fmt.Errorf("failed to get managed system tenant: %w", err)
+	}
+	return row.ToDomain(), nil
+}
+
 func (m *ManagedSystemRepository) ListManagedSystemTenants(ctx context.Context, managedSystemID string) ([]*domain.ManagedSystemTenant, error) {
 	id, err := uuid.Parse(managedSystemID)
 	if err != nil {

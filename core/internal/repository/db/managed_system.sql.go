@@ -65,6 +65,27 @@ func (q *Queries) GetManagedSystem(ctx context.Context, id uuid.UUID) (ManagedSy
 	return i, err
 }
 
+const getManagedSystemByName = `-- name: GetManagedSystemByName :one
+SELECT id, name, connector_url, connector_hash, connector_spec, created_at, updated_at
+FROM managed_system
+WHERE name = $1
+`
+
+func (q *Queries) GetManagedSystemByName(ctx context.Context, name string) (ManagedSystem, error) {
+	row := q.db.QueryRow(ctx, getManagedSystemByName, name)
+	var i ManagedSystem
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ConnectorUrl,
+		&i.ConnectorHash,
+		&i.ConnectorSpec,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listManagedSystems = `-- name: ListManagedSystems :many
 SELECT id, name, connector_url, connector_hash, connector_spec, created_at, updated_at
 FROM managed_system

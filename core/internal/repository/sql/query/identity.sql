@@ -7,3 +7,7 @@ ON CONFLICT (email) DO UPDATE
         last_name  = excluded.last_name,
         updated_at = CURRENT_TIMESTAMP
 RETURNING *;
+
+-- name: GetIdentityById :one
+SELECT * FROM identity
+WHERE id = $1;
