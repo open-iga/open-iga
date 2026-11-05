@@ -3,8 +3,8 @@ package domain
 // AccountIDInput is the input shape of every account operation on an existing account.
 // Each operation below gets its own type from it, because the type names the operation.
 type AccountIDInput struct {
-	Tenant ConnectorTenant `json:"tenant"`
-	ID     string          `json:"id"`
+	Tenant    ConnectorTenant `json:"tenant"`
+	AccountID string          `json:"accountId"`
 }
 
 type AccountCreateInput struct {
@@ -16,7 +16,7 @@ type AccountCreateInput struct {
 }
 
 type AccountCreateOutput struct {
-	ID string `json:"id"`
+	AccountID string `json:"accountId"`
 	// Created is false when the connector returned an existing account instead of creating one.
 	Created  bool     `json:"created"`
 	Metadata Metadata `json:"metadata,omitempty"`
@@ -83,14 +83,14 @@ func (AccountReadInput) DecodeOutput(raw []byte) (ConnectorOutput, error) {
 }
 func (AccountReadOutput) connectorOutput() {} // marker only, no behavior
 
-// AccountListInput asks for one page of the tenant's accounts; an empty Cursor means the first page.
+// AccountListInput asks for one page of the tenant's accounts; a nil Cursor means the first page.
 type AccountListInput struct {
 	Tenant ConnectorTenant `json:"tenant"`
-	Cursor string          `json:"cursor,omitempty"`
+	Cursor *string         `json:"cursor,omitempty"`
 }
 
 type ListedAccount struct {
-	ID        string `json:"id"`
+	AccountID string `json:"accountId"`
 	Email     string `json:"email"`
 	Enabled   bool   `json:"enabled"`
 	Firstname string `json:"firstname,omitempty"`

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,11 +16,19 @@ func TestConnectorOperationsDecodeSdkOutputs(t *testing.T) {
 		raw       string
 		expected  ConnectorOutput
 	}{
-		{"create reports created=false", AccountCreateInput{}, `{"id":"arn:1","created":false}`, AccountCreateOutput{ID: "arn:1", Created: false}},
-		{"list returns a page with a cursor", AccountListInput{}, `{"accounts":[{"id":"a","email":"a@b.co","enabled":true}],"nextCursor":"p2"}`,
-			AccountListOutput{Accounts: []ListedAccount{{ID: "a", Email: "a@b.co", Enabled: true}}, NextCursor: "p2"}},
-		{"discover returns the last page without a cursor", EntitlementDiscoverInput{}, `{"entitlements":[{"entitlementId":"g1","name":"G1"}]}`,
-			EntitlementDiscoverOutput{Entitlements: []DiscoveredEntitlement{{EntitlementID: "g1", Name: "G1"}}}},
+		{"create reports created=false", AccountCreateInput{}, `{"accountId":"arn:1","created":false}`, AccountCreateOutput{AccountID: "arn:1", Created: false}},
+		{
+			"list returns a page with a cursor",
+			AccountListInput{},
+			`{"accounts":[{"accountId":"a","email":"a@b.co","enabled":true}],"nextCursor":"p2"}`,
+			AccountListOutput{Accounts: []ListedAccount{{AccountID: "a", Email: "a@b.co", Enabled: true}}, NextCursor: "p2"},
+		},
+		{
+			"discover returns the last page without a cursor",
+			EntitlementDiscoverInput{},
+			`{"entitlements":[{"entitlementId":"g1","name":"G1"}]}`,
+			EntitlementDiscoverOutput{Entitlements: []DiscoveredEntitlement{{EntitlementID: "g1", Name: "G1"}}},
+		},
 	}
 
 	for _, test := range tests {
@@ -36,7 +45,52 @@ func TestConnectorInputsEncodeTenantAndOptionalCursor(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"tenant":{"id":"t1"}}`, string(firstPage))
 
-	nextPage, err := json.Marshal(EntitlementDiscoverInput{Tenant: ConnectorTenant{ID: "t1"}, Cursor: "p2"})
+	nextCursor := "p2"
+	nextPage, err := json.Marshal(EntitlementDiscoverInput{Tenant: ConnectorTenant{ID: "t1"}, Cursor: &nextCursor})
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"tenant":{"id":"t1"},"cursor":"p2"}`, string(nextPage))
+}
+
+func TestNewConnectorOperation(t *testing.T) {
+	data := OperationData{
+		Tenant:      &ManagedSystemTenant{ExternalId: "acct-1"},
+		Identity:    &Identity{Email: "a@b.c", FirstName: "Ada", LastName: "L"},
+		Account:     &Account{ExternalId: "arn:u1"},
+		Entitlement: &Entitlement{Name: "g1"},
+	}
+
+	create, err := NewConnectorOperation(AccountActionKind, "create", data)
+	assert.NoError(t, err)
+	assert.Equal(t, AccountCreateInput{Tenant: ConnectorTenant{ID: "acct-1"}, Email: "a@b.c", Firstname: "Ada", Lastname: "L"}, create)
+
+	grant, err := NewConnectorOperation(EntitlementKind, "grant", data)
+	assert.NoError(t, err)
+	assert.Equal(t, EntitlementGrantInput{Tenant: ConnectorTenant{ID: "acct-1"}, AccountID: "arn:u1", EntitlementID: "g1"}, grant)
+
+	_, err = NewConnectorOperation(AccountActionKind, "grant", data)
+	assert.ErrorIs(t, err, ErrUnknownOperation)
+}
+
+func TestNewConnectorOperation_NeedsProvisionedAccount(t *testing.T) {
+	tenant := &ManagedSystemTenant{ExternalId: "acct-1"}
+
+	_, err := NewConnectorOperation(AccountActionKind, "enable", OperationData{Tenant: tenant})
+	assert.ErrorIs(t, err, ErrMissingOperationData)
+
+	_, err = NewConnectorOperation(AccountActionKind, "enable", OperationData{Tenant: tenant, Account: &Account{}})
+	assert.ErrorIs(t, err, ErrMissingOperationData)
+}
+
+func TestOperationRefNeeds(t *testing.T) {
+	ref := OperationRef{IdentityId: uuid.New(), EntitlementId: uuid.New()}
+
+	assert.False(t, ref.NeedsAccount(AccountActionKind, "create"))
+	assert.False(t, ref.NeedsAccount(EntitlementKind, "discover"))
+	assert.True(t, ref.NeedsAccount(AccountActionKind, "enable"))
+	assert.True(t, ref.NeedsAccount(EntitlementKind, "grant"))
+	assert.False(t, OperationRef{}.NeedsAccount(AccountActionKind, "enable"))
+
+	assert.True(t, ref.NeedsEntitlement(EntitlementKind, "grant"))
+	assert.False(t, ref.NeedsEntitlement(EntitlementKind, "read"))
+	assert.False(t, OperationRef{}.NeedsEntitlement(EntitlementKind, "grant"))
 }

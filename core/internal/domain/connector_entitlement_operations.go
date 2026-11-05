@@ -1,17 +1,17 @@
 package domain
 
-// EntitlementAssignmentInput is the input shape of grant and revoke: ID is the account id,
+// EntitlementAssignmentInput is the input shape of grant and revoke: AccountID is the account id,
 // EntitlementID comes from discover. Each operation below gets its own type from it.
 type EntitlementAssignmentInput struct {
 	Tenant        ConnectorTenant `json:"tenant"`
-	ID            string          `json:"id"`
+	AccountID     string          `json:"accountId"`
 	EntitlementID string          `json:"entitlementId"`
 }
 
-// EntitlementDiscoverInput asks for one page of the catalog; an empty Cursor means the first page.
+// EntitlementDiscoverInput asks for one page of the catalog; a nil Cursor means the first page.
 type EntitlementDiscoverInput struct {
 	Tenant ConnectorTenant `json:"tenant"`
-	Cursor string          `json:"cursor,omitempty"`
+	Cursor *string         `json:"cursor,omitempty"`
 }
 
 type DiscoveredEntitlement struct {
@@ -61,8 +61,8 @@ func (EntitlementRevokeInput) DecodeOutput(raw []byte) (ConnectorOutput, error) 
 func (EntitlementRevokeOutput) connectorOutput() {} // marker only, no behavior
 
 type EntitlementReadInput struct {
-	Tenant ConnectorTenant `json:"tenant"`
-	ID     string          `json:"id"`
+	Tenant    ConnectorTenant `json:"tenant"`
+	AccountID string          `json:"accountId"`
 }
 
 type EntitlementReadOutput struct {

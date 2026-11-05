@@ -100,7 +100,8 @@ func TestListActionIsOptionalButScoped(t *testing.T) {
 		t.Setenv("AWS_USER_MANAGEMENT_ROLE", "arn:user")
 		spec := specWith(map[string]AccountActions{"iam-user": {List: list}}, nil)
 
-		assert.Equal(t,
+		assert.Equal(
+			t,
 			map[string]map[string]string{"account-action.iam-user.list": {"AWS_USER_MANAGEMENT_ROLE": "arn:user"}},
 			spec.ScopedConfigs(),
 		)
