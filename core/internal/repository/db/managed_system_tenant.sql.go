@@ -38,8 +38,7 @@ func (q *Queries) CreateManagedSystemTenant(ctx context.Context, arg CreateManag
 }
 
 const getManagedSystemTenant = `-- name: GetManagedSystemTenant :one
-SELECT id, managed_system_id, external_id, name, created_at, updated_at
-FROM managed_system_tenant
+SELECT id, managed_system_id, external_id, name, created_at, updated_at FROM managed_system_tenant
 WHERE id = $1
 `
 
@@ -58,8 +57,7 @@ func (q *Queries) GetManagedSystemTenant(ctx context.Context, id uuid.UUID) (Man
 }
 
 const getManagedSystemTenantByExternalId = `-- name: GetManagedSystemTenantByExternalId :one
-SELECT id, managed_system_id, external_id, name, created_at, updated_at
-FROM managed_system_tenant
+SELECT id, managed_system_id, external_id, name, created_at, updated_at FROM managed_system_tenant
 WHERE managed_system_id = $1
   AND external_id = $2
 `
@@ -84,8 +82,7 @@ func (q *Queries) GetManagedSystemTenantByExternalId(ctx context.Context, arg Ge
 }
 
 const listManagedSystemTenants = `-- name: ListManagedSystemTenants :many
-SELECT id, managed_system_id, external_id, name, created_at, updated_at
-FROM managed_system_tenant
+SELECT id, managed_system_id, external_id, name, created_at, updated_at FROM managed_system_tenant
 WHERE managed_system_id = $1
 ORDER BY created_at DESC
 `

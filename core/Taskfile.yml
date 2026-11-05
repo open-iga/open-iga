@@ -1,9 +1,18 @@
 version: 3
 
+vars:
+    AIR: github.com/air-verse/air@v1.65.1
+    GOLANGCI_LINT: github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
+    OAPI_CODEGEN: github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.7.0
+    SQLC: github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+    MOCKGEN: go.uber.org/mock/mockgen@v0.6.0
+    GOVULNCHECK: golang.org/x/vuln/cmd/govulncheck@v1.6.0
+    GOFUMPT: mvdan.cc/gofumpt@v0.12.0
+
 tasks:
     dev:
         cmds:
-            - go tool air
+            - go run {{.AIR}}
     generate:migration:
         preconditions:
             - sh: test -n "{{.NAME}}"
@@ -12,25 +21,25 @@ tasks:
             - go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1 create -ext sql -dir internal/repository/sql/migration -seq {{.NAME}}
     generate:sqlc:
         cmds:
-            - go tool sqlc generate
+            - go run {{.SQLC}} generate
             - echo "SQLC generation completed ✨"
     generate:oapi-codegen:
         cmds:
-            - go tool oapi-codegen -config oapi-codegen.yaml ../openapi-spec/openapi.yml
+            - go run {{.OAPI_CODEGEN}} -config oapi-codegen.yaml ../openapi-spec/openapi.yml
     generate:test-mocks:
         cmds:
-            - go tool mockgen -source=internal/contract/runtime_application.go -destination=internal/testutil/runtime_application_mock.go -package=testutil
-            - go tool mockgen -source=internal/contract/runtime_remote.go -destination=internal/testutil/runtime_remote_mock.go -package=testutil
-            - go tool mockgen -source=internal/contract/runtime_repository.go -destination=internal/testutil/runtime_repository_mock.go -package=testutil
+            - go run {{.MOCKGEN}} -source=internal/contract/runtime_application.go -destination=internal/testutil/runtime_application_mock.go -package=testutil
+            - go run {{.MOCKGEN}} -source=internal/contract/runtime_remote.go -destination=internal/testutil/runtime_remote_mock.go -package=testutil
+            - go run {{.MOCKGEN}} -source=internal/contract/runtime_repository.go -destination=internal/testutil/runtime_repository_mock.go -package=testutil
     lint:
         cmds:
-            - go tool golangci-lint run
+            - go run {{.GOLANGCI_LINT}} run
     vulncheck:
         cmds:
-            - go tool govulncheck ./...
+            - go run {{.GOVULNCHECK}} ./...
     pretty:
         cmds:
-            - go tool gofumpt -l -w .
+            - go run {{.GOFUMPT}} -l -w .
     setup:
         cmds:
             - go get

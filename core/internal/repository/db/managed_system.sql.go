@@ -45,8 +45,7 @@ func (q *Queries) CreateManagedSystem(ctx context.Context, arg CreateManagedSyst
 }
 
 const getManagedSystem = `-- name: GetManagedSystem :one
-SELECT id, name, connector_url, connector_hash, connector_spec, created_at, updated_at
-FROM managed_system
+SELECT id, name, connector_url, connector_hash, connector_spec, created_at, updated_at FROM managed_system
 WHERE id = $1
 `
 
@@ -66,8 +65,7 @@ func (q *Queries) GetManagedSystem(ctx context.Context, id uuid.UUID) (ManagedSy
 }
 
 const getManagedSystemByName = `-- name: GetManagedSystemByName :one
-SELECT id, name, connector_url, connector_hash, connector_spec, created_at, updated_at
-FROM managed_system
+SELECT id, name, connector_url, connector_hash, connector_spec, created_at, updated_at FROM managed_system
 WHERE name = $1
 `
 
@@ -87,8 +85,7 @@ func (q *Queries) GetManagedSystemByName(ctx context.Context, name string) (Mana
 }
 
 const listManagedSystems = `-- name: ListManagedSystems :many
-SELECT id, name, connector_url, connector_hash, connector_spec, created_at, updated_at
-FROM managed_system
+SELECT id, name, connector_url, connector_hash, connector_spec, created_at, updated_at FROM managed_system
 ORDER BY created_at DESC
 `
 
