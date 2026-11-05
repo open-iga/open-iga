@@ -39,7 +39,7 @@ jobs:
                   repo-token: ${{ secrets.GITHUB_TOKEN }}
             - uses: golangci/golangci-lint-action@v9
               with:
-                  version: v2.12.2
+                  version: v2.15.0
                   install-mode: goinstall
                   working-directory: core
             - run: task core:build
