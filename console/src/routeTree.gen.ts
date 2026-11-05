@@ -10,25 +10,15 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
-import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as ManagedSystemsIndexRouteImport } from './routes/managed-systems/index'
 import { Route as ManagedSystemsIdRouteImport } from './routes/managed-systems/$id'
+import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
+import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
 import { Route as AuthProviderCallbackRouteImport } from './routes/auth/$provider/callback'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthLogoutRoute = AuthLogoutRouteImport.update({
-  id: '/auth/logout',
-  path: '/auth/logout',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthSignInRoute = AuthSignInRouteImport.update({
-  id: '/auth/sign-in',
-  path: '/auth/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ManagedSystemsIndexRoute = ManagedSystemsIndexRouteImport.update({
@@ -39,6 +29,16 @@ const ManagedSystemsIndexRoute = ManagedSystemsIndexRouteImport.update({
 const ManagedSystemsIdRoute = ManagedSystemsIdRouteImport.update({
   id: '/managed-systems/$id',
   path: '/managed-systems/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSignInRoute = AuthSignInRouteImport.update({
+  id: '/auth/sign-in',
+  path: '/auth/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthLogoutRoute = AuthLogoutRouteImport.update({
+  id: '/auth/logout',
+  path: '/auth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthProviderCallbackRoute = AuthProviderCallbackRouteImport.update({
@@ -117,20 +117,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/logout': {
-      id: '/auth/logout'
-      path: '/auth/logout'
-      fullPath: '/auth/logout'
-      preLoaderRoute: typeof AuthLogoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/sign-in': {
-      id: '/auth/sign-in'
-      path: '/auth/sign-in'
-      fullPath: '/auth/sign-in'
-      preLoaderRoute: typeof AuthSignInRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/managed-systems/': {
       id: '/managed-systems/'
       path: '/managed-systems'
@@ -143,6 +129,20 @@ declare module '@tanstack/react-router' {
       path: '/managed-systems/$id'
       fullPath: '/managed-systems/$id'
       preLoaderRoute: typeof ManagedSystemsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/sign-in': {
+      id: '/auth/sign-in'
+      path: '/auth/sign-in'
+      fullPath: '/auth/sign-in'
+      preLoaderRoute: typeof AuthSignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/logout': {
+      id: '/auth/logout'
+      path: '/auth/logout'
+      fullPath: '/auth/logout'
+      preLoaderRoute: typeof AuthLogoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/$provider/callback': {

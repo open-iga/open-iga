@@ -8,7 +8,7 @@ require (
 	github.com/getkin/kin-openapi v0.152.0
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
-	github.com/gobwas/glob v1.1.0
+	github.com/gobwas/glob v0.2.3
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.12.0

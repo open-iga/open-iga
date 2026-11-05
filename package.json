@@ -13,9 +13,9 @@
     "@types/bun": "catalog:common",
     "@vitejs/plugin-react": "catalog:ui",
     "jsdom": "catalog:ui-testing",
-    "oxfmt": "catalog:common",
-    "oxlint": "catalog:common",
-    "oxlint-tsgolint": "catalog:common",
+    "oxfmt": "0.48.0",
+    "oxlint": "1.63.0",
+    "oxlint-tsgolint": "0.22.1",
     "typescript": "catalog:common",
     "vite": "catalog:ui",
     "vitest": "catalog:ui-testing"
@@ -67,9 +67,9 @@
       },
       "common": {
         "@types/bun": "1.4.4",
-        "oxfmt": "0.75.0",
-        "oxlint": "1.90.0",
-        "oxlint-tsgolint": "7.0.2005",
+        "oxfmt": "0.48.0",
+        "oxlint": "1.63.0",
+        "oxlint-tsgolint": "0.22.1",
         "typescript": "7.0.2",
         "zod": "4.6.7"
       }
