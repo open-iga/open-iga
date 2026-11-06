@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Globe, KeyRound, Layers, UserCog } from 'lucide-react';
 import { cn } from '@/design-system/lib/utils.ts';
 import type { ConnectorSpec, Operation } from './types.ts';
+
+type Config = ConnectorSpec['config'][number];
 import type { ReactNode } from 'react';
 
 const methodTone: Record<string, string> = {
@@ -30,10 +32,40 @@ const definedOps = (group: Record<string, Operation | undefined>): [string, Oper
 const countOps = (spec: ConnectorSpec) => {
     const groups = [...Object.values(spec.actions), ...Object.values(spec.entitlements)];
     const ops = groups.flatMap((group) => definedOps(group).map(([, op]) => op));
-    return { operations: ops.length, endpoints: ops.reduce((n, op) => n + op.endpoints.length, 0) };
+    const configNames = new Set([...spec.config, ...ops.flatMap((op) => op.config)].map((config) => config.name));
+    return {
+        operations: ops.length,
+        endpoints: ops.reduce((n, op) => n + op.endpoints.length, 0),
+        configs: configNames.size,
+    };
 };
 
-const OperationRow = ({ name, op }: { name: string; op: Operation }) => (
+const ConfigRow = ({ config, missing }: { config: Config; missing: Set<string> }) => {
+    const { t } = useTranslation();
+    return (
+        <li className="flex items-center justify-between gap-3 px-3 py-2">
+            <div className="flex min-w-0 flex-col">
+                <code className="flex items-center gap-1.5 font-mono text-xs">
+                    {missing.has(config.name) && (
+                        <AlertTriangle
+                            className="size-3.5 shrink-0 text-amber-500"
+                            aria-label={t('managedSystems.onboard.capability.envMissing')}
+                        />
+                    )}
+                    {config.name}
+                </code>
+                <span className="text-xs text-muted-foreground">{config.description}</span>
+            </div>
+            <span className="shrink-0 text-xs text-muted-foreground">
+                {config.required
+                    ? t('managedSystems.onboard.capability.required')
+                    : t('managedSystems.onboard.capability.optional')}
+            </span>
+        </li>
+    );
+};
+
+const OperationRow = ({ name, op, missing }: { name: string; op: Operation; missing: Set<string> }) => (
     <li className="flex flex-col gap-2 px-3 py-3">
         <div className="flex items-baseline justify-between gap-3">
             <span className="font-mono text-xs font-medium">{name}</span>
@@ -51,6 +83,13 @@ const OperationRow = ({ name, op }: { name: string; op: Operation }) => (
                 </li>
             ))}
         </ul>
+        {op.config.length > 0 && (
+            <ul className="divide-y overflow-hidden rounded-md border">
+                {op.config.map((config) => (
+                    <ConfigRow key={config.name} config={config} missing={missing} />
+                ))}
+            </ul>
+        )}
     </li>
 );
 
@@ -58,10 +97,12 @@ const OperationGroup = ({
     title,
     kind,
     group,
+    missing,
 }: {
     title: string;
     kind: string;
     group: Record<string, Operation | undefined>;
+    missing: Set<string>;
 }) => {
     const { t } = useTranslation();
     const ops = definedOps(group);
@@ -78,7 +119,7 @@ const OperationGroup = ({
             </div>
             <ul className="divide-y">
                 {ops.map(([name, op]) => (
-                    <OperationRow key={name} name={name} op={op} />
+                    <OperationRow key={name} name={name} op={op} missing={missing} />
                 ))}
             </ul>
         </div>
@@ -87,7 +128,7 @@ const OperationGroup = ({
 
 const CapabilitySummary = ({ spec }: { spec: ConnectorSpec }) => {
     const { t } = useTranslation();
-    const { operations, endpoints } = countOps(spec);
+    const { operations, endpoints, configs } = countOps(spec);
     const stats = [
         {
             id: 'domains',
@@ -96,7 +137,7 @@ const CapabilitySummary = ({ spec }: { spec: ConnectorSpec }) => {
         },
         { id: 'operations', label: t('managedSystems.onboard.capability.stats.operations'), value: operations },
         { id: 'endpoints', label: t('managedSystems.onboard.capability.stats.endpoints'), value: endpoints },
-        { id: 'config', label: t('managedSystems.onboard.capability.stats.config'), value: spec.config.length },
+        { id: 'config', label: t('managedSystems.onboard.capability.stats.config'), value: configs },
     ];
     return (
         <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-4">
@@ -158,26 +199,8 @@ export const CapabilityReview = ({ spec, missingEnvVars }: { spec: ConnectorSpec
                 title={t('managedSystems.onboard.capability.requiredConfig')}
             >
                 <ul className="divide-y overflow-hidden rounded-lg border">
-                    {spec.config.map(({ name, description, required }) => (
-                        <li key={name} className="flex items-center justify-between gap-3 px-3 py-2">
-                            <div className="flex min-w-0 flex-col">
-                                <code className="flex items-center gap-1.5 font-mono text-xs">
-                                    {missing.has(name) && (
-                                        <AlertTriangle
-                                            className="size-3.5 shrink-0 text-amber-500"
-                                            aria-label={t('managedSystems.onboard.capability.envMissing')}
-                                        />
-                                    )}
-                                    {name}
-                                </code>
-                                <span className="text-xs text-muted-foreground">{description}</span>
-                            </div>
-                            <span className="shrink-0 text-xs text-muted-foreground">
-                                {required
-                                    ? t('managedSystems.onboard.capability.required')
-                                    : t('managedSystems.onboard.capability.optional')}
-                            </span>
-                        </li>
+                    {spec.config.map((config) => (
+                        <ConfigRow key={config.name} config={config} missing={missing} />
                     ))}
                 </ul>
             </Section>
@@ -192,6 +215,7 @@ export const CapabilityReview = ({ spec, missingEnvVars }: { spec: ConnectorSpec
                         title={resource}
                         kind={t('managedSystems.onboard.capability.kind.account')}
                         group={group}
+                        missing={missing}
                     />
                 ))}
             </Section>
@@ -206,6 +230,7 @@ export const CapabilityReview = ({ spec, missingEnvVars }: { spec: ConnectorSpec
                         title={resource}
                         kind={t('managedSystems.onboard.capability.kind.entitlement')}
                         group={group}
+                        missing={missing}
                     />
                 ))}
             </Section>

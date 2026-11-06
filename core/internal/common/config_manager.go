@@ -126,6 +126,17 @@ var (
 	configFromEnv = ConfigFromEnv{AdminUserEmail, Port, HostUrl, GoogleOauthClientId, GoogleOauthClientSecret, DatabaseUrl, OtelTracesEndpoint, OtelMetricsEndpoint, OtelLogsEndpoint}
 )
 
+// IsAppEnvKey reports whether name is an env var owned by the application itself. Connector
+// config must not use these names, or the connector would be handed the app's secrets.
+func IsAppEnvKey(name string) bool {
+	for _, value := range StructToMap(configFromEnv) {
+		if value.(*EnvField[any]).envKey == name {
+			return true
+		}
+	}
+	return false
+}
+
 func validateEnv() (*ConfigFromEnv, error) {
 	var validationError error
 

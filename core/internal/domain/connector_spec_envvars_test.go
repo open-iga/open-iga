@@ -24,4 +24,26 @@ func TestMissingRequiredEnvVars(t *testing.T) {
 	if !slices.Equal(got, []string{"OPEN_IGA_TEST_ENDPOINT", "OPEN_IGA_TEST_EMPTY"}) {
 		t.Fatalf("expected ENDPOINT and EMPTY missing, got %v", got)
 	}
+
+	t.Run("operation-level config", func(t *testing.T) {
+		spec := ConnectorSpec{Actions: map[string]AccountActions{
+			"user": {Create: &Operation{Config: []Config{
+				{Name: "OPEN_IGA_TEST_ROLE_ARN", Required: &required},
+				{Name: "OPEN_IGA_TEST_ROLE_OPT", Required: &optional},
+			}}},
+		}}
+		if got := spec.MissingRequiredEnvVars(); !slices.Equal(got, []string{"OPEN_IGA_TEST_ROLE_ARN"}) {
+			t.Fatalf("expected ROLE_ARN missing, got %v", got)
+		}
+	})
+}
+
+func TestConfigRejectsAppEnvKey(t *testing.T) {
+	required := true
+	if err := (Config{Name: "DATABASE_URL", Description: "x", Required: &required}).Validate(); err == nil {
+		t.Fatal("expected app env key to be rejected")
+	}
+	if err := (Config{Name: "AWS_REGION", Description: "x", Required: &required}).Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 }
