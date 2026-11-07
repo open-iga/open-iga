@@ -11,6 +11,7 @@ import (
 	"github.com/open-iga/core/internal/common"
 	"github.com/open-iga/core/internal/contract"
 	"github.com/open-iga/core/internal/domain"
+	"github.com/tetratelabs/wazero"
 )
 
 var _ contract.ConnectorRuntime = (*ConnectorRuntime)(nil)
@@ -142,7 +143,8 @@ func (c *ConnectorRuntime) Execute(ctx context.Context, connectorURL string, has
 	// TODO: do not pass the request context; pass a new context with a timeout. A client
 	// disconnect would otherwise cancel a mutating action mid-flight and leave the target system
 	// half-updated.
-	instance, err := entry.compiled.Instance(ctx, extism.PluginInstanceConfig{})
+	// wazero's default wall clock is frozen at 2022-01-01, which breaks time-based signing (e.g. AWS SigV4)
+	instance, err := entry.compiled.Instance(ctx, extism.PluginInstanceConfig{ModuleConfig: wazero.NewModuleConfig().WithSysWalltime()})
 	if err != nil {
 		return nil, fmt.Errorf("instantiate connector: %w", err)
 	}

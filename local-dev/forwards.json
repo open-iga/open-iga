@@ -1,0 +1,4 @@
+{
+    "sts.us-east-1.amazonaws.com": "http://localhost:4566",
+    "iam.amazonaws.com": "http://localhost:4566"
+}

@@ -7,9 +7,12 @@ import (
 	"log/slog"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 
 	validation "github.com/go-ozzo/ozzo-validation"
+
+	"github.com/open-iga/core/internal/common"
 )
 
 var templateUrl = regexp.MustCompile(`^https?://[\w.\-{}]+(/.*)?$`)
@@ -23,10 +26,18 @@ type Config struct {
 func (c Config) Validate() error {
 	return validation.ValidateStruct(
 		&c,
-		validation.Field(&c.Name, validation.Required),
+		validation.Field(&c.Name, validation.Required, validation.By(notAppEnvKey)),
 		validation.Field(&c.Description, validation.Required),
 		validation.Field(&c.Required, validation.NotNil),
 	)
+}
+
+// notAppEnvKey keeps connector config separate from the application's own env vars.
+func notAppEnvKey(value any) error {
+	if name, _ := value.(string); common.IsAppEnvKey(name) {
+		return fmt.Errorf("%q is reserved for the application config", name)
+	}
+	return nil
 }
 
 type Endpoint struct {
@@ -135,20 +146,34 @@ func NewConnectorSpec(customSection []byte) (*ConnectorSpec, error) {
 	return &connectorSpec, nil
 }
 
-// MissingRequiredEnvVars returns the names of required config entries that the core's
-// environment has unset or empty, matching how endpoint templates treat an empty value. Config
-// entries not marked required are allowed to be absent.
+// MissingRequiredEnvVars returns the names of required config entries, at module level or on any
+// operation, that the core's environment has unset or empty, matching how endpoint templates
+// treat an empty value. Module-level names come first in declaration order, then operation-level
+// ones sorted. Config entries not marked required are allowed to be absent.
 func (c *ConnectorSpec) MissingRequiredEnvVars() []string {
 	missing := make([]string, 0)
-	for _, cfg := range c.Config {
-		if cfg.Required == nil || !*cfg.Required {
-			continue
+	seen := map[string]bool{}
+	collect := func(configs []Config) []string {
+		var names []string
+		for _, cfg := range configs {
+			if cfg.Required == nil || !*cfg.Required || seen[cfg.Name] {
+				continue
+			}
+			seen[cfg.Name] = true
+			if value, ok := os.LookupEnv(cfg.Name); !ok || value == "" {
+				names = append(names, cfg.Name)
+			}
 		}
-		if value, ok := os.LookupEnv(cfg.Name); !ok || value == "" {
-			missing = append(missing, cfg.Name)
-		}
+		return names
 	}
-	return missing
+
+	missing = append(missing, collect(c.Config)...)
+	var operationLevel []string
+	c.forEachOperation(func(_ ConnectorKind, _, _ string, op *Operation) {
+		operationLevel = append(operationLevel, collect(op.Config)...)
+	})
+	slices.Sort(operationLevel)
+	return append(missing, operationLevel...)
 }
 
 // endpointVar matches a `{{VAR}}` placeholder in an endpoint URL (e.g. https://sts.{{AWS_REGION}}...).
