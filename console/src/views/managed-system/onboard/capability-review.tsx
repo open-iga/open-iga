@@ -85,8 +85,8 @@ const OperationRow = ({ name, op, missing }: { name: string; op: Operation; miss
         </ul>
         {op.config.length > 0 && (
             <ul className="divide-y overflow-hidden rounded-md border">
-                {op.config.map((config) => (
-                    <ConfigRow key={config.name} config={config} missing={missing} />
+                {op.config.map((config, i) => (
+                    <ConfigRow key={`${config.name}-${i}`} config={config} missing={missing} />
                 ))}
             </ul>
         )}
@@ -199,8 +199,8 @@ export const CapabilityReview = ({ spec, missingEnvVars }: { spec: ConnectorSpec
                 title={t('managedSystems.onboard.capability.requiredConfig')}
             >
                 <ul className="divide-y overflow-hidden rounded-lg border">
-                    {spec.config.map((config) => (
-                        <ConfigRow key={config.name} config={config} missing={missing} />
+                    {spec.config.map((config, i) => (
+                        <ConfigRow key={`${config.name}-${i}`} config={config} missing={missing} />
                     ))}
                 </ul>
             </Section>
