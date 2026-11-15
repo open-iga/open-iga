@@ -1,0 +1,91 @@
+package handler
+
+import (
+	"context"
+	"errors"
+
+	"github.com/google/uuid"
+	"github.com/open-iga/core/internal/api/generated"
+	"github.com/open-iga/core/internal/domain"
+)
+
+// isInvalidWorkflow is true for errors that come from what the caller sent: a bad workflow, or a system, tenant or entitlement that does not exist.
+func isInvalidWorkflow(err error) bool {
+	return errors.Is(err, domain.ErrInvalidWorkflow) || errors.Is(err, domain.ErrManagedSystemNotFound) ||
+		errors.Is(err, domain.ErrTenantNotFound) || errors.Is(err, domain.ErrEntitlementNotFound)
+}
+
+func (h *Handler) SaveWorkflow(ctx context.Context, request generated.SaveWorkflowRequestObject) (generated.SaveWorkflowResponseObject, error) {
+	err := h.application.WorkflowService.SaveWorkflow(ctx, domain.WorkflowDefinition{Name: request.Name, Steps: request.Body.Steps})
+	if err != nil {
+		if isInvalidWorkflow(err) {
+			return generated.SaveWorkflow400JSONResponse{Message: err.Error()}, nil
+		}
+		return generated.SaveWorkflow500JSONResponse{Message: err.Error()}, nil
+	}
+
+	return generated.SaveWorkflow204Response{}, nil
+}
+
+func (h *Handler) GetWorkflow(ctx context.Context, request generated.GetWorkflowRequestObject) (generated.GetWorkflowResponseObject, error) {
+	definition, err := h.application.WorkflowService.GetWorkflow(ctx, request.Name)
+	if err != nil {
+		if errors.Is(err, domain.ErrWorkflowNotFound) {
+			return generated.GetWorkflow404JSONResponse{Message: err.Error()}, nil
+		}
+		return generated.GetWorkflow500JSONResponse{Message: err.Error()}, nil
+	}
+
+	return generated.GetWorkflow200JSONResponse{Name: definition.Name, Steps: definition.Steps}, nil
+}
+
+func (h *Handler) StartWorkflow(ctx context.Context, request generated.StartWorkflowRequestObject) (generated.StartWorkflowResponseObject, error) {
+	var identityId uuid.UUID // stays empty for workflows that work on no identity
+	if request.Body.IdentityId != nil {
+		parsed, err := uuid.Parse(*request.Body.IdentityId)
+		if err != nil {
+			return generated.StartWorkflow400JSONResponse{Message: "identityId is not a valid id"}, nil
+		}
+		identityId = parsed
+	}
+
+	runId, err := h.application.WorkflowService.StartWorkflow(ctx, request.Name, identityId)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrWorkflowNotFound) || errors.Is(err, domain.ErrNoIdentityFound):
+			return generated.StartWorkflow404JSONResponse{Message: err.Error()}, nil
+		case errors.Is(err, domain.ErrInvalidWorkflow):
+			return generated.StartWorkflow400JSONResponse{Message: err.Error()}, nil
+		}
+
+		return generated.StartWorkflow500JSONResponse{Message: err.Error()}, nil
+	}
+
+	return generated.StartWorkflow201JSONResponse{Id: runId}, nil
+}
+
+func (h *Handler) GetWorkflowRun(ctx context.Context, request generated.GetWorkflowRunRequestObject) (generated.GetWorkflowRunResponseObject, error) {
+	state, err := h.application.WorkflowService.GetRun(ctx, request.Name, request.Id)
+	if err != nil {
+		if errors.Is(err, domain.ErrWorkflowRunNotFound) {
+			return generated.GetWorkflowRun404JSONResponse{Message: err.Error()}, nil
+		}
+		return generated.GetWorkflowRun500JSONResponse{Message: err.Error()}, nil
+	}
+
+	return generated.GetWorkflowRun200JSONResponse{Id: state.Id, Steps: state.Steps}, nil
+}
+
+func (h *Handler) ContinueWorkflowStep(ctx context.Context, request generated.ContinueWorkflowStepRequestObject) (generated.ContinueWorkflowStepResponseObject, error) {
+	if err := h.application.WorkflowService.Continue(ctx, request.Name, request.Id, request.Step); err != nil {
+		if errors.Is(err, domain.ErrWorkflowRunNotFound) {
+			return generated.ContinueWorkflowStep404JSONResponse{Message: err.Error()}, nil
+		}
+		if errors.Is(err, domain.ErrWorkflowStepNotGated) {
+			return generated.ContinueWorkflowStep409JSONResponse{Message: err.Error()}, nil
+		}
+		return generated.ContinueWorkflowStep500JSONResponse{Message: err.Error()}, nil
+	}
+
+	return generated.ContinueWorkflowStep204Response{}, nil
+}

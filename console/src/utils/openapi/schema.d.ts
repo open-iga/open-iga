@@ -176,6 +176,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workflows/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get a saved workflow */
+        get: operations["getWorkflow"];
+        /** @description Create or replace a workflow. The systems, resources, tenants and entitlements its steps name must exist; otherwise nothing is saved. Runs already started keep the steps they started with. */
+        put: operations["saveWorkflow"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/{name}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Start a run of a saved workflow. The run goes on in the background; follow it with the run id. */
+        post: operations["startWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/{name}/runs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get where a run stands, step by step in workflow order */
+        get: operations["getWorkflowRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/{name}/runs/{id}/steps/{step}/continue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Continue a step that is waiting at its gate */
+        post: operations["continueWorkflowStep"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -325,6 +394,30 @@ export interface components {
                 };
             };
         };
+        /** @description The steps of a workflow. A step runs one connector operation on a resource of a managed system. Steps without `after` start together; a step with `after` starts when those steps finished. A failed or gated step holds only the steps that come after it. */
+        "workflow-steps": {
+            /** @description Unique within the workflow; `after` and the continue endpoint refer to it */
+            name: string;
+            /** @description The connector operation to run. The identity comes from the run; the account and tenant are derived. */
+            operation: {
+                /** @description Name of an onboarded managed system */
+                system: string;
+                /** @description A resource of the system's connector, e.g. iam-user */
+                resource: string;
+                /** @enum {string} */
+                kind: "account-action" | "entitlement";
+                /** @description For account-action one of create, enable, disable, delete, read, list. For entitlement one of discover, grant, revoke, read. */
+                action: string;
+                /** @description Tenant name; needed only when the system has several tenants and no entitlement tells which */
+                tenant?: string;
+                /** @description Id of the entitlement to grant or revoke. Required for those actions, not allowed for the others. */
+                entitlement?: string;
+            };
+            /** @description Names of the earlier steps that must finish first */
+            after?: string[];
+            /** @description Wait before this step until someone continues it from the UI or API */
+            gate?: boolean;
+        }[];
     };
     responses: {
         /** @description Internal Server error */
@@ -798,6 +891,179 @@ export interface operations {
                         id: string;
                     };
                 };
+            };
+            401: components["responses"]["unauthenticated-error"];
+            404: components["responses"]["not-found-error"];
+            409: components["responses"]["conflict-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
+    getWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the workflow, e.g. onboarding */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The workflow and its steps */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        name: string;
+                        steps: components["schemas"]["workflow-steps"];
+                    };
+                };
+            };
+            401: components["responses"]["unauthenticated-error"];
+            404: components["responses"]["not-found-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
+    saveWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the workflow, e.g. onboarding */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    steps: components["schemas"]["workflow-steps"];
+                };
+            };
+        };
+        responses: {
+            /** @description Workflow saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["bad-request-error"];
+            401: components["responses"]["unauthenticated-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
+    startWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the workflow, e.g. onboarding */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Id of the identity the run is about. Leave out for workflows that work on no identity. */
+                    identityId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Run started */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Id of the run */
+                        id: string;
+                    };
+                };
+            };
+            400: components["responses"]["bad-request-error"];
+            401: components["responses"]["unauthenticated-error"];
+            404: components["responses"]["not-found-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
+    getWorkflowRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the workflow, e.g. onboarding */
+                name: string;
+                /** @description Id of the run */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The state of every step of the run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        steps: {
+                            name: string;
+                            /**
+                             * @description pending: waiting for earlier steps or running. gated: waiting to be continued. succeeded. failed: see error. blocked: an earlier step did not succeed, so it never ran.
+                             * @enum {string}
+                             */
+                            status: "pending" | "gated" | "succeeded" | "failed" | "blocked";
+                            error?: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            /**
+                             * Format: date-time
+                             * @description Missing until the step starts.
+                             */
+                            startedAt?: string;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["unauthenticated-error"];
+            404: components["responses"]["not-found-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
+    continueWorkflowStep: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the workflow, e.g. onboarding */
+                name: string;
+                /** @description Id of the run, which must belong to the workflow */
+                id: string;
+                /** @description Name of the gated step */
+                step: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The step continues */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             401: components["responses"]["unauthenticated-error"];
             404: components["responses"]["not-found-error"];

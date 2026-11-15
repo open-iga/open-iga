@@ -24,6 +24,11 @@ var operationRoles = map[string][]string{
 	"OnboardManagedSystemTenant":           {domain.AdminRole},
 	"ListManagedSystemTenants":             {domain.AdminRole, domain.DefaultIdentityRole},
 	"ListManagedSystems":                   {domain.AdminRole, domain.DefaultIdentityRole},
+	"SaveWorkflow":                         {domain.AdminRole},
+	"GetWorkflow":                          {domain.AdminRole},
+	"StartWorkflow":                        {domain.AdminRole},
+	"GetWorkflowRun":                       {domain.AdminRole},
+	"ContinueWorkflowStep":                 {domain.AdminRole},
 }
 
 // AuthzStrictMiddleware enforces per-operation roles at the strict-handler layer.

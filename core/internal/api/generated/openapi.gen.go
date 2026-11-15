@@ -137,6 +137,18 @@ type OnboardManagedSystemTenantJSONBody struct {
 // GetUserDetails200JSONResponseBodyRoles defines parameters for GetUserDetails.
 type GetUserDetails200JSONResponseBodyRoles string
 
+// SaveWorkflowJSONBody defines parameters for SaveWorkflow.
+type SaveWorkflowJSONBody struct {
+	// Steps The steps of a workflow. A step runs one connector operation on a resource of a managed system. Steps without `after` start together; a step with `after` starts when those steps finished. A failed or gated step holds only the steps that come after it.
+	Steps []domain.WorkflowStep `json:"steps"`
+}
+
+// StartWorkflowJSONBody defines parameters for StartWorkflow.
+type StartWorkflowJSONBody struct {
+	// IdentityId Id of the identity the run is about. Leave out for workflows that work on no identity.
+	IdentityId *string `json:"identityId,omitempty"`
+}
+
 // OnboardConnectorJSONRequestBody defines body for OnboardConnector for application/json ContentType.
 type OnboardConnectorJSONRequestBody OnboardConnectorJSONBody
 
@@ -145,6 +157,12 @@ type OnboardManagedSystemJSONRequestBody OnboardManagedSystemJSONBody
 
 // OnboardManagedSystemTenantJSONRequestBody defines body for OnboardManagedSystemTenant for application/json ContentType.
 type OnboardManagedSystemTenantJSONRequestBody OnboardManagedSystemTenantJSONBody
+
+// SaveWorkflowJSONRequestBody defines body for SaveWorkflow for application/json ContentType.
+type SaveWorkflowJSONRequestBody SaveWorkflowJSONBody
+
+// StartWorkflowJSONRequestBody defines body for StartWorkflow for application/json ContentType.
+type StartWorkflowJSONRequestBody StartWorkflowJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -184,6 +202,21 @@ type ServerInterface interface {
 
 	// (GET /api/v1/users)
 	GetUserDetails(w http.ResponseWriter, r *http.Request)
+
+	// (GET /api/v1/workflows/{name})
+	GetWorkflow(w http.ResponseWriter, r *http.Request, name string)
+
+	// (PUT /api/v1/workflows/{name})
+	SaveWorkflow(w http.ResponseWriter, r *http.Request, name string)
+
+	// (POST /api/v1/workflows/{name}/runs)
+	StartWorkflow(w http.ResponseWriter, r *http.Request, name string)
+
+	// (GET /api/v1/workflows/{name}/runs/{id})
+	GetWorkflowRun(w http.ResponseWriter, r *http.Request, name string, id string)
+
+	// (POST /api/v1/workflows/{name}/runs/{id}/steps/{step}/continue)
+	ContinueWorkflowStep(w http.ResponseWriter, r *http.Request, name string, id string, step string)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -247,6 +280,31 @@ func (_ Unimplemented) OnboardManagedSystemTenant(w http.ResponseWriter, r *http
 
 // (GET /api/v1/users)
 func (_ Unimplemented) GetUserDetails(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/workflows/{name})
+func (_ Unimplemented) GetWorkflow(w http.ResponseWriter, r *http.Request, name string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/workflows/{name})
+func (_ Unimplemented) SaveWorkflow(w http.ResponseWriter, r *http.Request, name string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/workflows/{name}/runs)
+func (_ Unimplemented) StartWorkflow(w http.ResponseWriter, r *http.Request, name string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/workflows/{name}/runs/{id})
+func (_ Unimplemented) GetWorkflowRun(w http.ResponseWriter, r *http.Request, name string, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/workflows/{name}/runs/{id}/steps/{step}/continue)
+func (_ Unimplemented) ContinueWorkflowStep(w http.ResponseWriter, r *http.Request, name string, id string, step string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -543,6 +601,163 @@ func (siw *ServerInterfaceWrapper) GetUserDetails(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
+// GetWorkflow operation middleware
+func (siw *ServerInterfaceWrapper) GetWorkflow(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", chi.URLParam(r, "name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetWorkflow(w, r, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SaveWorkflow operation middleware
+func (siw *ServerInterfaceWrapper) SaveWorkflow(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", chi.URLParam(r, "name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveWorkflow(w, r, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartWorkflow operation middleware
+func (siw *ServerInterfaceWrapper) StartWorkflow(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", chi.URLParam(r, "name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartWorkflow(w, r, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetWorkflowRun operation middleware
+func (siw *ServerInterfaceWrapper) GetWorkflowRun(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", chi.URLParam(r, "name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetWorkflowRun(w, r, name, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ContinueWorkflowStep operation middleware
+func (siw *ServerInterfaceWrapper) ContinueWorkflowStep(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", chi.URLParam(r, "name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "step" -------------
+	var step string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "step", chi.URLParam(r, "step"), &step, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "step", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ContinueWorkflowStep(w, r, name, id, step)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -691,6 +906,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/users", wrapper.GetUserDetails)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/workflows/{name}", wrapper.GetWorkflow)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/workflows/{name}", wrapper.SaveWorkflow)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/workflows/{name}/runs", wrapper.StartWorkflow)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/workflows/{name}/runs/{id}", wrapper.GetWorkflowRun)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/workflows/{name}/runs/{id}/steps/{step}/continue", wrapper.ContinueWorkflowStep)
 	})
 
 	return r
@@ -1515,6 +1745,397 @@ func (response GetUserDetails500JSONResponse) VisitGetUserDetailsResponse(w http
 	return err
 }
 
+type GetWorkflowRequestObject struct {
+	Name string `json:"name"`
+}
+
+type GetWorkflowResponseObject interface {
+	VisitGetWorkflowResponse(w http.ResponseWriter) error
+}
+
+type GetWorkflow200JSONResponse struct {
+	Name string `json:"name"`
+
+	// Steps The steps of a workflow. A step runs one connector operation on a resource of a managed system. Steps without `after` start together; a step with `after` starts when those steps finished. A failed or gated step holds only the steps that come after it.
+	Steps []domain.WorkflowStep `json:"steps"`
+}
+
+func (response GetWorkflow200JSONResponse) VisitGetWorkflowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWorkflow401JSONResponse struct {
+	Message  string `json:"message"`
+	Redirect string `json:"redirect"`
+}
+
+func (response GetWorkflow401JSONResponse) VisitGetWorkflowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWorkflow404JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response GetWorkflow404JSONResponse) VisitGetWorkflowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWorkflow500JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response GetWorkflow500JSONResponse) VisitGetWorkflowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveWorkflowRequestObject struct {
+	Name string `json:"name"`
+	Body *SaveWorkflowJSONRequestBody
+}
+
+type SaveWorkflowResponseObject interface {
+	VisitSaveWorkflowResponse(w http.ResponseWriter) error
+}
+
+type SaveWorkflow204Response struct {
+}
+
+func (response SaveWorkflow204Response) VisitSaveWorkflowResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type SaveWorkflow400JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response SaveWorkflow400JSONResponse) VisitSaveWorkflowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveWorkflow401JSONResponse struct {
+	Message  string `json:"message"`
+	Redirect string `json:"redirect"`
+}
+
+func (response SaveWorkflow401JSONResponse) VisitSaveWorkflowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveWorkflow500JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response SaveWorkflow500JSONResponse) VisitSaveWorkflowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartWorkflowRequestObject struct {
+	Name string `json:"name"`
+	Body *StartWorkflowJSONRequestBody
+}
+
+type StartWorkflowResponseObject interface {
+	VisitStartWorkflowResponse(w http.ResponseWriter) error
+}
+
+type StartWorkflow201JSONResponse struct {
+	// Id Id of the run
+	Id string `json:"id"`
+}
+
+func (response StartWorkflow201JSONResponse) VisitStartWorkflowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartWorkflow400JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response StartWorkflow400JSONResponse) VisitStartWorkflowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartWorkflow401JSONResponse struct {
+	Message  string `json:"message"`
+	Redirect string `json:"redirect"`
+}
+
+func (response StartWorkflow401JSONResponse) VisitStartWorkflowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartWorkflow404JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response StartWorkflow404JSONResponse) VisitStartWorkflowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartWorkflow500JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response StartWorkflow500JSONResponse) VisitStartWorkflowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWorkflowRunRequestObject struct {
+	Name string `json:"name"`
+	Id   string `json:"id"`
+}
+
+type GetWorkflowRunResponseObject interface {
+	VisitGetWorkflowRunResponse(w http.ResponseWriter) error
+}
+
+type GetWorkflowRun200JSONResponse struct {
+	Id    string                     `json:"id"`
+	Steps []domain.WorkflowStepState `json:"steps"`
+}
+
+func (response GetWorkflowRun200JSONResponse) VisitGetWorkflowRunResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWorkflowRun401JSONResponse struct {
+	Message  string `json:"message"`
+	Redirect string `json:"redirect"`
+}
+
+func (response GetWorkflowRun401JSONResponse) VisitGetWorkflowRunResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWorkflowRun404JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response GetWorkflowRun404JSONResponse) VisitGetWorkflowRunResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWorkflowRun500JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response GetWorkflowRun500JSONResponse) VisitGetWorkflowRunResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ContinueWorkflowStepRequestObject struct {
+	Name string `json:"name"`
+	Id   string `json:"id"`
+	Step string `json:"step"`
+}
+
+type ContinueWorkflowStepResponseObject interface {
+	VisitContinueWorkflowStepResponse(w http.ResponseWriter) error
+}
+
+type ContinueWorkflowStep204Response struct {
+}
+
+func (response ContinueWorkflowStep204Response) VisitContinueWorkflowStepResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ContinueWorkflowStep401JSONResponse struct {
+	Message  string `json:"message"`
+	Redirect string `json:"redirect"`
+}
+
+func (response ContinueWorkflowStep401JSONResponse) VisitContinueWorkflowStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ContinueWorkflowStep404JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response ContinueWorkflowStep404JSONResponse) VisitContinueWorkflowStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ContinueWorkflowStep409JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response ContinueWorkflowStep409JSONResponse) VisitContinueWorkflowStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ContinueWorkflowStep500JSONResponse struct {
+	Message string `json:"message"`
+}
+
+func (response ContinueWorkflowStep500JSONResponse) VisitContinueWorkflowStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
@@ -1553,6 +2174,21 @@ type StrictServerInterface interface {
 
 	// (GET /api/v1/users)
 	GetUserDetails(ctx context.Context, request GetUserDetailsRequestObject) (GetUserDetailsResponseObject, error)
+
+	// (GET /api/v1/workflows/{name})
+	GetWorkflow(ctx context.Context, request GetWorkflowRequestObject) (GetWorkflowResponseObject, error)
+
+	// (PUT /api/v1/workflows/{name})
+	SaveWorkflow(ctx context.Context, request SaveWorkflowRequestObject) (SaveWorkflowResponseObject, error)
+
+	// (POST /api/v1/workflows/{name}/runs)
+	StartWorkflow(ctx context.Context, request StartWorkflowRequestObject) (StartWorkflowResponseObject, error)
+
+	// (GET /api/v1/workflows/{name}/runs/{id})
+	GetWorkflowRun(ctx context.Context, request GetWorkflowRunRequestObject) (GetWorkflowRunResponseObject, error)
+
+	// (POST /api/v1/workflows/{name}/runs/{id}/steps/{step}/continue)
+	ContinueWorkflowStep(ctx context.Context, request ContinueWorkflowStepRequestObject) (ContinueWorkflowStepResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -1906,49 +2542,215 @@ func (sh *strictHandler) GetUserDetails(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// GetWorkflow operation middleware
+func (sh *strictHandler) GetWorkflow(w http.ResponseWriter, r *http.Request, name string) {
+	var request GetWorkflowRequestObject
+
+	request.Name = name
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetWorkflow(ctx, request.(GetWorkflowRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetWorkflow")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetWorkflowResponseObject); ok {
+		if err := validResponse.VisitGetWorkflowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SaveWorkflow operation middleware
+func (sh *strictHandler) SaveWorkflow(w http.ResponseWriter, r *http.Request, name string) {
+	var request SaveWorkflowRequestObject
+
+	request.Name = name
+
+	var body SaveWorkflowJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SaveWorkflow(ctx, request.(SaveWorkflowRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SaveWorkflow")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SaveWorkflowResponseObject); ok {
+		if err := validResponse.VisitSaveWorkflowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartWorkflow operation middleware
+func (sh *strictHandler) StartWorkflow(w http.ResponseWriter, r *http.Request, name string) {
+	var request StartWorkflowRequestObject
+
+	request.Name = name
+
+	var body StartWorkflowJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartWorkflow(ctx, request.(StartWorkflowRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartWorkflow")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartWorkflowResponseObject); ok {
+		if err := validResponse.VisitStartWorkflowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetWorkflowRun operation middleware
+func (sh *strictHandler) GetWorkflowRun(w http.ResponseWriter, r *http.Request, name string, id string) {
+	var request GetWorkflowRunRequestObject
+
+	request.Name = name
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetWorkflowRun(ctx, request.(GetWorkflowRunRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetWorkflowRun")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetWorkflowRunResponseObject); ok {
+		if err := validResponse.VisitGetWorkflowRunResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ContinueWorkflowStep operation middleware
+func (sh *strictHandler) ContinueWorkflowStep(w http.ResponseWriter, r *http.Request, name string, id string, step string) {
+	var request ContinueWorkflowStepRequestObject
+
+	request.Name = name
+	request.Id = id
+	request.Step = step
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ContinueWorkflowStep(ctx, request.(ContinueWorkflowStepRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ContinueWorkflowStep")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ContinueWorkflowStepResponseObject); ok {
+		if err := validResponse.VisitContinueWorkflowStepResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
 // Stored as a slice of fixed-width chunks rather than one concatenated
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
+	"j/Flp8P/WVEZVHVMZT9ePTeb/wwA",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,
