@@ -56,7 +56,7 @@ func TestNewConnectorOperation(t *testing.T) {
 		Tenant:      &ManagedSystemTenant{ExternalId: "acct-1"},
 		Identity:    &Identity{Email: "a@b.c", FirstName: "Ada", LastName: "L"},
 		Account:     &Account{ExternalId: "arn:u1"},
-		Entitlement: &Entitlement{Name: "g1"},
+		Entitlement: &EntitlementCatalog{ExternalId: "g1"},
 	}
 
 	create, err := NewConnectorOperation(AccountActionKind, "create", data)

@@ -130,6 +130,19 @@ func (c *ConnectorSpec) Validate() error {
 	)
 }
 
+// SupportsResource is true when the connector has operations of the kind on the resource.
+func (c *ConnectorSpec) SupportsResource(kind ConnectorKind, resource string) bool {
+	switch kind {
+	case AccountActionKind:
+		_, ok := c.Actions[resource]
+		return ok
+	case EntitlementKind:
+		_, ok := c.Entitlements[resource]
+		return ok
+	}
+	return false
+}
+
 // NewConnectorSpec decodes the custom section byte and returns the connector spec
 func NewConnectorSpec(customSection []byte) (*ConnectorSpec, error) {
 	var connectorSpec ConnectorSpec
