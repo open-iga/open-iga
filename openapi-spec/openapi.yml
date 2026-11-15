@@ -25,3 +25,11 @@ paths:
         $ref: './paths/v1-managed-system-details.yml'
     '/api/v1/managed-systems/{id}/tenant':
         $ref: './paths/v1-managed-system-tenant.yml'
+    '/api/v1/workflows/{name}':
+        $ref: './paths/v1-workflow.yml'
+    '/api/v1/workflows/{name}/runs':
+        $ref: './paths/v1-workflow-start.yml'
+    '/api/v1/workflows/{name}/runs/{id}':
+        $ref: './paths/v1-workflow-run.yml'
+    '/api/v1/workflows/{name}/runs/{id}/steps/{step}/continue':
+        $ref: './paths/v1-workflow-step-continue.yml'

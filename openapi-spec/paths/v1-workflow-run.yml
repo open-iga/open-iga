@@ -1,0 +1,63 @@
+get:
+    operationId: getWorkflowRun
+    description: Get where a run stands, step by step in workflow order
+    parameters:
+        - name: name
+          in: path
+          required: true
+          description: Name of the workflow, e.g. onboarding
+          schema:
+              type: string
+        - name: id
+          in: path
+          required: true
+          description: Id of the run
+          schema:
+              type: string
+    responses:
+        200:
+            description: The state of every step of the run
+            content:
+                'application/json':
+                    schema:
+                        type: object
+                        properties:
+                            id:
+                                type: string
+                            steps:
+                                type: array
+                                items:
+                                    # Already a decoded domain value, so handlers pass it as is.
+                                    x-go-type: domain.WorkflowStepState
+                                    x-go-type-import:
+                                        path: github.com/open-iga/core/internal/domain
+                                    type: object
+                                    properties:
+                                        name:
+                                            type: string
+                                        status:
+                                            type: string
+                                            description: >-
+                                                pending: waiting for earlier steps or running. gated: waiting to be continued.
+                                                succeeded. failed: see error. blocked: an earlier step did not succeed, so it never ran.
+                                            enum: [pending, gated, succeeded, failed, blocked]
+                                        error:
+                                            type: string
+                                        createdAt:
+                                            type: string
+                                            format: date-time
+                                        updatedAt:
+                                            type: string
+                                            format: date-time
+                                        startedAt:
+                                            type: string
+                                            format: date-time
+                                            description: Missing until the step starts.
+                                    required: [name, status, createdAt, updatedAt]
+                        required: [id, steps]
+        401:
+            $ref: '../components/responses/unauthenticated-error.yml'
+        404:
+            $ref: '../components/responses/not-found-error.yml'
+        500:
+            $ref: '../components/responses/internal-server-error.yml'
