@@ -9,24 +9,65 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const getAccountByTenantAndIdentity = `-- name: GetAccountByTenantAndIdentity :one
-SELECT id, tenant_id, identity_id, external_id, enabled, metadata, created_at, updated_at FROM account
-WHERE tenant_id = $1
-  AND identity_id = $2
+const getAccount = `-- name: GetAccount :one
+SELECT id, managed_system_id, tenant_id, identity_id, external_id, enabled, metadata, created_at, updated_at FROM account
+WHERE managed_system_id = $1
+  AND tenant_id IS NOT DISTINCT FROM $2
+  AND identity_id = $3
 `
 
-type GetAccountByTenantAndIdentityParams struct {
-	TenantID   uuid.UUID
-	IdentityID uuid.UUID
+type GetAccountParams struct {
+	ManagedSystemID uuid.UUID
+	TenantID        pgtype.UUID
+	IdentityID      uuid.UUID
 }
 
-func (q *Queries) GetAccountByTenantAndIdentity(ctx context.Context, arg GetAccountByTenantAndIdentityParams) (Account, error) {
-	row := q.db.QueryRow(ctx, getAccountByTenantAndIdentity, arg.TenantID, arg.IdentityID)
+func (q *Queries) GetAccount(ctx context.Context, arg GetAccountParams) (Account, error) {
+	row := q.db.QueryRow(ctx, getAccount, arg.ManagedSystemID, arg.TenantID, arg.IdentityID)
 	var i Account
 	err := row.Scan(
 		&i.ID,
+		&i.ManagedSystemID,
+		&i.TenantID,
+		&i.IdentityID,
+		&i.ExternalID,
+		&i.Enabled,
+		&i.Metadata,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const upsertAccount = `-- name: UpsertAccount :one
+INSERT INTO account (managed_system_id, tenant_id, identity_id, external_id)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (managed_system_id, tenant_id, identity_id) DO UPDATE
+SET external_id = EXCLUDED.external_id, updated_at = CURRENT_TIMESTAMP
+RETURNING id, managed_system_id, tenant_id, identity_id, external_id, enabled, metadata, created_at, updated_at
+`
+
+type UpsertAccountParams struct {
+	ManagedSystemID uuid.UUID
+	TenantID        pgtype.UUID
+	IdentityID      uuid.UUID
+	ExternalID      pgtype.Text
+}
+
+func (q *Queries) UpsertAccount(ctx context.Context, arg UpsertAccountParams) (Account, error) {
+	row := q.db.QueryRow(ctx, upsertAccount,
+		arg.ManagedSystemID,
+		arg.TenantID,
+		arg.IdentityID,
+		arg.ExternalID,
+	)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.ManagedSystemID,
 		&i.TenantID,
 		&i.IdentityID,
 		&i.ExternalID,
