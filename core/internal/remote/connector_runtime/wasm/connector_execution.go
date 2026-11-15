@@ -65,6 +65,11 @@ func cacheKey(connectorURL string, hash string) string {
 // so a later call retries. No-op if already cached.
 func (c *ConnectorRuntime) CompileConnector(ctx context.Context, connectorURL string, hash string, spec *domain.ConnectorSpec) {
 	key := cacheKey(connectorURL, hash)
+	// Execute asks for this on every call, so a cached connector must cost no more than a lookup.
+	if _, cached := connectors.Load(key); cached {
+		return
+	}
+
 	entry := &connectorEntry{ready: make(chan struct{}), configs: spec.ScopedConfigs(), endpoints: spec.ResolveEndpoints(c.logger), err: nil, compiled: nil}
 	if _, loaded := connectors.LoadOrStore(key, entry); loaded {
 		return
