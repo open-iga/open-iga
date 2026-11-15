@@ -12,6 +12,7 @@ package testutil
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	domain "github.com/open-iga/core/internal/domain"
 	gomock "go.uber.org/mock/gomock"
@@ -135,4 +136,97 @@ func (m *MockConnectorRuntime) ValidateConnectorByURL(ctx context.Context, url, 
 func (mr *MockConnectorRuntimeMockRecorder) ValidateConnectorByURL(ctx, url, hash any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateConnectorByURL", reflect.TypeOf((*MockConnectorRuntime)(nil).ValidateConnectorByURL), ctx, url, hash)
+}
+
+// MockWorkflowEngine is a mock of WorkflowEngine interface.
+type MockWorkflowEngine struct {
+	ctrl     *gomock.Controller
+	recorder *MockWorkflowEngineMockRecorder
+	isgomock struct{}
+}
+
+// MockWorkflowEngineMockRecorder is the mock recorder for MockWorkflowEngine.
+type MockWorkflowEngineMockRecorder struct {
+	mock *MockWorkflowEngine
+}
+
+// NewMockWorkflowEngine creates a new mock instance.
+func NewMockWorkflowEngine(ctrl *gomock.Controller) *MockWorkflowEngine {
+	mock := &MockWorkflowEngine{ctrl: ctrl}
+	mock.recorder = &MockWorkflowEngineMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockWorkflowEngine) EXPECT() *MockWorkflowEngineMockRecorder {
+	return m.recorder
+}
+
+// Continue mocks base method.
+func (m *MockWorkflowEngine) Continue(ctx context.Context, runId, stepName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Continue", ctx, runId, stepName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Continue indicates an expected call of Continue.
+func (mr *MockWorkflowEngineMockRecorder) Continue(ctx, runId, stepName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Continue", reflect.TypeOf((*MockWorkflowEngine)(nil).Continue), ctx, runId, stepName)
+}
+
+// Get mocks base method.
+func (m *MockWorkflowEngine) Get(ctx context.Context, runId string) (domain.WorkflowRunState, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, runId)
+	ret0, _ := ret[0].(domain.WorkflowRunState)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockWorkflowEngineMockRecorder) Get(ctx, runId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockWorkflowEngine)(nil).Get), ctx, runId)
+}
+
+// Launch mocks base method.
+func (m *MockWorkflowEngine) Launch(ctx context.Context, runner domain.WorkflowStepRunner) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Launch", ctx, runner)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Launch indicates an expected call of Launch.
+func (mr *MockWorkflowEngineMockRecorder) Launch(ctx, runner any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Launch", reflect.TypeOf((*MockWorkflowEngine)(nil).Launch), ctx, runner)
+}
+
+// Shutdown mocks base method.
+func (m *MockWorkflowEngine) Shutdown(timeout time.Duration) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Shutdown", timeout)
+}
+
+// Shutdown indicates an expected call of Shutdown.
+func (mr *MockWorkflowEngineMockRecorder) Shutdown(timeout any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockWorkflowEngine)(nil).Shutdown), timeout)
+}
+
+// Start mocks base method.
+func (m *MockWorkflowEngine) Start(ctx context.Context, runId string, run domain.WorkflowRun) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Start", ctx, runId, run)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Start indicates an expected call of Start.
+func (mr *MockWorkflowEngineMockRecorder) Start(ctx, runId, run any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockWorkflowEngine)(nil).Start), ctx, runId, run)
 }

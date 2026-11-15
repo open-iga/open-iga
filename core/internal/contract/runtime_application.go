@@ -31,8 +31,19 @@ type ManagedSystemService interface {
 	ListTenants(ctx context.Context, managedSystemId string) ([]*domain.ManagedSystemTenant, error)
 }
 
+type WorkflowService interface {
+	// SaveWorkflow checks every step against the managed systems, tenants and entitlements, then saves the definition under its name.
+	SaveWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error
+	GetWorkflow(ctx context.Context, name string) (domain.WorkflowDefinition, error)
+	// StartWorkflow runs the saved workflow for the identity (empty for workflows that touch none) and returns the run id.
+	StartWorkflow(ctx context.Context, name string, identityId uuid.UUID) (runId string, err error)
+	Continue(ctx context.Context, workflowName string, runId string, stepName string) error
+	GetRun(ctx context.Context, workflowName string, runId string) (domain.WorkflowRunState, error)
+}
+
 type RuntimeApplication struct {
 	AuthService          AuthService
 	ConnectorService     ConnectorService
 	ManagedSystemService ManagedSystemService
+	WorkflowService      WorkflowService
 }

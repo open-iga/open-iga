@@ -311,3 +311,100 @@ func (mr *MockManagedSystemServiceMockRecorder) OnboardTenant(ctx, managedSystem
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnboardTenant", reflect.TypeOf((*MockManagedSystemService)(nil).OnboardTenant), ctx, managedSystemId, externalId, name)
 }
+
+// MockWorkflowService is a mock of WorkflowService interface.
+type MockWorkflowService struct {
+	ctrl     *gomock.Controller
+	recorder *MockWorkflowServiceMockRecorder
+	isgomock struct{}
+}
+
+// MockWorkflowServiceMockRecorder is the mock recorder for MockWorkflowService.
+type MockWorkflowServiceMockRecorder struct {
+	mock *MockWorkflowService
+}
+
+// NewMockWorkflowService creates a new mock instance.
+func NewMockWorkflowService(ctrl *gomock.Controller) *MockWorkflowService {
+	mock := &MockWorkflowService{ctrl: ctrl}
+	mock.recorder = &MockWorkflowServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockWorkflowService) EXPECT() *MockWorkflowServiceMockRecorder {
+	return m.recorder
+}
+
+// Continue mocks base method.
+func (m *MockWorkflowService) Continue(ctx context.Context, workflowName, runId, stepName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Continue", ctx, workflowName, runId, stepName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Continue indicates an expected call of Continue.
+func (mr *MockWorkflowServiceMockRecorder) Continue(ctx, workflowName, runId, stepName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Continue", reflect.TypeOf((*MockWorkflowService)(nil).Continue), ctx, workflowName, runId, stepName)
+}
+
+// GetRun mocks base method.
+func (m *MockWorkflowService) GetRun(ctx context.Context, workflowName, runId string) (domain.WorkflowRunState, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRun", ctx, workflowName, runId)
+	ret0, _ := ret[0].(domain.WorkflowRunState)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRun indicates an expected call of GetRun.
+func (mr *MockWorkflowServiceMockRecorder) GetRun(ctx, workflowName, runId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRun", reflect.TypeOf((*MockWorkflowService)(nil).GetRun), ctx, workflowName, runId)
+}
+
+// GetWorkflow mocks base method.
+func (m *MockWorkflowService) GetWorkflow(ctx context.Context, name string) (domain.WorkflowDefinition, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWorkflow", ctx, name)
+	ret0, _ := ret[0].(domain.WorkflowDefinition)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWorkflow indicates an expected call of GetWorkflow.
+func (mr *MockWorkflowServiceMockRecorder) GetWorkflow(ctx, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorkflow", reflect.TypeOf((*MockWorkflowService)(nil).GetWorkflow), ctx, name)
+}
+
+// SaveWorkflow mocks base method.
+func (m *MockWorkflowService) SaveWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveWorkflow", ctx, definition)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SaveWorkflow indicates an expected call of SaveWorkflow.
+func (mr *MockWorkflowServiceMockRecorder) SaveWorkflow(ctx, definition any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveWorkflow", reflect.TypeOf((*MockWorkflowService)(nil).SaveWorkflow), ctx, definition)
+}
+
+// StartWorkflow mocks base method.
+func (m *MockWorkflowService) StartWorkflow(ctx context.Context, name string, identityId uuid.UUID) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StartWorkflow", ctx, name, identityId)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StartWorkflow indicates an expected call of StartWorkflow.
+func (mr *MockWorkflowServiceMockRecorder) StartWorkflow(ctx, name, identityId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartWorkflow", reflect.TypeOf((*MockWorkflowService)(nil).StartWorkflow), ctx, name, identityId)
+}

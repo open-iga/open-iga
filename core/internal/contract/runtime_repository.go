@@ -34,17 +34,32 @@ type ManagedSystemRepository interface {
 }
 
 type AccountRepository interface {
-	GetAccountByTenantAndIdentity(ctx context.Context, tenantId uuid.UUID, identityId uuid.UUID) (*domain.Account, error)
+	// GetAccount finds the account of an identity on a system; tenantId is uuid.Nil for a single-tenant system.
+	GetAccount(ctx context.Context, managedSystemId string, tenantId uuid.UUID, identityId uuid.UUID) (*domain.Account, error)
+	// UpsertAccount saves the account an identity has on a system (and tenant, if it has one) with its id in the target system; repeating it updates the id.
+	UpsertAccount(ctx context.Context, managedSystemId string, tenantId uuid.UUID, identityId uuid.UUID, externalId string) (*domain.Account, error)
 }
 
-type EntitlementRepository interface {
-	GetEntitlement(ctx context.Context, entitlementId uuid.UUID) (*domain.Entitlement, error)
+// WorkflowRepository keeps the workflow definitions admins save, by name.
+type WorkflowRepository interface {
+	// SaveWorkflow creates the definition or replaces the one with the same name.
+	SaveWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error
+	// GetWorkflow returns domain.ErrWorkflowNotFound when no definition has the name.
+	GetWorkflow(ctx context.Context, name string) (domain.WorkflowDefinition, error)
+}
+
+type EntitlementCatalogRepository interface {
+	// GetEntitlementCatalog is not found when the entitlement belongs to another system or resource.
+	GetEntitlementCatalog(ctx context.Context, entitlementId uuid.UUID, managedSystemId string, resource string) (*domain.EntitlementCatalog, error)
+	// UpsertEntitlementCatalog saves what discovery found for a resource of a tenant; repeating it updates the row.
+	UpsertEntitlementCatalog(ctx context.Context, managedSystemId string, tenantId uuid.UUID, resource string, discovered domain.DiscoveredEntitlement) (*domain.EntitlementCatalog, error)
 }
 
 type Repository struct {
-	AccountRepository       AccountRepository
-	EntitlementRepository   EntitlementRepository
-	IdentityRepository      IdentityRepository
-	SessionRepository       SessionRepository
-	ManagedSystemRepository ManagedSystemRepository
+	AccountRepository            AccountRepository
+	EntitlementCatalogRepository EntitlementCatalogRepository
+	IdentityRepository           IdentityRepository
+	SessionRepository            SessionRepository
+	ManagedSystemRepository      ManagedSystemRepository
+	WorkflowRepository           WorkflowRepository
 }

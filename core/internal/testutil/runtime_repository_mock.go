@@ -371,56 +371,139 @@ func (m *MockAccountRepository) EXPECT() *MockAccountRepositoryMockRecorder {
 	return m.recorder
 }
 
-// GetAccountByTenantAndIdentity mocks base method.
-func (m *MockAccountRepository) GetAccountByTenantAndIdentity(ctx context.Context, tenantId, identityId uuid.UUID) (*domain.Account, error) {
+// GetAccount mocks base method.
+func (m *MockAccountRepository) GetAccount(ctx context.Context, managedSystemId string, tenantId, identityId uuid.UUID) (*domain.Account, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAccountByTenantAndIdentity", ctx, tenantId, identityId)
+	ret := m.ctrl.Call(m, "GetAccount", ctx, managedSystemId, tenantId, identityId)
 	ret0, _ := ret[0].(*domain.Account)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAccountByTenantAndIdentity indicates an expected call of GetAccountByTenantAndIdentity.
-func (mr *MockAccountRepositoryMockRecorder) GetAccountByTenantAndIdentity(ctx, tenantId, identityId any) *gomock.Call {
+// GetAccount indicates an expected call of GetAccount.
+func (mr *MockAccountRepositoryMockRecorder) GetAccount(ctx, managedSystemId, tenantId, identityId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountByTenantAndIdentity", reflect.TypeOf((*MockAccountRepository)(nil).GetAccountByTenantAndIdentity), ctx, tenantId, identityId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccount", reflect.TypeOf((*MockAccountRepository)(nil).GetAccount), ctx, managedSystemId, tenantId, identityId)
 }
 
-// MockEntitlementRepository is a mock of EntitlementRepository interface.
-type MockEntitlementRepository struct {
-	ctrl     *gomock.Controller
-	recorder *MockEntitlementRepositoryMockRecorder
-	isgomock struct{}
-}
-
-// MockEntitlementRepositoryMockRecorder is the mock recorder for MockEntitlementRepository.
-type MockEntitlementRepositoryMockRecorder struct {
-	mock *MockEntitlementRepository
-}
-
-// NewMockEntitlementRepository creates a new mock instance.
-func NewMockEntitlementRepository(ctrl *gomock.Controller) *MockEntitlementRepository {
-	mock := &MockEntitlementRepository{ctrl: ctrl}
-	mock.recorder = &MockEntitlementRepositoryMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockEntitlementRepository) EXPECT() *MockEntitlementRepositoryMockRecorder {
-	return m.recorder
-}
-
-// GetEntitlement mocks base method.
-func (m *MockEntitlementRepository) GetEntitlement(ctx context.Context, entitlementId uuid.UUID) (*domain.Entitlement, error) {
+// UpsertAccount mocks base method.
+func (m *MockAccountRepository) UpsertAccount(ctx context.Context, managedSystemId string, tenantId, identityId uuid.UUID, externalId string) (*domain.Account, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetEntitlement", ctx, entitlementId)
-	ret0, _ := ret[0].(*domain.Entitlement)
+	ret := m.ctrl.Call(m, "UpsertAccount", ctx, managedSystemId, tenantId, identityId, externalId)
+	ret0, _ := ret[0].(*domain.Account)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetEntitlement indicates an expected call of GetEntitlement.
-func (mr *MockEntitlementRepositoryMockRecorder) GetEntitlement(ctx, entitlementId any) *gomock.Call {
+// UpsertAccount indicates an expected call of UpsertAccount.
+func (mr *MockAccountRepositoryMockRecorder) UpsertAccount(ctx, managedSystemId, tenantId, identityId, externalId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEntitlement", reflect.TypeOf((*MockEntitlementRepository)(nil).GetEntitlement), ctx, entitlementId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertAccount", reflect.TypeOf((*MockAccountRepository)(nil).UpsertAccount), ctx, managedSystemId, tenantId, identityId, externalId)
+}
+
+// MockWorkflowRepository is a mock of WorkflowRepository interface.
+type MockWorkflowRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockWorkflowRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockWorkflowRepositoryMockRecorder is the mock recorder for MockWorkflowRepository.
+type MockWorkflowRepositoryMockRecorder struct {
+	mock *MockWorkflowRepository
+}
+
+// NewMockWorkflowRepository creates a new mock instance.
+func NewMockWorkflowRepository(ctrl *gomock.Controller) *MockWorkflowRepository {
+	mock := &MockWorkflowRepository{ctrl: ctrl}
+	mock.recorder = &MockWorkflowRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockWorkflowRepository) EXPECT() *MockWorkflowRepositoryMockRecorder {
+	return m.recorder
+}
+
+// GetWorkflow mocks base method.
+func (m *MockWorkflowRepository) GetWorkflow(ctx context.Context, name string) (domain.WorkflowDefinition, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWorkflow", ctx, name)
+	ret0, _ := ret[0].(domain.WorkflowDefinition)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWorkflow indicates an expected call of GetWorkflow.
+func (mr *MockWorkflowRepositoryMockRecorder) GetWorkflow(ctx, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorkflow", reflect.TypeOf((*MockWorkflowRepository)(nil).GetWorkflow), ctx, name)
+}
+
+// SaveWorkflow mocks base method.
+func (m *MockWorkflowRepository) SaveWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveWorkflow", ctx, definition)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SaveWorkflow indicates an expected call of SaveWorkflow.
+func (mr *MockWorkflowRepositoryMockRecorder) SaveWorkflow(ctx, definition any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveWorkflow", reflect.TypeOf((*MockWorkflowRepository)(nil).SaveWorkflow), ctx, definition)
+}
+
+// MockEntitlementCatalogRepository is a mock of EntitlementCatalogRepository interface.
+type MockEntitlementCatalogRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockEntitlementCatalogRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockEntitlementCatalogRepositoryMockRecorder is the mock recorder for MockEntitlementCatalogRepository.
+type MockEntitlementCatalogRepositoryMockRecorder struct {
+	mock *MockEntitlementCatalogRepository
+}
+
+// NewMockEntitlementCatalogRepository creates a new mock instance.
+func NewMockEntitlementCatalogRepository(ctrl *gomock.Controller) *MockEntitlementCatalogRepository {
+	mock := &MockEntitlementCatalogRepository{ctrl: ctrl}
+	mock.recorder = &MockEntitlementCatalogRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockEntitlementCatalogRepository) EXPECT() *MockEntitlementCatalogRepositoryMockRecorder {
+	return m.recorder
+}
+
+// GetEntitlementCatalog mocks base method.
+func (m *MockEntitlementCatalogRepository) GetEntitlementCatalog(ctx context.Context, entitlementId uuid.UUID, managedSystemId, resource string) (*domain.EntitlementCatalog, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEntitlementCatalog", ctx, entitlementId, managedSystemId, resource)
+	ret0, _ := ret[0].(*domain.EntitlementCatalog)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEntitlementCatalog indicates an expected call of GetEntitlementCatalog.
+func (mr *MockEntitlementCatalogRepositoryMockRecorder) GetEntitlementCatalog(ctx, entitlementId, managedSystemId, resource any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEntitlementCatalog", reflect.TypeOf((*MockEntitlementCatalogRepository)(nil).GetEntitlementCatalog), ctx, entitlementId, managedSystemId, resource)
+}
+
+// UpsertEntitlementCatalog mocks base method.
+func (m *MockEntitlementCatalogRepository) UpsertEntitlementCatalog(ctx context.Context, managedSystemId string, tenantId uuid.UUID, resource string, discovered domain.DiscoveredEntitlement) (*domain.EntitlementCatalog, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpsertEntitlementCatalog", ctx, managedSystemId, tenantId, resource, discovered)
+	ret0, _ := ret[0].(*domain.EntitlementCatalog)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpsertEntitlementCatalog indicates an expected call of UpsertEntitlementCatalog.
+func (mr *MockEntitlementCatalogRepositoryMockRecorder) UpsertEntitlementCatalog(ctx, managedSystemId, tenantId, resource, discovered any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertEntitlementCatalog", reflect.TypeOf((*MockEntitlementCatalogRepository)(nil).UpsertEntitlementCatalog), ctx, managedSystemId, tenantId, resource, discovered)
 }
