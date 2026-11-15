@@ -14,30 +14,30 @@ import (
 )
 
 type ConnectorService struct {
-	connectorRuntime        contract.ConnectorRuntime
-	managedSystemRepository contract.ManagedSystemRepository
-	identityRepository      contract.IdentityRepository
-	accountRepository       contract.AccountRepository
-	entitlementRepository   contract.EntitlementRepository
-	logger                  *slog.Logger
-	mu                      sync.RWMutex
-	onboardingResults       map[string]domain.ConnectorValidationResult
+	connectorRuntime             contract.ConnectorRuntime
+	managedSystemRepository      contract.ManagedSystemRepository
+	identityRepository           contract.IdentityRepository
+	accountRepository            contract.AccountRepository
+	entitlementCatalogRepository contract.EntitlementCatalogRepository
+	logger                       *slog.Logger
+	mu                           sync.RWMutex
+	onboardingResults            map[string]domain.ConnectorValidationResult
 }
 
 const validationTimeout = 2 * time.Minute
 
 var _ contract.ConnectorService = (*ConnectorService)(nil)
 
-func NewConnectorService(connectorRuntime contract.ConnectorRuntime, managedSystemRepository contract.ManagedSystemRepository, identityRepository contract.IdentityRepository, accountRepository contract.AccountRepository, entitlementRepository contract.EntitlementRepository, logger *slog.Logger) *ConnectorService {
+func NewConnectorService(connectorRuntime contract.ConnectorRuntime, managedSystemRepository contract.ManagedSystemRepository, identityRepository contract.IdentityRepository, accountRepository contract.AccountRepository, entitlementCatalogRepository contract.EntitlementCatalogRepository, logger *slog.Logger) *ConnectorService {
 	return &ConnectorService{
-		connectorRuntime:        connectorRuntime,
-		managedSystemRepository: managedSystemRepository,
-		identityRepository:      identityRepository,
-		accountRepository:       accountRepository,
-		entitlementRepository:   entitlementRepository,
-		logger:                  logger,
-		onboardingResults:       make(map[string]domain.ConnectorValidationResult),
-		mu:                      sync.RWMutex{}, // for exhaustruct lint
+		connectorRuntime:             connectorRuntime,
+		managedSystemRepository:      managedSystemRepository,
+		identityRepository:           identityRepository,
+		accountRepository:            accountRepository,
+		entitlementCatalogRepository: entitlementCatalogRepository,
+		logger:                       logger,
+		onboardingResults:            make(map[string]domain.ConnectorValidationResult),
+		mu:                           sync.RWMutex{}, // for exhaustruct lint
 	}
 }
 
@@ -118,7 +118,7 @@ func (c *ConnectorService) Execute(ctx context.Context, connectorName string, ma
 	if err != nil {
 		return nil, fmt.Errorf("execute connector %s: %w", connectorName, err)
 	}
-	data, err := c.loadOperationData(ctx, managedSystem, kind, action, ref)
+	data, err := c.loadOperationData(ctx, managedSystem, managedResource, kind, action, ref)
 	if err != nil {
 		return nil, fmt.Errorf("execute connector %s: %w", connectorName, err)
 	}
@@ -131,6 +131,11 @@ func (c *ConnectorService) Execute(ctx context.Context, connectorName string, ma
 	input, err := json.Marshal(operation)
 	if err != nil {
 		return nil, fmt.Errorf("execute connector %s: marshal input: %w", connectorName, err)
+	}
+
+	// A failed compile leaves no cache entry. Asking again starts a new compile, and does nothing when the connector is cached.
+	if managedSystem.ConnectorSpec != nil {
+		c.CompileConnector(ctx, managedSystem.ConnectorUrl, managedSystem.ConnectorHash, managedSystem.ConnectorSpec)
 	}
 
 	raw, err := c.connectorRuntime.Execute(ctx, managedSystem.ConnectorUrl, managedSystem.ConnectorHash, domain.ConnectorInvocation{
@@ -156,7 +161,7 @@ func (c *ConnectorService) Execute(ctx context.Context, connectorName string, ma
 
 // loadOperationData loads the rows the ref points to. The tenant and entitlement must belong to the
 // connector's managed system. The account is loaded only for operations that need an existing one.
-func (c *ConnectorService) loadOperationData(ctx context.Context, managedSystem *domain.ManagedSystem, kind domain.ConnectorKind, action string, ref domain.OperationRef) (*domain.OperationData, error) {
+func (c *ConnectorService) loadOperationData(ctx context.Context, managedSystem *domain.ManagedSystem, managedResource string, kind domain.ConnectorKind, action string, ref domain.OperationRef) (*domain.OperationData, error) {
 	tenant, err := c.loadTenant(ctx, managedSystem, ref.TenantId)
 	if err != nil {
 		return nil, err
@@ -170,13 +175,13 @@ func (c *ConnectorService) loadOperationData(ctx context.Context, managedSystem 
 	}
 
 	if ref.NeedsAccount(kind, action) {
-		if data.Account, err = c.accountRepository.GetAccountByTenantAndIdentity(ctx, ref.TenantId, ref.IdentityId); err != nil {
+		if data.Account, err = c.accountRepository.GetAccount(ctx, managedSystem.Id, ref.TenantId, ref.IdentityId); err != nil {
 			return nil, fmt.Errorf("load account: %w", err)
 		}
 	}
 
 	if ref.NeedsEntitlement(kind, action) {
-		if data.Entitlement, err = c.entitlementRepository.GetEntitlement(ctx, ref.EntitlementId); err != nil {
+		if data.Entitlement, err = c.entitlementCatalogRepository.GetEntitlementCatalog(ctx, ref.EntitlementId, managedSystem.Id, managedResource); err != nil {
 			return nil, fmt.Errorf("load entitlement: %w", err)
 		}
 
@@ -189,7 +194,7 @@ func (c *ConnectorService) loadOperationData(ctx context.Context, managedSystem 
 }
 
 // loadTenant loads the tenant and checks it belongs to the managed system.
-// TODO: temporary, so the wasm can be tested before a tenant exists: no tenant id gives an empty tenant. Remove once tenants are always set.
+// No tenant id means a single-tenant system: the connector gets an empty tenant.
 func (c *ConnectorService) loadTenant(ctx context.Context, managedSystem *domain.ManagedSystem, tenantId uuid.UUID) (*domain.ManagedSystemTenant, error) {
 	if tenantId == uuid.Nil {
 		return new(domain.ManagedSystemTenant), nil
