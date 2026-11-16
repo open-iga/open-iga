@@ -11,7 +11,7 @@ import (
 
 func NewApplication(ctx context.Context, appConfig *common.AppConfig, logger *slog.Logger, remotes *contract.RuntimeRemote, repository *contract.Repository) (*contract.RuntimeApplication, error) {
 	connectorService := NewConnectorService(remotes.ConnectorRuntime, repository.ManagedSystemRepository, repository.IdentityRepository, repository.AccountRepository, repository.EntitlementCatalogRepository, logger)
-	workflowService := NewWorkflowService(logger, repository.WorkflowRepository, repository.ManagedSystemRepository, repository.EntitlementCatalogRepository)
+	workflowService := NewWorkflowService(logger, remotes.WorkflowEngine, connectorService, repository.WorkflowRepository, repository.ManagedSystemRepository, repository.EntitlementCatalogRepository, repository.IdentityRepository, repository.AccountRepository)
 
 	application := &contract.RuntimeApplication{
 		AuthService:          NewAuthService(remotes.Oauth2Clients, logger, repository.SessionRepository, repository.IdentityRepository),
@@ -27,6 +27,11 @@ func NewApplication(ctx context.Context, appConfig *common.AppConfig, logger *sl
 	// TODO: for now the server will not start if the required env variable is missing; one better option is to start and prevent executing. For now stopping is preferred as this is a simpler solution
 	if err := application.ConnectorService.LoadConnectorsOnStartup(ctx); err != nil {
 		return nil, fmt.Errorf("load connectors: %w", err)
+	}
+
+	// Launching resumes the runs left from before a restart, and they need the connectors loaded above.
+	if err := remotes.WorkflowEngine.Launch(ctx, workflowService.ExecuteConnectorOperation); err != nil {
+		return nil, fmt.Errorf("launch workflow engine: %w", err)
 	}
 
 	return application, nil

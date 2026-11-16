@@ -26,6 +26,8 @@ var operationRoles = map[string][]string{
 	"ListManagedSystems":                   {domain.AdminRole, domain.DefaultIdentityRole},
 	"CreateWorkflow":                       {domain.AdminRole},
 	"GetWorkflow":                          {domain.AdminRole},
+	"StartWorkflow":                        {domain.AdminRole},
+	"GetWorkflowRun":                       {domain.AdminRole},
 }
 
 // AuthzStrictMiddleware enforces per-operation roles at the strict-handler layer.

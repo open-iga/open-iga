@@ -26,18 +26,18 @@ items:
                 kind:
                     type: string
                     enum: [account-action, entitlement]
-                action:
-                    type: string
-                    description: >-
-                        For account-action one of create, enable, disable, delete, read, list.
-                        For entitlement one of discover, grant, revoke, read.
+                    description: What the step works on. The action it runs follows from this and the workflow type, see `type` of the workflow.
                 tenant:
                     type: string
                     description: Tenant name; needed only when the system has several tenants and no entitlement tells which
                 entitlement:
                     type: string
-                    description: Id of the entitlement to grant or revoke. Required for those actions, not allowed for the others.
-            required: [system, resource, kind, action]
+                    description: Id of the entitlement the step works on. Required for kind entitlement, not allowed for account-action.
+                action:
+                    type: string
+                    readOnly: true
+                    description: Set when the workflow is saved, from its type and the step's kind. Not sent by the client.
+            required: [system, resource, kind]
         after:
             type: array
             description: Names of the earlier steps that must finish first

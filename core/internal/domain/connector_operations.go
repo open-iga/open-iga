@@ -130,10 +130,6 @@ func (d OperationData) accountExternalID() (string, error) {
 	return d.Account.ExternalId, nil
 }
 
-func isConnectorOperation(kind ConnectorKind, action string) bool {
-	return operationBuilders[kind][action] != nil
-}
-
 // NewConnectorOperation builds the typed input of the action named by kind and name from the loaded data.
 func NewConnectorOperation(kind ConnectorKind, action string, data OperationData) (ConnectorOperation, error) {
 	build, ok := operationBuilders[kind][action]

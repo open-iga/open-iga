@@ -6,7 +6,7 @@ get:
           name: name
           in: path
           required: true
-          description: Name of the workflow, e.g. onboarding
+          description: Name of the workflow
           schema:
               type: string
     responses:
@@ -19,9 +19,11 @@ get:
                         properties:
                             name:
                                 type: string
+                            type:
+                                $ref: '../schemas/workflow-type.yml'
                             steps:
                                 $ref: '../schemas/workflow-steps.yml'
-                        required: [name, steps]
+                        required: [name, type, steps]
         401:
             $ref: '../components/responses/unauthenticated-error.yml'
         404:

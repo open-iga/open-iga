@@ -9,6 +9,31 @@ import (
 	"github.com/open-iga/core/internal/domain"
 )
 
+// ExecuteConnectorOperation is the runner the workflow engine launches with: it runs the step's connector operation on the run's identity.
+func (w *WorkflowService) ExecuteConnectorOperation(ctx context.Context, step domain.WorkflowStep, identityId uuid.UUID) error {
+	managedSystem, ref, err := w.resolveOperation(ctx, step.Operation)
+	if err != nil {
+		return fmt.Errorf("run step %q: %w", step.Name, err)
+	}
+	ref.IdentityId = identityId
+
+	operation := step.Operation
+	output, err := w.connectorService.Execute(ctx, operation.System, operation.Resource, operation.Kind, operation.Action, ref)
+	if err != nil {
+		return fmt.Errorf("run step %q: %w", step.Name, err)
+	}
+
+	// Later steps load the account from the DB, so a created account must be saved here.
+	// TODO: save the results of the other operations too, once a workflow needs them.
+	if created, ok := output.(domain.AccountCreateOutput); ok {
+		if _, err := w.accountRepository.UpsertAccount(ctx, managedSystem.Id, ref.TenantId, identityId, created.AccountID); err != nil {
+			return fmt.Errorf("run step %q: save account: %w", step.Name, err)
+		}
+	}
+
+	return nil
+}
+
 // resolveOperation checks the operation against the managed systems and finds the rows it works on: the tenant and the entitlement.
 func (w *WorkflowService) resolveOperation(ctx context.Context, operation domain.WorkflowOperation) (*domain.ManagedSystem, domain.OperationRef, error) {
 	managedSystem, err := w.managedSystemRepository.GetManagedSystemByName(ctx, operation.System)

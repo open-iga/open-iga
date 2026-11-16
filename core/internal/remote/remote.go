@@ -7,6 +7,7 @@ import (
 	"github.com/open-iga/core/internal/contract"
 	"github.com/open-iga/core/internal/remote/connector_runtime/wasm"
 	"github.com/open-iga/core/internal/remote/oauth2_client"
+	"github.com/open-iga/core/internal/remote/workflow_engine"
 )
 
 // NewRemote creates runtime remotes that could be injected into the application layer
@@ -16,5 +17,6 @@ func NewRemote(appConfig *common.AppConfig, logger *slog.Logger) *contract.Runti
 			contract.Google: oauth2_client.NewGoogleOauth2Client(appConfig, logger),
 		},
 		ConnectorRuntime: wasm.NewConnectorRuntime(logger),
+		WorkflowEngine:   workflow_engine.NewEngine(appConfig.Database.URL, logger),
 	}
 }

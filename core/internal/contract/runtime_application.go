@@ -36,6 +36,9 @@ type WorkflowService interface {
 	// It returns domain.ErrWorkflowAlreadyExists when the name is taken.
 	CreateWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error
 	GetWorkflow(ctx context.Context, name string) (domain.WorkflowDefinition, error)
+	// StartWorkflow runs the saved workflow for the identity (empty for workflows that touch none) and returns the run id.
+	StartWorkflow(ctx context.Context, name string, identityId uuid.UUID) (runId string, err error)
+	GetRun(ctx context.Context, workflowName string, runId string) (domain.WorkflowRunState, error)
 }
 
 type RuntimeApplication struct {

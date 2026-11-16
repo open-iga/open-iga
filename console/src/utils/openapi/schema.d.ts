@@ -210,6 +210,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workflows/{name}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Start a run of a saved workflow. The run goes on in the background; follow it with the run id. */
+        post: operations["startWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/{name}/runs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get where a run stands, step by step in workflow order */
+        get: operations["getWorkflowRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -359,6 +393,11 @@ export interface components {
                 };
             };
         };
+        /**
+         * @description What the workflow does; it decides the action each step runs. With onboarding, an account-action step creates the account and an entitlement step grants the entitlement.
+         * @enum {string}
+         */
+        "workflow-type": "onboarding";
         /** @description The steps of a workflow. A step runs one connector operation on a resource of a managed system. Steps without `after` start together; a step with `after` starts when those steps finished. A failed step holds only the steps that come after it. */
         "workflow-steps": {
             /** @description Unique within the workflow; `after` refers to it */
@@ -369,14 +408,17 @@ export interface components {
                 system: string;
                 /** @description A resource of the system's connector, e.g. iam-user */
                 resource: string;
-                /** @enum {string} */
+                /**
+                 * @description What the step works on. The action it runs follows from this and the workflow type, see `type` of the workflow.
+                 * @enum {string}
+                 */
                 kind: "account-action" | "entitlement";
-                /** @description For account-action one of create, enable, disable, delete, read, list. For entitlement one of discover, grant, revoke, read. */
-                action: string;
                 /** @description Tenant name; needed only when the system has several tenants and no entitlement tells which */
                 tenant?: string;
-                /** @description Id of the entitlement to grant or revoke. Required for those actions, not allowed for the others. */
+                /** @description Id of the entitlement the step works on. Required for kind entitlement, not allowed for account-action. */
                 entitlement?: string;
+                /** @description Set when the workflow is saved, from its type and the step's kind. Not sent by the client. */
+                readonly action?: string;
             };
             /** @description Names of the earlier steps that must finish first */
             after?: string[];
@@ -871,8 +913,9 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description Name of the workflow, e.g. onboarding */
+                    /** @description Name of the workflow. Free to choose, e.g. onboarding-contractors */
                     name: string;
+                    type: components["schemas"]["workflow-type"];
                     steps: components["schemas"]["workflow-steps"];
                 };
             };
@@ -896,7 +939,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Name of the workflow, e.g. onboarding */
+                /** @description Name of the workflow */
                 name: string;
             };
             cookie?: never;
@@ -911,7 +954,93 @@ export interface operations {
                 content: {
                     "application/json": {
                         name: string;
+                        type: components["schemas"]["workflow-type"];
                         steps: components["schemas"]["workflow-steps"];
+                    };
+                };
+            };
+            401: components["responses"]["unauthenticated-error"];
+            404: components["responses"]["not-found-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
+    startWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the workflow, e.g. onboarding */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Id of the identity the run is about */
+                    identityId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Run started */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Id of the run */
+                        id: string;
+                    };
+                };
+            };
+            400: components["responses"]["bad-request-error"];
+            401: components["responses"]["unauthenticated-error"];
+            404: components["responses"]["not-found-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
+    getWorkflowRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the workflow, e.g. onboarding */
+                name: string;
+                /** @description Id of the run */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The state of every step of the run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        steps: {
+                            name: string;
+                            /**
+                             * @description pending: waiting for earlier steps or running. succeeded. failed: see error. blocked: an earlier step did not succeed, so it never ran.
+                             * @enum {string}
+                             */
+                            status: "pending" | "succeeded" | "failed" | "blocked";
+                            error?: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            /**
+                             * Format: date-time
+                             * @description Missing until the step starts.
+                             */
+                            startedAt?: string;
+                        }[];
                     };
                 };
             };

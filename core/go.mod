@@ -3,6 +3,7 @@ module github.com/open-iga/core
 go 1.27.3
 
 require (
+	github.com/dbos-inc/dbos-transact-golang v1.8.0
 	github.com/exaring/otelpgx v0.13.0
 	github.com/extism/go-sdk v1.7.1
 	github.com/getkin/kin-openapi v0.152.0
@@ -83,6 +84,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6 // indirect
+	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.16.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.9 // indirect
