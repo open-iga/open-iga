@@ -25,6 +25,8 @@ func TestWorkflowOperationValidate(t *testing.T) {
 		"no resource":               {System: "s", Kind: AccountActionKind, Action: "create"},
 		"unknown action":            operation(AccountActionKind, "nope"),
 		"action of another kind":    operation(AccountActionKind, "grant"),
+		"account delete":            operation(AccountActionKind, "delete"),
+		"entitlement revoke":        operation(EntitlementKind, "revoke"),
 		"grant without entitlement": operation(EntitlementKind, "grant"),
 		"entitlement on create":     withEntitlement,
 	}
@@ -37,10 +39,12 @@ func TestWorkflowOperationValidate(t *testing.T) {
 
 func TestWorkflowDefinitionValidate(t *testing.T) {
 	create := operation(AccountActionKind, "create")
+	grant := operation(EntitlementKind, "grant")
+	grant.Entitlement = uuid.New()
 	valid := WorkflowDefinition{Name: "onboarding", Steps: []WorkflowStep{
 		{Name: "create-aws", Operation: create},
 		{Name: "create-github", Operation: create},
-		{Name: "disable-aws", Operation: operation(AccountActionKind, "disable"), After: []string{"create-aws"}},
+		{Name: "grant-aws", Operation: grant, After: []string{"create-aws"}},
 	}}
 	assert.NoError(t, valid.Validate())
 
@@ -65,9 +69,7 @@ func TestWorkflowDefinitionValidate(t *testing.T) {
 
 func TestWorkflowRunValidate(t *testing.T) {
 	createDefinition := WorkflowDefinition{Name: "w", Steps: []WorkflowStep{{Name: "a", Operation: operation(AccountActionKind, "create")}}}
-	listDefinition := WorkflowDefinition{Name: "w", Steps: []WorkflowStep{{Name: "a", Operation: operation(AccountActionKind, "list")}}}
 
 	assert.NoError(t, WorkflowRun{Definition: createDefinition, IdentityId: uuid.New()}.Validate())
-	assert.NoError(t, WorkflowRun{Definition: listDefinition}.Validate(), "listing accounts needs no identity")
 	assert.ErrorIs(t, WorkflowRun{Definition: createDefinition}.Validate(), ErrInvalidWorkflow)
 }

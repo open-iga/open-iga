@@ -119,11 +119,10 @@ func TestWorkflowService_CreateWorkflow(t *testing.T) {
 		assert.ErrorIs(t, svc.CreateWorkflow(ctx, single), domain.ErrWorkflowAlreadyExists)
 	})
 
-	t.Run("rejects an action the connector does not declare", func(t *testing.T) {
-		svc, mocks := setupWorkflowService(t)
-		mocks.managedSystem.EXPECT().GetManagedSystemByName(ctx, "aws").Return(buildAwsSystem(), nil)
-		step := buildCreateStep("list-aws")
-		step.Operation.Action = "list" // the connector declares no list on iam-user
+	t.Run("rejects an action a workflow cannot run", func(t *testing.T) {
+		svc, _ := setupWorkflowService(t)
+		step := buildCreateStep("delete-aws")
+		step.Operation.Action = "delete"
 
 		err := svc.CreateWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{step}})
 		assert.ErrorIs(t, err, domain.ErrInvalidWorkflow)

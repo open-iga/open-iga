@@ -24,13 +24,16 @@ type WorkflowOperation struct {
 	Entitlement uuid.UUID `json:"entitlement,omitzero"`
 }
 
+// workflowActions is the one action a workflow can run per kind: onboarding creates an account and grants entitlements.
+var workflowActions = map[ConnectorKind]string{AccountActionKind: "create", EntitlementKind: "grant"}
+
 func (o WorkflowOperation) Validate() error {
 	if o.System == "" || o.Resource == "" {
 		return fmt.Errorf("%w: operation needs a system and a resource", ErrInvalidWorkflow)
 	}
 
-	if !isConnectorOperation(o.Kind, o.Action) {
-		return fmt.Errorf("%w: %s %q is not a connector operation", ErrInvalidWorkflow, o.Kind, o.Action)
+	if workflowActions[o.Kind] != o.Action {
+		return fmt.Errorf("%w: %s %q is not a workflow action, onboarding only creates accounts and grants entitlements", ErrInvalidWorkflow, o.Kind, o.Action)
 	}
 
 	needsEntitlement := needsEntitlement(o.Kind, o.Action)
