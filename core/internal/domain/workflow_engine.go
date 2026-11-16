@@ -13,6 +13,7 @@ var (
 	ErrWorkflowRunNotFound    = errors.New("workflow run not found")
 	ErrWorkflowStepNotGated   = errors.New("workflow step is not waiting at a gate")
 	ErrWorkflowNotFound       = errors.New("workflow not found")
+	ErrWorkflowAlreadyExists  = errors.New("workflow already exists")
 )
 
 // WorkflowStepRunner runs one step of a run about the given identity; the engine calls it, it knows nothing of what a step does.

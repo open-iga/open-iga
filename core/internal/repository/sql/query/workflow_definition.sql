@@ -1,8 +1,6 @@
--- name: UpsertWorkflowDefinition :exec
+-- name: InsertWorkflowDefinition :exec
 INSERT INTO workflow_definition(name, definition)
-VALUES ($1, $2)
-ON CONFLICT (name) DO UPDATE
-SET definition = EXCLUDED.definition, updated_at = CURRENT_TIMESTAMP;
+VALUES ($1, $2);
 
 -- name: GetWorkflowDefinition :one
 SELECT * FROM workflow_definition

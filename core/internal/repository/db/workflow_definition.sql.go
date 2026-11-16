@@ -26,19 +26,17 @@ func (q *Queries) GetWorkflowDefinition(ctx context.Context, name string) (Workf
 	return i, err
 }
 
-const upsertWorkflowDefinition = `-- name: UpsertWorkflowDefinition :exec
+const insertWorkflowDefinition = `-- name: InsertWorkflowDefinition :exec
 INSERT INTO workflow_definition(name, definition)
 VALUES ($1, $2)
-ON CONFLICT (name) DO UPDATE
-SET definition = EXCLUDED.definition, updated_at = CURRENT_TIMESTAMP
 `
 
-type UpsertWorkflowDefinitionParams struct {
+type InsertWorkflowDefinitionParams struct {
 	Name       string
 	Definition []byte
 }
 
-func (q *Queries) UpsertWorkflowDefinition(ctx context.Context, arg UpsertWorkflowDefinitionParams) error {
-	_, err := q.db.Exec(ctx, upsertWorkflowDefinition, arg.Name, arg.Definition)
+func (q *Queries) InsertWorkflowDefinition(ctx context.Context, arg InsertWorkflowDefinitionParams) error {
+	_, err := q.db.Exec(ctx, insertWorkflowDefinition, arg.Name, arg.Definition)
 	return err
 }

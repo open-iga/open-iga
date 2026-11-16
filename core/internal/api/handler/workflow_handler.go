@@ -15,16 +15,20 @@ func isInvalidWorkflow(err error) bool {
 		errors.Is(err, domain.ErrTenantNotFound) || errors.Is(err, domain.ErrEntitlementNotFound)
 }
 
-func (h *Handler) SaveWorkflow(ctx context.Context, request generated.SaveWorkflowRequestObject) (generated.SaveWorkflowResponseObject, error) {
-	err := h.application.WorkflowService.SaveWorkflow(ctx, domain.WorkflowDefinition{Name: request.Name, Steps: request.Body.Steps})
+func (h *Handler) CreateWorkflow(ctx context.Context, request generated.CreateWorkflowRequestObject) (generated.CreateWorkflowResponseObject, error) {
+	err := h.application.WorkflowService.CreateWorkflow(ctx, domain.WorkflowDefinition{Name: request.Body.Name, Steps: request.Body.Steps})
 	if err != nil {
-		if isInvalidWorkflow(err) {
-			return generated.SaveWorkflow400JSONResponse{Message: err.Error()}, nil
+		switch {
+		case errors.Is(err, domain.ErrWorkflowAlreadyExists):
+			return generated.CreateWorkflow409JSONResponse{Message: err.Error()}, nil
+		case isInvalidWorkflow(err):
+			return generated.CreateWorkflow400JSONResponse{Message: err.Error()}, nil
 		}
-		return generated.SaveWorkflow500JSONResponse{Message: err.Error()}, nil
+
+		return generated.CreateWorkflow500JSONResponse{Message: err.Error()}, nil
 	}
 
-	return generated.SaveWorkflow204Response{}, nil
+	return generated.CreateWorkflow201Response{}, nil
 }
 
 func (h *Handler) GetWorkflow(ctx context.Context, request generated.GetWorkflowRequestObject) (generated.GetWorkflowResponseObject, error) {

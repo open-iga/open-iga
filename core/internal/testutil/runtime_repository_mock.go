@@ -425,6 +425,20 @@ func (m *MockWorkflowRepository) EXPECT() *MockWorkflowRepositoryMockRecorder {
 	return m.recorder
 }
 
+// CreateWorkflow mocks base method.
+func (m *MockWorkflowRepository) CreateWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateWorkflow", ctx, definition)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateWorkflow indicates an expected call of CreateWorkflow.
+func (mr *MockWorkflowRepositoryMockRecorder) CreateWorkflow(ctx, definition any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWorkflow", reflect.TypeOf((*MockWorkflowRepository)(nil).CreateWorkflow), ctx, definition)
+}
+
 // GetWorkflow mocks base method.
 func (m *MockWorkflowRepository) GetWorkflow(ctx context.Context, name string) (domain.WorkflowDefinition, error) {
 	m.ctrl.T.Helper()
@@ -438,20 +452,6 @@ func (m *MockWorkflowRepository) GetWorkflow(ctx context.Context, name string) (
 func (mr *MockWorkflowRepositoryMockRecorder) GetWorkflow(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorkflow", reflect.TypeOf((*MockWorkflowRepository)(nil).GetWorkflow), ctx, name)
-}
-
-// SaveWorkflow mocks base method.
-func (m *MockWorkflowRepository) SaveWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveWorkflow", ctx, definition)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SaveWorkflow indicates an expected call of SaveWorkflow.
-func (mr *MockWorkflowRepositoryMockRecorder) SaveWorkflow(ctx, definition any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveWorkflow", reflect.TypeOf((*MockWorkflowRepository)(nil).SaveWorkflow), ctx, definition)
 }
 
 // MockEntitlementCatalogRepository is a mock of EntitlementCatalogRepository interface.

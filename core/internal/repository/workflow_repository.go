@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/open-iga/core/internal/domain"
 	"github.com/open-iga/core/internal/repository/db"
 )
@@ -19,13 +20,18 @@ func NewWorkflowRepository(queries *db.Queries) *WorkflowRepository {
 	return &WorkflowRepository{queries: queries}
 }
 
-func (w *WorkflowRepository) SaveWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error {
+func (w *WorkflowRepository) CreateWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error {
 	raw, err := json.Marshal(definition)
 	if err != nil {
 		return fmt.Errorf("failed to marshal workflow %q: %w", definition.Name, err)
 	}
-	if err := w.queries.UpsertWorkflowDefinition(ctx, db.UpsertWorkflowDefinitionParams{Name: definition.Name, Definition: raw}); err != nil {
-		return fmt.Errorf("failed to save workflow %q: %w", definition.Name, err)
+	if err := w.queries.InsertWorkflowDefinition(ctx, db.InsertWorkflowDefinitionParams{Name: definition.Name, Definition: raw}); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgUniqueViolation {
+			return fmt.Errorf("%w: %s", domain.ErrWorkflowAlreadyExists, definition.Name)
+		}
+
+		return fmt.Errorf("failed to create workflow %q: %w", definition.Name, err)
 	}
 	return nil
 }

@@ -23,21 +23,21 @@ func TestWorkflowRepository(t *testing.T) {
 		},
 	}}
 
-	t.Run("saves a workflow and reads it back unchanged", func(t *testing.T) {
-		require.NoError(t, repository.WorkflowRepository.SaveWorkflow(t.Context(), definition))
+	t.Run("creates a workflow and reads it back unchanged", func(t *testing.T) {
+		require.NoError(t, repository.WorkflowRepository.CreateWorkflow(t.Context(), definition))
 
 		loaded, err := repository.WorkflowRepository.GetWorkflow(t.Context(), "repository-test")
 		require.NoError(t, err)
 		assert.Equal(t, definition, loaded)
 	})
 
-	t.Run("saving again replaces the workflow", func(t *testing.T) {
-		replaced := domain.WorkflowDefinition{Name: "repository-test", Steps: definition.Steps[:1]}
-		require.NoError(t, repository.WorkflowRepository.SaveWorkflow(t.Context(), replaced))
+	t.Run("a second workflow with the same name is refused and the first stays", func(t *testing.T) {
+		other := domain.WorkflowDefinition{Name: "repository-test", Steps: definition.Steps[:1]}
+		assert.ErrorIs(t, repository.WorkflowRepository.CreateWorkflow(t.Context(), other), domain.ErrWorkflowAlreadyExists)
 
 		loaded, err := repository.WorkflowRepository.GetWorkflow(t.Context(), "repository-test")
 		require.NoError(t, err)
-		assert.Equal(t, replaced, loaded)
+		assert.Equal(t, definition, loaded)
 	})
 
 	t.Run("returns not found for an unknown workflow", func(t *testing.T) {

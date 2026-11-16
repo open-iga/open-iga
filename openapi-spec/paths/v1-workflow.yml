@@ -28,29 +28,3 @@ get:
             $ref: '../components/responses/not-found-error.yml'
         500:
             $ref: '../components/responses/internal-server-error.yml'
-put:
-    operationId: saveWorkflow
-    description: >-
-        Create or replace a workflow. The systems, resources, tenants and entitlements its steps name must exist;
-        otherwise nothing is saved. Runs already started keep the steps they started with.
-    parameters:
-        - *workflowName
-    requestBody:
-        required: true
-        content:
-            'application/json':
-                schema:
-                    type: object
-                    properties:
-                        steps:
-                            $ref: '../schemas/workflow-steps.yml'
-                    required: [steps]
-    responses:
-        204:
-            description: Workflow saved
-        400:
-            $ref: '../components/responses/bad-request-error.yml'
-        401:
-            $ref: '../components/responses/unauthenticated-error.yml'
-        500:
-            $ref: '../components/responses/internal-server-error.yml'

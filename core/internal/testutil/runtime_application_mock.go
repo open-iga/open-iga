@@ -350,6 +350,20 @@ func (mr *MockWorkflowServiceMockRecorder) Continue(ctx, workflowName, runId, st
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Continue", reflect.TypeOf((*MockWorkflowService)(nil).Continue), ctx, workflowName, runId, stepName)
 }
 
+// CreateWorkflow mocks base method.
+func (m *MockWorkflowService) CreateWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateWorkflow", ctx, definition)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateWorkflow indicates an expected call of CreateWorkflow.
+func (mr *MockWorkflowServiceMockRecorder) CreateWorkflow(ctx, definition any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWorkflow", reflect.TypeOf((*MockWorkflowService)(nil).CreateWorkflow), ctx, definition)
+}
+
 // GetRun mocks base method.
 func (m *MockWorkflowService) GetRun(ctx context.Context, workflowName, runId string) (domain.WorkflowRunState, error) {
 	m.ctrl.T.Helper()
@@ -378,20 +392,6 @@ func (m *MockWorkflowService) GetWorkflow(ctx context.Context, name string) (dom
 func (mr *MockWorkflowServiceMockRecorder) GetWorkflow(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorkflow", reflect.TypeOf((*MockWorkflowService)(nil).GetWorkflow), ctx, name)
-}
-
-// SaveWorkflow mocks base method.
-func (m *MockWorkflowService) SaveWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveWorkflow", ctx, definition)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SaveWorkflow indicates an expected call of SaveWorkflow.
-func (mr *MockWorkflowServiceMockRecorder) SaveWorkflow(ctx, definition any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveWorkflow", reflect.TypeOf((*MockWorkflowService)(nil).SaveWorkflow), ctx, definition)
 }
 
 // StartWorkflow mocks base method.

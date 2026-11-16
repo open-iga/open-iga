@@ -75,19 +75,19 @@ func (w *WorkflowService) checkEngineReady() error {
 	}
 }
 
-func (w *WorkflowService) SaveWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error {
+func (w *WorkflowService) CreateWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error {
 	if err := definition.Validate(); err != nil {
-		return fmt.Errorf("save workflow: %w", err)
+		return fmt.Errorf("create workflow: %w", err)
 	}
 	// A wrong step fails when the admin saves it, not halfway through someone's run.
 	for _, step := range definition.Steps {
 		if _, _, err := w.resolveOperation(ctx, step.Operation); err != nil {
-			return fmt.Errorf("save workflow: step %q: %w", step.Name, err)
+			return fmt.Errorf("create workflow: step %q: %w", step.Name, err)
 		}
 	}
 
-	if err := w.workflowRepository.SaveWorkflow(ctx, definition); err != nil {
-		return fmt.Errorf("save workflow: %w", err)
+	if err := w.workflowRepository.CreateWorkflow(ctx, definition); err != nil {
+		return fmt.Errorf("create workflow: %w", err)
 	}
 	return nil
 }

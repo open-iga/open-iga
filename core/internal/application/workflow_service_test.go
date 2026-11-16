@@ -72,7 +72,7 @@ func buildGrantStep(name string, entitlementId uuid.UUID, after ...string) domai
 	}
 }
 
-func TestWorkflowService_SaveWorkflow(t *testing.T) {
+func TestWorkflowService_CreateWorkflow(t *testing.T) {
 	ctx := context.Background()
 	tenantId, entitlementId := uuid.New(), uuid.New()
 	definition := domain.WorkflowDefinition{Name: "onboarding", Steps: []domain.WorkflowStep{
@@ -87,9 +87,9 @@ func TestWorkflowService_SaveWorkflow(t *testing.T) {
 			return []*domain.ManagedSystemTenant{buildTenant(tenantId, "main")}, nil
 		}).Times(2)
 		mocks.entitlement.EXPECT().GetEntitlementCatalog(ctx, entitlementId, "system-1", "iam-user").Return(&domain.EntitlementCatalog{Id: entitlementId.String(), TenantId: tenantId.String(), Resource: "iam-user"}, nil)
-		mocks.workflowRepo.EXPECT().SaveWorkflow(ctx, definition).Return(nil)
+		mocks.workflowRepo.EXPECT().CreateWorkflow(ctx, definition).Return(nil)
 
-		require.NoError(t, svc.SaveWorkflow(ctx, definition))
+		require.NoError(t, svc.CreateWorkflow(ctx, definition))
 	})
 
 	t.Run("saves a workflow on a system without tenants and adds no tenant", func(t *testing.T) {
@@ -97,9 +97,9 @@ func TestWorkflowService_SaveWorkflow(t *testing.T) {
 		mocks.managedSystem.EXPECT().GetManagedSystemByName(ctx, "aws").Return(buildAwsSystem(), nil)
 		mocks.managedSystem.EXPECT().ListManagedSystemTenants(ctx, "system-1").Return(nil, nil)
 		single := domain.WorkflowDefinition{Name: "onboarding", Steps: []domain.WorkflowStep{buildCreateStep("create-aws")}}
-		mocks.workflowRepo.EXPECT().SaveWorkflow(ctx, single).Return(nil)
+		mocks.workflowRepo.EXPECT().CreateWorkflow(ctx, single).Return(nil)
 
-		require.NoError(t, svc.SaveWorkflow(ctx, single))
+		require.NoError(t, svc.CreateWorkflow(ctx, single))
 	})
 
 	t.Run("rejects a named tenant on a system without tenants", func(t *testing.T) {
@@ -109,15 +109,25 @@ func TestWorkflowService_SaveWorkflow(t *testing.T) {
 		step := buildCreateStep("create-aws")
 		step.Operation.Tenant = "main"
 
-		err := svc.SaveWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{step}})
+		err := svc.CreateWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{step}})
 		assert.ErrorIs(t, err, domain.ErrTenantNotFound)
+	})
+
+	t.Run("refuses a name that is taken", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.managedSystem.EXPECT().GetManagedSystemByName(ctx, "aws").Return(buildAwsSystem(), nil)
+		mocks.managedSystem.EXPECT().ListManagedSystemTenants(ctx, "system-1").Return(nil, nil)
+		single := domain.WorkflowDefinition{Name: "onboarding", Steps: []domain.WorkflowStep{buildCreateStep("create-aws")}}
+		mocks.workflowRepo.EXPECT().CreateWorkflow(ctx, single).Return(domain.ErrWorkflowAlreadyExists)
+
+		assert.ErrorIs(t, svc.CreateWorkflow(ctx, single), domain.ErrWorkflowAlreadyExists)
 	})
 
 	t.Run("rejects a system that does not exist", func(t *testing.T) {
 		svc, mocks := setupWorkflowService(t)
 		mocks.managedSystem.EXPECT().GetManagedSystemByName(ctx, "aws").Return(nil, domain.ErrManagedSystemNotFound)
 
-		err := svc.SaveWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{buildCreateStep("create-aws")}})
+		err := svc.CreateWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{buildCreateStep("create-aws")}})
 		assert.ErrorIs(t, err, domain.ErrManagedSystemNotFound)
 	})
 
@@ -127,7 +137,7 @@ func TestWorkflowService_SaveWorkflow(t *testing.T) {
 		system.ConnectorSpec.Actions = map[string]domain.AccountActions{"other": {}}
 		mocks.managedSystem.EXPECT().GetManagedSystemByName(ctx, "aws").Return(system, nil)
 
-		err := svc.SaveWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{buildCreateStep("create-aws")}})
+		err := svc.CreateWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{buildCreateStep("create-aws")}})
 		assert.ErrorIs(t, err, domain.ErrInvalidWorkflow)
 	})
 
@@ -137,7 +147,7 @@ func TestWorkflowService_SaveWorkflow(t *testing.T) {
 		mocks.managedSystem.EXPECT().ListManagedSystemTenants(ctx, "system-1").Return([]*domain.ManagedSystemTenant{buildTenant(tenantId, "main")}, nil)
 		mocks.entitlement.EXPECT().GetEntitlementCatalog(ctx, entitlementId, "system-1", "iam-user").Return(&domain.EntitlementCatalog{Id: entitlementId.String(), TenantId: uuid.NewString(), Resource: "iam-user"}, nil)
 
-		err := svc.SaveWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{buildGrantStep("grant", entitlementId)}})
+		err := svc.CreateWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{buildGrantStep("grant", entitlementId)}})
 		assert.ErrorIs(t, err, domain.ErrTenantNotFound)
 	})
 
@@ -146,7 +156,7 @@ func TestWorkflowService_SaveWorkflow(t *testing.T) {
 		mocks.managedSystem.EXPECT().GetManagedSystemByName(ctx, "aws").Return(buildAwsSystem(), nil)
 		mocks.entitlement.EXPECT().GetEntitlementCatalog(ctx, entitlementId, "system-1", "iam-user").Return(nil, domain.ErrEntitlementNotFound)
 
-		err := svc.SaveWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{buildGrantStep("grant", entitlementId)}})
+		err := svc.CreateWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{buildGrantStep("grant", entitlementId)}})
 		assert.ErrorIs(t, err, domain.ErrEntitlementNotFound)
 	})
 
@@ -155,7 +165,7 @@ func TestWorkflowService_SaveWorkflow(t *testing.T) {
 		mocks.managedSystem.EXPECT().GetManagedSystemByName(ctx, "aws").Return(buildAwsSystem(), nil)
 		mocks.managedSystem.EXPECT().ListManagedSystemTenants(ctx, "system-1").Return([]*domain.ManagedSystemTenant{buildTenant(uuid.New(), "a"), buildTenant(uuid.New(), "b")}, nil)
 
-		err := svc.SaveWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{buildCreateStep("create-aws")}})
+		err := svc.CreateWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{buildCreateStep("create-aws")}})
 		assert.ErrorIs(t, err, domain.ErrInvalidWorkflow)
 	})
 }

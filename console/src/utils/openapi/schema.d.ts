@@ -176,6 +176,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workflows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Create a workflow. The systems, resources, tenants and entitlements its steps name must exist; otherwise nothing is saved. A workflow with the same name is not replaced. */
+        post: operations["createWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workflows/{name}": {
         parameters: {
             query?: never;
@@ -185,8 +202,7 @@ export interface paths {
         };
         /** @description Get a saved workflow */
         get: operations["getWorkflow"];
-        /** @description Create or replace a workflow. The systems, resources, tenants and entitlements its steps name must exist; otherwise nothing is saved. Runs already started keep the steps they started with. */
-        put: operations["saveWorkflow"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -898,6 +914,36 @@ export interface operations {
             500: components["responses"]["internal-server-error"];
         };
     };
+    createWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Name of the workflow, e.g. onboarding */
+                    name: string;
+                    steps: components["schemas"]["workflow-steps"];
+                };
+            };
+        };
+        responses: {
+            /** @description Workflow created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["bad-request-error"];
+            401: components["responses"]["unauthenticated-error"];
+            409: components["responses"]["conflict-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
     getWorkflow: {
         parameters: {
             query?: never;
@@ -924,36 +970,6 @@ export interface operations {
             };
             401: components["responses"]["unauthenticated-error"];
             404: components["responses"]["not-found-error"];
-            500: components["responses"]["internal-server-error"];
-        };
-    };
-    saveWorkflow: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Name of the workflow, e.g. onboarding */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    steps: components["schemas"]["workflow-steps"];
-                };
-            };
-        };
-        responses: {
-            /** @description Workflow saved */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["bad-request-error"];
-            401: components["responses"]["unauthenticated-error"];
             500: components["responses"]["internal-server-error"];
         };
     };

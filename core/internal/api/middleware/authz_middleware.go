@@ -24,7 +24,7 @@ var operationRoles = map[string][]string{
 	"OnboardManagedSystemTenant":           {domain.AdminRole},
 	"ListManagedSystemTenants":             {domain.AdminRole, domain.DefaultIdentityRole},
 	"ListManagedSystems":                   {domain.AdminRole, domain.DefaultIdentityRole},
-	"SaveWorkflow":                         {domain.AdminRole},
+	"CreateWorkflow":                       {domain.AdminRole},
 	"GetWorkflow":                          {domain.AdminRole},
 	"StartWorkflow":                        {domain.AdminRole},
 	"GetWorkflowRun":                       {domain.AdminRole},

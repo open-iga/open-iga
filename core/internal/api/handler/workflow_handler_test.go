@@ -43,15 +43,22 @@ var createStep = domain.WorkflowStep{
 	Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.AccountActionKind, Action: "create"},
 }
 
-func TestHandler_SaveWorkflow(t *testing.T) {
-	body := `{"steps": [` + createStepJSON + `]}`
+func TestHandler_CreateWorkflow(t *testing.T) {
+	body := `{"name": "onboarding", "steps": [` + createStepJSON + `]}`
 	definition := domain.WorkflowDefinition{Name: "onboarding", Steps: []domain.WorkflowStep{createStep}}
 
-	t.Run("returns 204 when the workflow is saved", func(t *testing.T) {
+	t.Run("returns 201 when the workflow is created", func(t *testing.T) {
 		router, service := setupRouterWithMockWorkflowService(t)
-		service.EXPECT().SaveWorkflow(gomock.Any(), definition).Return(nil)
+		service.EXPECT().CreateWorkflow(gomock.Any(), definition).Return(nil)
 
-		assert.Equal(t, http.StatusNoContent, sendRequest(router, http.MethodPut, "/api/v1/workflows/onboarding", body).Code)
+		assert.Equal(t, http.StatusCreated, sendRequest(router, http.MethodPost, "/api/v1/workflows", body).Code)
+	})
+
+	t.Run("returns 409 when the name is taken", func(t *testing.T) {
+		router, service := setupRouterWithMockWorkflowService(t)
+		service.EXPECT().CreateWorkflow(gomock.Any(), definition).Return(domain.ErrWorkflowAlreadyExists)
+
+		assert.Equal(t, http.StatusConflict, sendRequest(router, http.MethodPost, "/api/v1/workflows", body).Code)
 	})
 
 	for name, err := range map[string]error{
@@ -62,9 +69,9 @@ func TestHandler_SaveWorkflow(t *testing.T) {
 	} {
 		t.Run("returns 400 when "+name, func(t *testing.T) {
 			router, service := setupRouterWithMockWorkflowService(t)
-			service.EXPECT().SaveWorkflow(gomock.Any(), definition).Return(err)
+			service.EXPECT().CreateWorkflow(gomock.Any(), definition).Return(err)
 
-			assert.Equal(t, http.StatusBadRequest, sendRequest(router, http.MethodPut, "/api/v1/workflows/onboarding", body).Code)
+			assert.Equal(t, http.StatusBadRequest, sendRequest(router, http.MethodPost, "/api/v1/workflows", body).Code)
 		})
 	}
 }

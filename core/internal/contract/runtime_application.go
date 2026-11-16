@@ -32,8 +32,9 @@ type ManagedSystemService interface {
 }
 
 type WorkflowService interface {
-	// SaveWorkflow checks every step against the managed systems, tenants and entitlements, then saves the definition under its name.
-	SaveWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error
+	// CreateWorkflow checks every step against the managed systems, tenants and entitlements, then saves the definition under its name.
+	// It returns domain.ErrWorkflowAlreadyExists when the name is taken.
+	CreateWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error
 	GetWorkflow(ctx context.Context, name string) (domain.WorkflowDefinition, error)
 	// StartWorkflow runs the saved workflow for the identity (empty for workflows that touch none) and returns the run id.
 	StartWorkflow(ctx context.Context, name string, identityId uuid.UUID) (runId string, err error)

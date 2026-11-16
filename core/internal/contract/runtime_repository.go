@@ -42,8 +42,8 @@ type AccountRepository interface {
 
 // WorkflowRepository keeps the workflow definitions admins save, by name.
 type WorkflowRepository interface {
-	// SaveWorkflow creates the definition or replaces the one with the same name.
-	SaveWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error
+	// CreateWorkflow returns domain.ErrWorkflowAlreadyExists when a definition has the name already.
+	CreateWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error
 	// GetWorkflow returns domain.ErrWorkflowNotFound when no definition has the name.
 	GetWorkflow(ctx context.Context, name string) (domain.WorkflowDefinition, error)
 }
