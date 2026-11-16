@@ -5,8 +5,10 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/open-iga/core/internal/contract"
 	"github.com/open-iga/core/internal/domain"
 	"github.com/open-iga/core/internal/testutil"
@@ -89,5 +91,74 @@ func TestHandler_GetWorkflow(t *testing.T) {
 		service.EXPECT().GetWorkflow(gomock.Any(), "nope").Return(domain.WorkflowDefinition{}, domain.ErrWorkflowNotFound)
 
 		assert.Equal(t, http.StatusNotFound, sendRequest(router, http.MethodGet, "/api/v1/workflows/nope", "").Code)
+	})
+}
+
+func TestHandler_StartWorkflow(t *testing.T) {
+	identityId := uuid.New()
+	body := `{"identityId": "` + identityId.String() + `"}`
+
+	t.Run("returns 201 with the run id", func(t *testing.T) {
+		router, service := setupRouterWithMockWorkflowService(t)
+		service.EXPECT().StartWorkflow(gomock.Any(), "onboarding", identityId).Return("run-1", nil)
+
+		rec := sendRequest(router, http.MethodPost, "/api/v1/workflows/onboarding/runs", body)
+		assert.Equal(t, http.StatusCreated, rec.Code)
+		assert.JSONEq(t, `{"id": "run-1"}`, rec.Body.String())
+	})
+
+	t.Run("starts a run about no identity when none is sent", func(t *testing.T) {
+		router, service := setupRouterWithMockWorkflowService(t)
+		service.EXPECT().StartWorkflow(gomock.Any(), "onboarding", uuid.Nil).Return("run-1", nil)
+
+		assert.Equal(t, http.StatusCreated, sendRequest(router, http.MethodPost, "/api/v1/workflows/onboarding/runs", `{}`).Code)
+	})
+
+	t.Run("returns 400 for an identity id that is not an id", func(t *testing.T) {
+		router, _ := setupRouterWithMockWorkflowService(t)
+
+		assert.Equal(t, http.StatusBadRequest, sendRequest(router, http.MethodPost, "/api/v1/workflows/onboarding/runs", `{"identityId": "x"}`).Code)
+	})
+
+	t.Run("returns 400 when the run needs an identity it was not given", func(t *testing.T) {
+		router, service := setupRouterWithMockWorkflowService(t)
+		service.EXPECT().StartWorkflow(gomock.Any(), "onboarding", uuid.Nil).Return("", domain.ErrInvalidWorkflow)
+
+		assert.Equal(t, http.StatusBadRequest, sendRequest(router, http.MethodPost, "/api/v1/workflows/onboarding/runs", `{}`).Code)
+	})
+
+	for name, err := range map[string]error{"workflow": domain.ErrWorkflowNotFound, "identity": domain.ErrNoIdentityFound} {
+		t.Run("returns 404 for an unknown "+name, func(t *testing.T) {
+			router, service := setupRouterWithMockWorkflowService(t)
+			service.EXPECT().StartWorkflow(gomock.Any(), "onboarding", identityId).Return("", err)
+
+			assert.Equal(t, http.StatusNotFound, sendRequest(router, http.MethodPost, "/api/v1/workflows/onboarding/runs", body).Code)
+		})
+	}
+}
+
+func TestHandler_GetWorkflowRun(t *testing.T) {
+	t.Run("returns the state and the times of every step", func(t *testing.T) {
+		router, service := setupRouterWithMockWorkflowService(t)
+		created := time.Date(2026, 11, 15, 10, 0, 0, 0, time.UTC)
+		started := created.Add(time.Second)
+		service.EXPECT().GetRun(gomock.Any(), "onboarding", "run-1").Return(domain.WorkflowRunState{Id: "run-1", Steps: []domain.WorkflowStepState{
+			{Name: "create-aws", Status: domain.WorkflowStepSucceeded, CreatedAt: created, UpdatedAt: started, StartedAt: started},
+			{Name: "grant-admin", Status: domain.WorkflowStepFailed, Error: "boom", CreatedAt: created, UpdatedAt: created},
+		}}, nil)
+
+		rec := sendRequest(router, http.MethodGet, "/api/v1/workflows/onboarding/runs/run-1", "")
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.JSONEq(t, `{"id": "run-1", "steps": [
+			{"name": "create-aws", "status": "succeeded", "createdAt": "2026-11-15T10:00:00Z", "updatedAt": "2026-11-15T10:00:01Z", "startedAt": "2026-11-15T10:00:01Z"},
+			{"name": "grant-admin", "status": "failed", "error": "boom", "createdAt": "2026-11-15T10:00:00Z", "updatedAt": "2026-11-15T10:00:00Z"}
+		]}`, rec.Body.String())
+	})
+
+	t.Run("returns 404 for an unknown run", func(t *testing.T) {
+		router, service := setupRouterWithMockWorkflowService(t)
+		service.EXPECT().GetRun(gomock.Any(), "onboarding", "run-1").Return(domain.WorkflowRunState{}, domain.ErrWorkflowRunNotFound)
+
+		assert.Equal(t, http.StatusNotFound, sendRequest(router, http.MethodGet, "/api/v1/workflows/onboarding/runs/run-1", "").Code)
 	})
 }

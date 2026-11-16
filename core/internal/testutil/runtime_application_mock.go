@@ -350,6 +350,21 @@ func (mr *MockWorkflowServiceMockRecorder) CreateWorkflow(ctx, definition any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWorkflow", reflect.TypeOf((*MockWorkflowService)(nil).CreateWorkflow), ctx, definition)
 }
 
+// GetRun mocks base method.
+func (m *MockWorkflowService) GetRun(ctx context.Context, workflowName, runId string) (domain.WorkflowRunState, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRun", ctx, workflowName, runId)
+	ret0, _ := ret[0].(domain.WorkflowRunState)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRun indicates an expected call of GetRun.
+func (mr *MockWorkflowServiceMockRecorder) GetRun(ctx, workflowName, runId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRun", reflect.TypeOf((*MockWorkflowService)(nil).GetRun), ctx, workflowName, runId)
+}
+
 // GetWorkflow mocks base method.
 func (m *MockWorkflowService) GetWorkflow(ctx context.Context, name string) (domain.WorkflowDefinition, error) {
 	m.ctrl.T.Helper()
@@ -363,4 +378,19 @@ func (m *MockWorkflowService) GetWorkflow(ctx context.Context, name string) (dom
 func (mr *MockWorkflowServiceMockRecorder) GetWorkflow(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorkflow", reflect.TypeOf((*MockWorkflowService)(nil).GetWorkflow), ctx, name)
+}
+
+// StartWorkflow mocks base method.
+func (m *MockWorkflowService) StartWorkflow(ctx context.Context, name string, identityId uuid.UUID) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StartWorkflow", ctx, name, identityId)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StartWorkflow indicates an expected call of StartWorkflow.
+func (mr *MockWorkflowServiceMockRecorder) StartWorkflow(ctx, name, identityId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartWorkflow", reflect.TypeOf((*MockWorkflowService)(nil).StartWorkflow), ctx, name, identityId)
 }

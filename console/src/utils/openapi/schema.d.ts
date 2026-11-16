@@ -210,6 +210,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workflows/{name}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Start a run of a saved workflow. The run goes on in the background; follow it with the run id. */
+        post: operations["startWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/{name}/runs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get where a run stands, step by step in workflow order */
+        get: operations["getWorkflowRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -912,6 +946,91 @@ export interface operations {
                     "application/json": {
                         name: string;
                         steps: components["schemas"]["workflow-steps"];
+                    };
+                };
+            };
+            401: components["responses"]["unauthenticated-error"];
+            404: components["responses"]["not-found-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
+    startWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the workflow, e.g. onboarding */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Id of the identity the run is about. Leave out for workflows that work on no identity. */
+                    identityId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Run started */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Id of the run */
+                        id: string;
+                    };
+                };
+            };
+            400: components["responses"]["bad-request-error"];
+            401: components["responses"]["unauthenticated-error"];
+            404: components["responses"]["not-found-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
+    getWorkflowRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the workflow, e.g. onboarding */
+                name: string;
+                /** @description Id of the run */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The state of every step of the run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        steps: {
+                            name: string;
+                            /**
+                             * @description pending: waiting for earlier steps or running. succeeded. failed: see error. blocked: an earlier step did not succeed, so it never ran.
+                             * @enum {string}
+                             */
+                            status: "pending" | "succeeded" | "failed" | "blocked";
+                            error?: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            /**
+                             * Format: date-time
+                             * @description Missing until the step starts.
+                             */
+                            startedAt?: string;
+                        }[];
                     };
                 };
             };

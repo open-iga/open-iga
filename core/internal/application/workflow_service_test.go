@@ -13,22 +13,27 @@ import (
 )
 
 type workflowMocks struct {
-	workflowRepo  *testutil.MockWorkflowRepository
-	managedSystem *testutil.MockManagedSystemRepository
-	entitlement   *testutil.MockEntitlementCatalogRepository
+	engine           *testutil.MockWorkflowEngine
+	connectorService *testutil.MockConnectorService
+	workflowRepo     *testutil.MockWorkflowRepository
+	managedSystem    *testutil.MockManagedSystemRepository
+	entitlement      *testutil.MockEntitlementCatalogRepository
+	identity         *testutil.MockIdentityRepository
+	account          *testutil.MockAccountRepository
 }
 
 func setupWorkflowService(t *testing.T) (*WorkflowService, workflowMocks) {
-	t.Helper()
-
 	ctrl := gomock.NewController(t)
 	mocks := workflowMocks{
-		workflowRepo:  testutil.NewMockWorkflowRepository(ctrl),
-		managedSystem: testutil.NewMockManagedSystemRepository(ctrl),
-		entitlement:   testutil.NewMockEntitlementCatalogRepository(ctrl),
+		engine:           testutil.NewMockWorkflowEngine(ctrl),
+		connectorService: testutil.NewMockConnectorService(ctrl),
+		workflowRepo:     testutil.NewMockWorkflowRepository(ctrl),
+		managedSystem:    testutil.NewMockManagedSystemRepository(ctrl),
+		entitlement:      testutil.NewMockEntitlementCatalogRepository(ctrl),
+		identity:         testutil.NewMockIdentityRepository(ctrl),
+		account:          testutil.NewMockAccountRepository(ctrl),
 	}
-	svc := NewWorkflowService(testutil.NewTestLogger(), mocks.workflowRepo, mocks.managedSystem, mocks.entitlement)
-
+	svc := NewWorkflowService(testutil.NewTestLogger(), mocks.engine, mocks.connectorService, mocks.workflowRepo, mocks.managedSystem, mocks.entitlement, mocks.identity, mocks.account)
 	return svc, mocks
 }
 
@@ -178,4 +183,71 @@ func TestWorkflowService_CreateWorkflow(t *testing.T) {
 		err := svc.CreateWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{buildCreateStep("create-aws")}})
 		assert.ErrorIs(t, err, domain.ErrInvalidWorkflow)
 	})
+}
+
+func TestWorkflowService_StartWorkflow(t *testing.T) {
+	ctx := context.Background()
+	identityId := uuid.New()
+	definition := domain.WorkflowDefinition{Name: "onboarding", Steps: []domain.WorkflowStep{buildCreateStep("create-aws")}}
+
+	t.Run("starts a run of the saved workflow for the identity", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.workflowRepo.EXPECT().GetWorkflow(ctx, "onboarding").Return(definition, nil)
+		mocks.identity.EXPECT().GetIdentityById(ctx, identityId).Return(&domain.Identity{}, nil)
+		mocks.engine.EXPECT().Start(ctx, gomock.Any(), domain.WorkflowRun{Definition: definition, IdentityId: identityId}).Return(nil)
+
+		runId, err := svc.StartWorkflow(ctx, "onboarding", identityId)
+		require.NoError(t, err)
+		assert.NotEmpty(t, runId)
+	})
+
+	t.Run("starts a workflow that touches no identity without looking one up", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		listStep := buildCreateStep("list-aws")
+		listStep.Operation.Action = "list"
+		listDefinition := domain.WorkflowDefinition{Name: "listing", Steps: []domain.WorkflowStep{listStep}}
+		mocks.workflowRepo.EXPECT().GetWorkflow(ctx, "listing").Return(listDefinition, nil)
+		mocks.engine.EXPECT().Start(ctx, gomock.Any(), domain.WorkflowRun{Definition: listDefinition, IdentityId: uuid.Nil}).Return(nil)
+
+		_, err := svc.StartWorkflow(ctx, "listing", uuid.Nil)
+		require.NoError(t, err)
+	})
+
+	t.Run("refuses a run that needs an identity when none is given", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.workflowRepo.EXPECT().GetWorkflow(ctx, "onboarding").Return(definition, nil)
+		mocks.engine.EXPECT().Start(ctx, gomock.Any(), domain.WorkflowRun{Definition: definition, IdentityId: uuid.Nil}).Return(domain.ErrInvalidWorkflow)
+
+		_, err := svc.StartWorkflow(ctx, "onboarding", uuid.Nil)
+		assert.ErrorIs(t, err, domain.ErrInvalidWorkflow)
+	})
+
+	t.Run("fails when the workflow does not exist", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.workflowRepo.EXPECT().GetWorkflow(ctx, "nope").Return(domain.WorkflowDefinition{}, domain.ErrWorkflowNotFound)
+
+		_, err := svc.StartWorkflow(ctx, "nope", identityId)
+		assert.ErrorIs(t, err, domain.ErrWorkflowNotFound)
+	})
+
+	t.Run("does not start a run for an unknown identity", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.workflowRepo.EXPECT().GetWorkflow(ctx, "onboarding").Return(definition, nil)
+		mocks.identity.EXPECT().GetIdentityById(ctx, identityId).Return(nil, domain.ErrNoIdentityFound)
+
+		_, err := svc.StartWorkflow(ctx, "onboarding", identityId)
+		assert.ErrorIs(t, err, domain.ErrNoIdentityFound)
+	})
+}
+
+func TestWorkflowService_GetRun(t *testing.T) {
+	svc, mocks := setupWorkflowService(t)
+	mocks.engine.EXPECT().Get(gomock.Any(), "run-1").Return(domain.WorkflowRunState{Id: "run-1", Name: "onboarding"}, nil).Times(2)
+
+	state, err := svc.GetRun(context.Background(), "onboarding", "run-1")
+	require.NoError(t, err)
+	assert.Equal(t, "run-1", state.Id)
+
+	_, err = svc.GetRun(context.Background(), "rehire", "run-1")
+	assert.ErrorIs(t, err, domain.ErrWorkflowRunNotFound)
 }

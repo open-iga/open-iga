@@ -5,25 +5,34 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/google/uuid"
 	"github.com/open-iga/core/internal/contract"
 	"github.com/open-iga/core/internal/domain"
 )
 
 type WorkflowService struct {
 	logger                       *slog.Logger
+	workflowEngine               contract.WorkflowEngine
+	connectorService             contract.ConnectorService
 	workflowRepository           contract.WorkflowRepository
 	managedSystemRepository      contract.ManagedSystemRepository
 	entitlementCatalogRepository contract.EntitlementCatalogRepository
+	identityRepository           contract.IdentityRepository
+	accountRepository            contract.AccountRepository
 }
 
 var _ contract.WorkflowService = (*WorkflowService)(nil)
 
-func NewWorkflowService(logger *slog.Logger, workflowRepository contract.WorkflowRepository, managedSystemRepository contract.ManagedSystemRepository, entitlementCatalogRepository contract.EntitlementCatalogRepository) *WorkflowService {
+func NewWorkflowService(logger *slog.Logger, workflowEngine contract.WorkflowEngine, connectorService contract.ConnectorService, workflowRepository contract.WorkflowRepository, managedSystemRepository contract.ManagedSystemRepository, entitlementCatalogRepository contract.EntitlementCatalogRepository, identityRepository contract.IdentityRepository, accountRepository contract.AccountRepository) *WorkflowService {
 	return &WorkflowService{
-		logger:                       logger,
-		workflowRepository:           workflowRepository,
-		managedSystemRepository:      managedSystemRepository,
-		entitlementCatalogRepository: entitlementCatalogRepository,
+		logger,
+		workflowEngine,
+		connectorService,
+		workflowRepository,
+		managedSystemRepository,
+		entitlementCatalogRepository,
+		identityRepository,
+		accountRepository,
 	}
 }
 
@@ -66,4 +75,38 @@ func (w *WorkflowService) GetWorkflow(ctx context.Context, name string) (domain.
 	}
 
 	return definition, nil
+}
+
+func (w *WorkflowService) StartWorkflow(ctx context.Context, name string, identityId uuid.UUID) (string, error) {
+	definition, err := w.workflowRepository.GetWorkflow(ctx, name)
+	if err != nil {
+		return "", fmt.Errorf("start workflow: %w", err)
+	}
+
+	if identityId != uuid.Nil {
+		if _, err := w.identityRepository.GetIdentityById(ctx, identityId); err != nil {
+			return "", fmt.Errorf("start workflow: %w", err)
+		}
+	}
+
+	runId := uuid.NewString()
+	if err := w.workflowEngine.Start(ctx, runId, domain.WorkflowRun{Definition: definition, IdentityId: identityId}); err != nil {
+		return "", fmt.Errorf("start workflow: %w", err)
+	}
+
+	return runId, nil
+}
+
+// GetRun treats a run of another workflow as not found.
+func (w *WorkflowService) GetRun(ctx context.Context, workflowName string, runId string) (domain.WorkflowRunState, error) {
+	state, err := w.workflowEngine.Get(ctx, runId)
+	if err != nil {
+		return domain.WorkflowRunState{}, fmt.Errorf("get workflow run: %w", err)
+	}
+
+	if state.Name != workflowName {
+		return domain.WorkflowRunState{}, fmt.Errorf("%w: %s", domain.ErrWorkflowRunNotFound, runId)
+	}
+
+	return state, nil
 }
