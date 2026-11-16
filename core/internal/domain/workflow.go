@@ -17,32 +17,36 @@ type WorkflowOperation struct {
 	System   string        `json:"system"`
 	Resource string        `json:"resource"`
 	Kind     ConnectorKind `json:"kind"`
-	Action   string        `json:"action"`
 	// Tenant is the tenant's name; needed only when the system has several tenants and no entitlement tells which.
 	Tenant string `json:"tenant,omitempty"`
 	// Entitlement is the entitlement to grant or revoke; the only extra an operation can need.
 	Entitlement uuid.UUID `json:"entitlement,omitzero"`
 }
 
-// workflowActions is the one action a workflow can run per kind: onboarding creates an account and grants entitlements.
+// workflowActions is the one action a workflow runs per kind: onboarding creates an account and grants entitlements.
 var workflowActions = map[ConnectorKind]string{AccountActionKind: "create", EntitlementKind: "grant"}
+
+// Action is fixed by the kind of the operation.
+func (o WorkflowOperation) Action() string {
+	return workflowActions[o.Kind]
+}
 
 func (o WorkflowOperation) Validate() error {
 	if o.System == "" || o.Resource == "" {
 		return fmt.Errorf("%w: operation needs a system and a resource", ErrInvalidWorkflow)
 	}
 
-	if workflowActions[o.Kind] != o.Action {
-		return fmt.Errorf("%w: %s %q is not a workflow action, onboarding only creates accounts and grants entitlements", ErrInvalidWorkflow, o.Kind, o.Action)
+	if _, ok := workflowActions[o.Kind]; !ok {
+		return fmt.Errorf("%w: kind %q is not one a workflow runs, use %s or %s", ErrInvalidWorkflow, o.Kind, AccountActionKind, EntitlementKind)
 	}
 
-	needsEntitlement := needsEntitlement(o.Kind, o.Action)
+	needsEntitlement := o.Kind == EntitlementKind
 	if needsEntitlement && o.Entitlement == uuid.Nil {
-		return fmt.Errorf("%w: %s %q needs an entitlement", ErrInvalidWorkflow, o.Kind, o.Action)
+		return fmt.Errorf("%w: %s needs an entitlement", ErrInvalidWorkflow, o.Kind)
 	}
 
 	if !needsEntitlement && o.Entitlement != uuid.Nil {
-		return fmt.Errorf("%w: %s %q does not take an entitlement", ErrInvalidWorkflow, o.Kind, o.Action)
+		return fmt.Errorf("%w: %s does not take an entitlement", ErrInvalidWorkflow, o.Kind)
 	}
 
 	return nil
@@ -116,20 +120,14 @@ func (d WorkflowDefinition) Validate() error {
 	return nil
 }
 
-// Validate also checks the run has an identity when a step works on one.
+// Validate also checks the run has an identity: every step works on one.
 func (r WorkflowRun) Validate() error {
 	if err := r.Definition.Validate(); err != nil {
 		return err
 	}
 
-	if r.IdentityId != uuid.Nil {
-		return nil
-	}
-
-	for _, step := range r.Definition.Steps {
-		if needsIdentity(step.Operation.Action) {
-			return fmt.Errorf("%w: step %q works on an identity but the run has none", ErrInvalidWorkflow, step.Name)
-		}
+	if r.IdentityId == uuid.Nil {
+		return fmt.Errorf("%w: the run has no identity", ErrInvalidWorkflow)
 	}
 
 	return nil

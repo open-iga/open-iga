@@ -11,10 +11,10 @@ import (
 
 func buildWorkflowDefinition(name string) domain.WorkflowDefinition {
 	return domain.WorkflowDefinition{Name: name, Steps: []domain.WorkflowStep{
-		{Name: "create", Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.AccountActionKind, Action: "create"}},
+		{Name: "create", Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.AccountActionKind}},
 		{
 			Name:      "grant",
-			Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.EntitlementKind, Action: "grant", Entitlement: uuid.New()},
+			Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.EntitlementKind, Entitlement: uuid.New()},
 			After:     []string{"create"},
 		},
 	}}

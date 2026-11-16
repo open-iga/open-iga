@@ -403,13 +403,14 @@ export interface components {
                 system: string;
                 /** @description A resource of the system's connector, e.g. iam-user */
                 resource: string;
-                /** @enum {string} */
+                /**
+                 * @description An account-action creates the identity's account, an entitlement grants an entitlement
+                 * @enum {string}
+                 */
                 kind: "account-action" | "entitlement";
-                /** @description For account-action one of create, enable, disable, delete, read, list. For entitlement one of discover, grant, revoke, read. */
-                action: string;
                 /** @description Tenant name; needed only when the system has several tenants and no entitlement tells which */
                 tenant?: string;
-                /** @description Id of the entitlement to grant or revoke. Required for those actions, not allowed for the others. */
+                /** @description Id of the entitlement to grant. Required for kind entitlement, not allowed for account-action. */
                 entitlement?: string;
             };
             /** @description Names of the earlier steps that must finish first */
@@ -967,8 +968,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description Id of the identity the run is about. Leave out for workflows that work on no identity. */
-                    identityId?: string;
+                    /** @description Id of the identity the run is about */
+                    identityId: string;
                 };
             };
         };

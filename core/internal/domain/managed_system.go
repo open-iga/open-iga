@@ -98,8 +98,3 @@ func (r OperationRef) NeedsEntitlement(kind ConnectorKind, action string) bool {
 func needsEntitlement(kind ConnectorKind, action string) bool {
 	return kind == EntitlementKind && (action == "grant" || action == "revoke")
 }
-
-// needsIdentity is false for the operations that run on a whole tenant.
-func needsIdentity(action string) bool {
-	return action != "list" && action != "discover"
-}

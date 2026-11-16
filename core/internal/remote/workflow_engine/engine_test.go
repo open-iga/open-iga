@@ -47,7 +47,7 @@ func (c *calls) count(name string) int {
 func step(name string, after ...string) domain.WorkflowStep {
 	return domain.WorkflowStep{
 		Name:      name,
-		Operation: domain.WorkflowOperation{System: "s", Resource: "r", Kind: domain.AccountActionKind, Action: "create"},
+		Operation: domain.WorkflowOperation{System: "s", Resource: "r", Kind: domain.AccountActionKind},
 		After:     after,
 	}
 }

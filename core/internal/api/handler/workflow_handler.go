@@ -45,13 +45,9 @@ func (h *Handler) GetWorkflow(ctx context.Context, request generated.GetWorkflow
 }
 
 func (h *Handler) StartWorkflow(ctx context.Context, request generated.StartWorkflowRequestObject) (generated.StartWorkflowResponseObject, error) {
-	var identityId uuid.UUID // stays empty for workflows that work on no identity
-	if request.Body.IdentityId != nil {
-		parsed, err := uuid.Parse(*request.Body.IdentityId)
-		if err != nil {
-			return generated.StartWorkflow400JSONResponse{Message: "identityId is not a valid id"}, nil
-		}
-		identityId = parsed
+	identityId, err := uuid.Parse(request.Body.IdentityId)
+	if err != nil {
+		return generated.StartWorkflow400JSONResponse{Message: "identityId is not a valid id"}, nil
 	}
 
 	runId, err := h.application.WorkflowService.StartWorkflow(ctx, request.Name, identityId)

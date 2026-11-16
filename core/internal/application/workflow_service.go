@@ -50,7 +50,7 @@ func (w *WorkflowService) CreateWorkflow(ctx context.Context, definition domain.
 			return fmt.Errorf("create workflow: step %q: %w", step.Name, err)
 		}
 
-		if step.Operation.Kind == domain.AccountActionKind && step.Operation.Action == "create" {
+		if step.Operation.Kind == domain.AccountActionKind {
 			accountKey := managedSystem.Id + "/" + ref.TenantId.String()
 
 			if firstStep, taken := createdOn[accountKey]; taken {
@@ -83,10 +83,8 @@ func (w *WorkflowService) StartWorkflow(ctx context.Context, name string, identi
 		return "", fmt.Errorf("start workflow: %w", err)
 	}
 
-	if identityId != uuid.Nil {
-		if _, err := w.identityRepository.GetIdentityById(ctx, identityId); err != nil {
-			return "", fmt.Errorf("start workflow: %w", err)
-		}
+	if _, err := w.identityRepository.GetIdentityById(ctx, identityId); err != nil {
+		return "", fmt.Errorf("start workflow: %w", err)
 	}
 
 	runId := uuid.NewString()

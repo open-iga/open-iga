@@ -17,7 +17,8 @@ post:
                     properties:
                         identityId:
                             type: string
-                            description: Id of the identity the run is about. Leave out for workflows that work on no identity.
+                            description: Id of the identity the run is about
+                    required: [identityId]
     responses:
         201:
             description: Run started

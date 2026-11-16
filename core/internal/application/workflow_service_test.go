@@ -55,7 +55,7 @@ func buildTenant(id uuid.UUID, name string) *domain.ManagedSystemTenant {
 func buildCreateStep(name string, after ...string) domain.WorkflowStep {
 	return domain.WorkflowStep{
 		Name:      name,
-		Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.AccountActionKind, Action: "create"},
+		Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.AccountActionKind},
 		After:     after,
 	}
 }
@@ -63,7 +63,7 @@ func buildCreateStep(name string, after ...string) domain.WorkflowStep {
 func buildGrantStep(name string, entitlementId uuid.UUID, after ...string) domain.WorkflowStep {
 	return domain.WorkflowStep{
 		Name:      name,
-		Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.EntitlementKind, Action: "grant", Entitlement: entitlementId},
+		Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.EntitlementKind, Entitlement: entitlementId},
 		After:     after,
 	}
 }
@@ -119,10 +119,10 @@ func TestWorkflowService_CreateWorkflow(t *testing.T) {
 		assert.ErrorIs(t, svc.CreateWorkflow(ctx, single), domain.ErrWorkflowAlreadyExists)
 	})
 
-	t.Run("rejects an action a workflow cannot run", func(t *testing.T) {
+	t.Run("rejects a kind a workflow cannot run", func(t *testing.T) {
 		svc, _ := setupWorkflowService(t)
-		step := buildCreateStep("delete-aws")
-		step.Operation.Action = "delete"
+		step := buildCreateStep("other-aws")
+		step.Operation.Kind = "other"
 
 		err := svc.CreateWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{step}})
 		assert.ErrorIs(t, err, domain.ErrInvalidWorkflow)
@@ -209,27 +209,6 @@ func TestWorkflowService_StartWorkflow(t *testing.T) {
 		runId, err := svc.StartWorkflow(ctx, "onboarding", identityId)
 		require.NoError(t, err)
 		assert.NotEmpty(t, runId)
-	})
-
-	t.Run("starts a workflow that touches no identity without looking one up", func(t *testing.T) {
-		svc, mocks := setupWorkflowService(t)
-		listStep := buildCreateStep("list-aws")
-		listStep.Operation.Action = "list"
-		listDefinition := domain.WorkflowDefinition{Name: "listing", Steps: []domain.WorkflowStep{listStep}}
-		mocks.workflowRepo.EXPECT().GetWorkflow(ctx, "listing").Return(listDefinition, nil)
-		mocks.engine.EXPECT().Start(ctx, gomock.Any(), domain.WorkflowRun{Definition: listDefinition, IdentityId: uuid.Nil}).Return(nil)
-
-		_, err := svc.StartWorkflow(ctx, "listing", uuid.Nil)
-		require.NoError(t, err)
-	})
-
-	t.Run("refuses a run that needs an identity when none is given", func(t *testing.T) {
-		svc, mocks := setupWorkflowService(t)
-		mocks.workflowRepo.EXPECT().GetWorkflow(ctx, "onboarding").Return(definition, nil)
-		mocks.engine.EXPECT().Start(ctx, gomock.Any(), domain.WorkflowRun{Definition: definition, IdentityId: uuid.Nil}).Return(domain.ErrInvalidWorkflow)
-
-		_, err := svc.StartWorkflow(ctx, "onboarding", uuid.Nil)
-		assert.ErrorIs(t, err, domain.ErrInvalidWorkflow)
 	})
 
 	t.Run("fails when the workflow does not exist", func(t *testing.T) {

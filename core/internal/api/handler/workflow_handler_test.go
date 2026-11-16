@@ -36,11 +36,11 @@ func sendRequest(router *chi.Mux, method, path, body string) *httptest.ResponseR
 	return rec
 }
 
-const createStepJSON = `{"name": "create-aws", "operation": {"system": "aws", "resource": "iam-user", "kind": "account-action", "action": "create"}}`
+const createStepJSON = `{"name": "create-aws", "operation": {"system": "aws", "resource": "iam-user", "kind": "account-action"}}`
 
 var createStep = domain.WorkflowStep{
 	Name:      "create-aws",
-	Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.AccountActionKind, Action: "create"},
+	Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.AccountActionKind},
 }
 
 func TestHandler_CreateWorkflow(t *testing.T) {
@@ -107,22 +107,14 @@ func TestHandler_StartWorkflow(t *testing.T) {
 		assert.JSONEq(t, `{"id": "run-1"}`, rec.Body.String())
 	})
 
-	t.Run("starts a run about no identity when none is sent", func(t *testing.T) {
-		router, service := setupRouterWithMockWorkflowService(t)
-		service.EXPECT().StartWorkflow(gomock.Any(), "onboarding", uuid.Nil).Return("run-1", nil)
-
-		assert.Equal(t, http.StatusCreated, sendRequest(router, http.MethodPost, "/api/v1/workflows/onboarding/runs", `{}`).Code)
-	})
-
 	t.Run("returns 400 for an identity id that is not an id", func(t *testing.T) {
 		router, _ := setupRouterWithMockWorkflowService(t)
 
 		assert.Equal(t, http.StatusBadRequest, sendRequest(router, http.MethodPost, "/api/v1/workflows/onboarding/runs", `{"identityId": "x"}`).Code)
 	})
 
-	t.Run("returns 400 when the run needs an identity it was not given", func(t *testing.T) {
-		router, service := setupRouterWithMockWorkflowService(t)
-		service.EXPECT().StartWorkflow(gomock.Any(), "onboarding", uuid.Nil).Return("", domain.ErrInvalidWorkflow)
+	t.Run("returns 400 when no identity is sent", func(t *testing.T) {
+		router, _ := setupRouterWithMockWorkflowService(t)
 
 		assert.Equal(t, http.StatusBadRequest, sendRequest(router, http.MethodPost, "/api/v1/workflows/onboarding/runs", `{}`).Code)
 	})

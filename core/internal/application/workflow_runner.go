@@ -18,7 +18,7 @@ func (w *WorkflowService) ExecuteConnectorOperation(ctx context.Context, step do
 	ref.IdentityId = identityId
 
 	operation := step.Operation
-	output, err := w.connectorService.Execute(ctx, operation.System, operation.Resource, operation.Kind, operation.Action, ref)
+	output, err := w.connectorService.Execute(ctx, operation.System, operation.Resource, operation.Kind, operation.Action(), ref)
 	if err != nil {
 		return fmt.Errorf("run step %q: %w", step.Name, err)
 	}
@@ -45,8 +45,8 @@ func (w *WorkflowService) resolveOperation(ctx context.Context, operation domain
 		return nil, domain.OperationRef{}, fmt.Errorf("%w: system %q has no %s resource %q", domain.ErrInvalidWorkflow, operation.System, operation.Kind, operation.Resource)
 	}
 
-	if !managedSystem.ConnectorSpec.SupportsAction(operation.Kind, operation.Resource, operation.Action) {
-		return nil, domain.OperationRef{}, fmt.Errorf("%w: system %q does not declare %s %q on resource %q", domain.ErrInvalidWorkflow, operation.System, operation.Kind, operation.Action, operation.Resource)
+	if !managedSystem.ConnectorSpec.SupportsAction(operation.Kind, operation.Resource, operation.Action()) {
+		return nil, domain.OperationRef{}, fmt.Errorf("%w: system %q does not declare %s %q on resource %q", domain.ErrInvalidWorkflow, operation.System, operation.Kind, operation.Action(), operation.Resource)
 	}
 
 	var entitlement *domain.EntitlementCatalog

@@ -7,28 +7,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func operation(kind ConnectorKind, action string) WorkflowOperation {
-	return WorkflowOperation{System: "aws", Resource: "iam-user", Kind: kind, Action: action}
+func operation(kind ConnectorKind) WorkflowOperation {
+	return WorkflowOperation{System: "aws", Resource: "iam-user", Kind: kind}
 }
 
 func TestWorkflowOperationValidate(t *testing.T) {
-	grant := operation(EntitlementKind, "grant")
+	grant := operation(EntitlementKind)
 	grant.Entitlement = uuid.New()
-	assert.NoError(t, operation(AccountActionKind, "create").Validate())
+	assert.NoError(t, operation(AccountActionKind).Validate())
 	assert.NoError(t, grant.Validate())
 
-	withEntitlement := operation(AccountActionKind, "create")
+	withEntitlement := operation(AccountActionKind)
 	withEntitlement.Entitlement = uuid.New()
 
 	invalid := map[string]WorkflowOperation{
-		"no system":                 {Resource: "r", Kind: AccountActionKind, Action: "create"},
-		"no resource":               {System: "s", Kind: AccountActionKind, Action: "create"},
-		"unknown action":            operation(AccountActionKind, "nope"),
-		"action of another kind":    operation(AccountActionKind, "grant"),
-		"account delete":            operation(AccountActionKind, "delete"),
-		"entitlement revoke":        operation(EntitlementKind, "revoke"),
-		"grant without entitlement": operation(EntitlementKind, "grant"),
-		"entitlement on create":     withEntitlement,
+		"no system":                    {Resource: "r", Kind: AccountActionKind},
+		"no resource":                  {System: "s", Kind: AccountActionKind},
+		"kind a workflow does not run": operation("other"),
+		"grant without entitlement":    operation(EntitlementKind),
+		"entitlement on create":        withEntitlement,
 	}
 	for name, invalidOperation := range invalid {
 		t.Run(name, func(t *testing.T) {
@@ -38,8 +35,8 @@ func TestWorkflowOperationValidate(t *testing.T) {
 }
 
 func TestWorkflowDefinitionValidate(t *testing.T) {
-	create := operation(AccountActionKind, "create")
-	grant := operation(EntitlementKind, "grant")
+	create := operation(AccountActionKind)
+	grant := operation(EntitlementKind)
 	grant.Entitlement = uuid.New()
 	valid := WorkflowDefinition{Name: "onboarding", Steps: []WorkflowStep{
 		{Name: "create-aws", Operation: create},
@@ -68,7 +65,7 @@ func TestWorkflowDefinitionValidate(t *testing.T) {
 }
 
 func TestWorkflowRunValidate(t *testing.T) {
-	createDefinition := WorkflowDefinition{Name: "w", Steps: []WorkflowStep{{Name: "a", Operation: operation(AccountActionKind, "create")}}}
+	createDefinition := WorkflowDefinition{Name: "w", Steps: []WorkflowStep{{Name: "a", Operation: operation(AccountActionKind)}}}
 
 	assert.NoError(t, WorkflowRun{Definition: createDefinition, IdentityId: uuid.New()}.Validate())
 	assert.ErrorIs(t, WorkflowRun{Definition: createDefinition}.Validate(), ErrInvalidWorkflow)
