@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,8 +22,12 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-// workflowShutdownTimeout is how long running steps get to finish on shutdown; the rest resume on the next start.
-const workflowShutdownTimeout = 10 * time.Second
+const (
+	// workflowShutdownTimeout is how long running steps get to finish on shutdown; the rest resume on the next start.
+	workflowShutdownTimeout = 10 * time.Second
+	// serverShutdownTimeout is how long requests in flight get to finish on shutdown.
+	serverShutdownTimeout = 10 * time.Second
+)
 
 const banner = "\n" +
 	" ██████╗ ██████╗ ███████╗███╗   ██╗    ██╗ ██████╗  █████╗ \n" +
@@ -103,23 +109,44 @@ func main() {
 		IdleTimeout:       60 * time.Second,
 	}
 
-	defer func() {
-		logger.Info("Gracefully shutting down")
-		runtimeRemote.WorkflowEngine.Shutdown(workflowShutdownTimeout)
+	defer shutDown(logger, server, runtimeRemote.WorkflowEngine.Shutdown, conn.Close)
 
-		conn.Close()
-		logger.Info("Closed DB connection")
+	waitForStop(logger, server)
+}
 
-		err = server.Close()
-		if err != nil {
-			logger.Error("Error closing server")
-		} else {
-			logger.Info("Server shutdown gracefully")
+// waitForStop serves until the server fails or a stop signal arrives; the deferred shutdown runs only when main returns, so the signal has to end the wait.
+func waitForStop(logger *slog.Logger, server *http.Server) {
+	stopSignal := make(chan os.Signal, 1)
+	signal.Notify(stopSignal, os.Interrupt, syscall.SIGTERM)
+
+	serverErr := make(chan error, 1)
+	go func() { serverErr <- server.ListenAndServe() }()
+
+	select {
+	case err := <-serverErr:
+		if !errors.Is(err, http.ErrServerClosed) {
+			panic(err)
 		}
-	}()
-
-	err = server.ListenAndServe()
-	if err != nil {
-		panic(err)
+	case received := <-stopSignal:
+		logger.Info("Received a stop signal", "signal", received.String())
 	}
+}
+
+// shutDown stops taking requests first, then lets the workflow steps finish, then closes the database.
+func shutDown(logger *slog.Logger, server *http.Server, shutdownWorkflowEngine func(time.Duration), closeDatabase func()) {
+	logger.Info("Gracefully shutting down")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), serverShutdownTimeout)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		logger.Error("Error shutting down server", "err", err)
+	} else {
+		logger.Info("Server shutdown gracefully")
+	}
+
+	shutdownWorkflowEngine(workflowShutdownTimeout)
+
+	closeDatabase()
+	logger.Info("Closed DB connection")
 }
