@@ -49,6 +49,11 @@ func (a *AccountRepository) UpsertAccount(ctx context.Context, managedSystemId s
 		ExternalID:      pgtype.Text{String: externalId, Valid: true},
 	})
 	if err != nil {
+		// No row comes back when the identity already has an account with another id: it is never overwritten.
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("%w: system %s, identity %s", domain.ErrAccountConflict, managedSystemId, identityId)
+		}
+
 		return nil, fmt.Errorf("failed to save account: %w", err)
 	}
 	return row.ToDomain(), nil

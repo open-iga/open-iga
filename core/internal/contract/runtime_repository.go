@@ -36,7 +36,8 @@ type ManagedSystemRepository interface {
 type AccountRepository interface {
 	// GetAccount finds the account of an identity on a system; tenantId is uuid.Nil for a single-tenant system.
 	GetAccount(ctx context.Context, managedSystemId string, tenantId uuid.UUID, identityId uuid.UUID) (*domain.Account, error)
-	// UpsertAccount saves the account an identity has on a system (and tenant, if it has one) with its id in the target system; repeating it updates the id.
+	// UpsertAccount saves the account an identity has on a system (and tenant, if it has one) with its id in the target system.
+	// An identity has one account per system and tenant: saving the same id again is fine, a different id returns domain.ErrAccountConflict.
 	UpsertAccount(ctx context.Context, managedSystemId string, tenantId uuid.UUID, identityId uuid.UUID, externalId string) (*domain.Account, error)
 }
 

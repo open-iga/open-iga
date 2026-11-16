@@ -44,6 +44,10 @@ func (w *WorkflowService) resolveOperation(ctx context.Context, operation domain
 		return nil, domain.OperationRef{}, fmt.Errorf("%w: system %q has no %s resource %q", domain.ErrInvalidWorkflow, operation.System, operation.Kind, operation.Resource)
 	}
 
+	if !managedSystem.ConnectorSpec.SupportsAction(operation.Kind, operation.Resource, operation.Action) {
+		return nil, domain.OperationRef{}, fmt.Errorf("%w: system %q does not declare %s %q on resource %q", domain.ErrInvalidWorkflow, operation.System, operation.Kind, operation.Action, operation.Resource)
+	}
+
 	var entitlement *domain.EntitlementCatalog
 	if operation.Entitlement != uuid.Nil {
 		if entitlement, err = w.entitlementCatalogRepository.GetEntitlementCatalog(ctx, operation.Entitlement, managedSystem.Id, operation.Resource); err != nil {

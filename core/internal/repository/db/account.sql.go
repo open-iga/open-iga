@@ -46,7 +46,8 @@ const upsertAccount = `-- name: UpsertAccount :one
 INSERT INTO account (managed_system_id, tenant_id, identity_id, external_id)
 VALUES ($1, $2, $3, $4)
 ON CONFLICT (managed_system_id, tenant_id, identity_id) DO UPDATE
-SET external_id = EXCLUDED.external_id, updated_at = CURRENT_TIMESTAMP
+SET updated_at = CURRENT_TIMESTAMP
+WHERE account.external_id = EXCLUDED.external_id
 RETURNING id, managed_system_id, tenant_id, identity_id, external_id, enabled, metadata, created_at, updated_at
 `
 

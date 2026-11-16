@@ -45,8 +45,8 @@ func buildAwsSystem() *domain.ManagedSystem {
 	return &domain.ManagedSystem{
 		Id: "system-1", Name: "aws",
 		ConnectorSpec: &domain.ConnectorSpec{
-			Actions:      map[string]domain.AccountActions{"iam-user": {}},
-			Entitlements: map[string]domain.UserEntitlements{"iam-user": {}},
+			Actions:      map[string]domain.AccountActions{"iam-user": {Create: &domain.Operation{}, Disable: &domain.Operation{}}},
+			Entitlements: map[string]domain.UserEntitlements{"iam-user": {Grant: &domain.Operation{}, Revoke: &domain.Operation{}}},
 		},
 	}
 }
@@ -121,6 +121,25 @@ func TestWorkflowService_CreateWorkflow(t *testing.T) {
 		mocks.workflowRepo.EXPECT().CreateWorkflow(ctx, single).Return(domain.ErrWorkflowAlreadyExists)
 
 		assert.ErrorIs(t, svc.CreateWorkflow(ctx, single), domain.ErrWorkflowAlreadyExists)
+	})
+
+	t.Run("rejects an action the connector does not declare", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.managedSystem.EXPECT().GetManagedSystemByName(ctx, "aws").Return(buildAwsSystem(), nil)
+		step := buildCreateStep("list-aws")
+		step.Operation.Action = "list" // the connector declares no list on iam-user
+
+		err := svc.CreateWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{step}})
+		assert.ErrorIs(t, err, domain.ErrInvalidWorkflow)
+	})
+
+	t.Run("rejects two create steps on the same system and tenant", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.managedSystem.EXPECT().GetManagedSystemByName(ctx, "aws").Return(buildAwsSystem(), nil).Times(2)
+		mocks.managedSystem.EXPECT().ListManagedSystemTenants(ctx, "system-1").Return(nil, nil).Times(2)
+
+		twice := domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{buildCreateStep("create-one"), buildCreateStep("create-two")}}
+		assert.ErrorIs(t, svc.CreateWorkflow(ctx, twice), domain.ErrInvalidWorkflow)
 	})
 
 	t.Run("rejects a system that does not exist", func(t *testing.T) {

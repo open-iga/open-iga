@@ -15,6 +15,7 @@ var (
 	ErrManagedSystemNotFound   = errors.New("managed system not found")
 	ErrTenantNotFound          = errors.New("tenant not found")
 	ErrAccountNotFound         = errors.New("account not found")
+	ErrAccountConflict         = errors.New("the identity already has another account on this system")
 	ErrEntitlementNotFound     = errors.New("entitlement not found")
 	ErrEmptyOutput             = errors.New("connector returned an empty output")
 	ErrUnknownOperation        = errors.New("unknown connector operation")
