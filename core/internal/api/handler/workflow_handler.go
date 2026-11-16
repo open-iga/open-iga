@@ -16,7 +16,7 @@ func isInvalidWorkflow(err error) bool {
 }
 
 func (h *Handler) CreateWorkflow(ctx context.Context, request generated.CreateWorkflowRequestObject) (generated.CreateWorkflowResponseObject, error) {
-	err := h.application.WorkflowService.CreateWorkflow(ctx, domain.WorkflowDefinition{Name: request.Body.Name, Steps: request.Body.Steps})
+	err := h.application.WorkflowService.CreateWorkflow(ctx, domain.WorkflowDefinition{Name: request.Body.Name, Type: request.Body.Type, Steps: request.Body.Steps})
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrWorkflowAlreadyExists):
@@ -41,7 +41,7 @@ func (h *Handler) GetWorkflow(ctx context.Context, request generated.GetWorkflow
 		return generated.GetWorkflow500JSONResponse{Message: err.Error()}, nil
 	}
 
-	return generated.GetWorkflow200JSONResponse{Name: definition.Name, Steps: definition.Steps}, nil
+	return generated.GetWorkflow200JSONResponse{Name: definition.Name, Type: definition.Type, Steps: definition.Steps}, nil
 }
 
 func (h *Handler) StartWorkflow(ctx context.Context, request generated.StartWorkflowRequestObject) (generated.StartWorkflowResponseObject, error) {

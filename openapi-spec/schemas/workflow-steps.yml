@@ -26,13 +26,17 @@ items:
                 kind:
                     type: string
                     enum: [account-action, entitlement]
-                    description: An account-action creates the identity's account, an entitlement grants an entitlement
+                    description: What the step works on. The action it runs follows from this and the workflow type, see `type` of the workflow.
                 tenant:
                     type: string
                     description: Tenant name; needed only when the system has several tenants and no entitlement tells which
                 entitlement:
                     type: string
-                    description: Id of the entitlement to grant. Required for kind entitlement, not allowed for account-action.
+                    description: Id of the entitlement the step works on. Required for kind entitlement, not allowed for account-action.
+                action:
+                    type: string
+                    readOnly: true
+                    description: Set when the workflow is saved, from its type and the step's kind. Not sent by the client.
             required: [system, resource, kind]
         after:
             type: array

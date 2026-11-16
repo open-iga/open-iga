@@ -393,6 +393,11 @@ export interface components {
                 };
             };
         };
+        /**
+         * @description What the workflow does; it decides the action each step runs. With onboarding, an account-action step creates the account and an entitlement step grants the entitlement.
+         * @enum {string}
+         */
+        "workflow-type": "onboarding";
         /** @description The steps of a workflow. A step runs one connector operation on a resource of a managed system. Steps without `after` start together; a step with `after` starts when those steps finished. A failed step holds only the steps that come after it. */
         "workflow-steps": {
             /** @description Unique within the workflow; `after` refers to it */
@@ -404,14 +409,16 @@ export interface components {
                 /** @description A resource of the system's connector, e.g. iam-user */
                 resource: string;
                 /**
-                 * @description An account-action creates the identity's account, an entitlement grants an entitlement
+                 * @description What the step works on. The action it runs follows from this and the workflow type, see `type` of the workflow.
                  * @enum {string}
                  */
                 kind: "account-action" | "entitlement";
                 /** @description Tenant name; needed only when the system has several tenants and no entitlement tells which */
                 tenant?: string;
-                /** @description Id of the entitlement to grant. Required for kind entitlement, not allowed for account-action. */
+                /** @description Id of the entitlement the step works on. Required for kind entitlement, not allowed for account-action. */
                 entitlement?: string;
+                /** @description Set when the workflow is saved, from its type and the step's kind. Not sent by the client. */
+                readonly action?: string;
             };
             /** @description Names of the earlier steps that must finish first */
             after?: string[];
@@ -906,8 +913,9 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description Name of the workflow, e.g. onboarding */
+                    /** @description Name of the workflow. Free to choose, e.g. onboarding-contractors */
                     name: string;
+                    type: components["schemas"]["workflow-type"];
                     steps: components["schemas"]["workflow-steps"];
                 };
             };
@@ -931,7 +939,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Name of the workflow, e.g. onboarding */
+                /** @description Name of the workflow */
                 name: string;
             };
             cookie?: never;
@@ -946,6 +954,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         name: string;
+                        type: components["schemas"]["workflow-type"];
                         steps: components["schemas"]["workflow-steps"];
                     };
                 };

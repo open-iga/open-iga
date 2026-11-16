@@ -44,8 +44,8 @@ var createStep = domain.WorkflowStep{
 }
 
 func TestHandler_CreateWorkflow(t *testing.T) {
-	body := `{"name": "onboarding", "steps": [` + createStepJSON + `]}`
-	definition := domain.WorkflowDefinition{Name: "onboarding", Steps: []domain.WorkflowStep{createStep}}
+	body := `{"name": "onboarding", "type": "onboarding", "steps": [` + createStepJSON + `]}`
+	definition := domain.WorkflowDefinition{Name: "onboarding", Type: domain.WorkflowTypeOnboarding, Steps: []domain.WorkflowStep{createStep}}
 
 	t.Run("returns 201 when the workflow is created", func(t *testing.T) {
 		router, service := setupRouterWithMockWorkflowService(t)
@@ -79,11 +79,11 @@ func TestHandler_CreateWorkflow(t *testing.T) {
 func TestHandler_GetWorkflow(t *testing.T) {
 	t.Run("returns the workflow", func(t *testing.T) {
 		router, service := setupRouterWithMockWorkflowService(t)
-		service.EXPECT().GetWorkflow(gomock.Any(), "onboarding").Return(domain.WorkflowDefinition{Name: "onboarding", Steps: []domain.WorkflowStep{createStep}}, nil)
+		service.EXPECT().GetWorkflow(gomock.Any(), "onboarding").Return(domain.WorkflowDefinition{Name: "onboarding", Type: domain.WorkflowTypeOnboarding, Steps: []domain.WorkflowStep{createStep}}, nil)
 
 		rec := sendRequest(router, http.MethodGet, "/api/v1/workflows/onboarding", "")
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.JSONEq(t, `{"name": "onboarding", "steps": [`+createStepJSON+`]}`, rec.Body.String())
+		assert.JSONEq(t, `{"name": "onboarding", "type": "onboarding", "steps": [`+createStepJSON+`]}`, rec.Body.String())
 	})
 
 	t.Run("returns 404 when there is no such workflow", func(t *testing.T) {

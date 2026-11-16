@@ -53,7 +53,7 @@ func step(name string, after ...string) domain.WorkflowStep {
 }
 
 func run(steps ...domain.WorkflowStep) domain.WorkflowRun {
-	return domain.WorkflowRun{Definition: domain.WorkflowDefinition{Name: "test", Steps: steps}, IdentityId: uuid.New()}
+	return domain.WorkflowRun{Definition: domain.WorkflowDefinition{Name: "onboarding", Type: domain.WorkflowTypeOnboarding, Steps: steps}, IdentityId: uuid.New()}
 }
 
 func getStepStatuses(state domain.WorkflowRunState) map[string]domain.WorkflowStepStatus {

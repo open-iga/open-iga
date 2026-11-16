@@ -41,6 +41,8 @@ func (w *WorkflowService) CreateWorkflow(ctx context.Context, definition domain.
 		return fmt.Errorf("create workflow: %w", err)
 	}
 
+	definition.SetActions()
+
 	// A wrong step fails when the admin saves it, not halfway through someone's run.
 	// An identity has one account per system and tenant, so two create steps on the same one would fight over it.
 	createdOn := map[string]string{}

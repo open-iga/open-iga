@@ -10,7 +10,7 @@ import (
 )
 
 func buildWorkflowDefinition(name string) domain.WorkflowDefinition {
-	return domain.WorkflowDefinition{Name: name, Steps: []domain.WorkflowStep{
+	return domain.WorkflowDefinition{Name: name, Type: domain.WorkflowTypeOnboarding, Steps: []domain.WorkflowStep{
 		{Name: "create", Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.AccountActionKind}},
 		{
 			Name:      "grant",
@@ -37,7 +37,7 @@ func TestWorkflowRepository(t *testing.T) {
 		t.Cleanup(func() { deleteRows(t, "DELETE FROM workflow_definition WHERE name = $1", definition.Name) })
 		require.NoError(t, repository.WorkflowRepository.CreateWorkflow(t.Context(), definition))
 
-		other := domain.WorkflowDefinition{Name: definition.Name, Steps: definition.Steps[:1]}
+		other := domain.WorkflowDefinition{Name: definition.Name, Type: definition.Type, Steps: definition.Steps[:1]}
 		assert.ErrorIs(t, repository.WorkflowRepository.CreateWorkflow(t.Context(), other), domain.ErrWorkflowAlreadyExists)
 
 		loaded, err := repository.WorkflowRepository.GetWorkflow(t.Context(), definition.Name)
