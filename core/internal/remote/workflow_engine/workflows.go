@@ -10,6 +10,8 @@ import (
 	"github.com/open-iga/core/internal/domain"
 )
 
+var errGateTimedOut = errors.New("gate timed out")
+
 // stepInput is the input of a step workflow: one step of a run and who the run is about.
 type stepInput struct {
 	RunId      string              `json:"runId"`
@@ -51,8 +53,8 @@ func (e *Engine) executeWorkflowRun(ctx dbos.Context, run domain.WorkflowRun) (s
 	return "", errors.Join(failures...)
 }
 
-// executeWorkflowStep waits for the steps it follows, then runs its step.
-// It is a workflow of its own so a failure holds only the steps after it.
+// executeWorkflowStep waits for the steps it follows, then for its gate, then runs its step.
+// It is a workflow of its own so waiting at a gate holds nothing else.
 func (e *Engine) executeWorkflowStep(ctx dbos.Context, input stepInput) (string, error) {
 	for _, previousStepName := range input.Step.After {
 		previousWorkflowStepId := buildStepWorkflowId(input.RunId, previousStepName)
@@ -66,6 +68,12 @@ func (e *Engine) executeWorkflowStep(ctx dbos.Context, input stepInput) (string,
 		}
 	}
 
+	if input.Step.Gate {
+		if err := waitForGate(ctx); err != nil {
+			return "", err
+		}
+	}
+
 	// A returned error is not retried. A crash can still replay the step, so connector operations must be idempotent.
 	_, err := dbos.RunAsStep(ctx, func(stepCtx context.Context) (string, error) {
 		return "", e.runner(stepCtx, input.Step, input.IdentityId)
@@ -75,4 +83,26 @@ func (e *Engine) executeWorkflowStep(ctx dbos.Context, input stepInput) (string,
 	}
 
 	return "", nil
+}
+
+func waitForGate(ctx dbos.Context) error {
+	if err := dbos.SetEvent(ctx, gateEvent, gateWaiting); err != nil {
+		return fmt.Errorf("mark gate waiting: %w", err)
+	}
+
+	// Recv gives an empty message when the timeout runs out.
+	message, err := dbos.Recv[string](ctx, gateTopic, gateTimeout)
+	if err != nil {
+		return fmt.Errorf("wait at gate: %w", err)
+	}
+
+	if message == "" {
+		return errGateTimedOut
+	}
+
+	if err := dbos.SetEvent(ctx, gateEvent, gateContinued); err != nil {
+		return fmt.Errorf("mark gate continued: %w", err)
+	}
+
+	return nil
 }

@@ -162,6 +162,20 @@ func (m *MockWorkflowEngine) EXPECT() *MockWorkflowEngineMockRecorder {
 	return m.recorder
 }
 
+// Continue mocks base method.
+func (m *MockWorkflowEngine) Continue(ctx context.Context, runId, stepName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Continue", ctx, runId, stepName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Continue indicates an expected call of Continue.
+func (mr *MockWorkflowEngineMockRecorder) Continue(ctx, runId, stepName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Continue", reflect.TypeOf((*MockWorkflowEngine)(nil).Continue), ctx, runId, stepName)
+}
+
 // Get mocks base method.
 func (m *MockWorkflowEngine) Get(ctx context.Context, runId string) (domain.WorkflowRunState, error) {
 	m.ctrl.T.Helper()

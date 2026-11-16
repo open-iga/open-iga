@@ -64,6 +64,8 @@ type WorkflowStep struct {
 	Operation WorkflowOperation `json:"operation"`
 	// After lists the steps that must finish first. A step with none starts at once, so independent steps run in parallel.
 	After []string `json:"after,omitempty"`
+	// Gate is a prerequisite: the run waits before this step until someone continues it manually
+	Gate bool `json:"gate,omitempty"`
 }
 
 // WorkflowDefinition is a workflow: an ordered list of steps.
