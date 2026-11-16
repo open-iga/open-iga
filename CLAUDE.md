@@ -27,14 +27,17 @@ Open-source identity governance and administration (IGA). A serious, long-lived 
 
 ## core (Go)
 
-Run from `core/`:
+Use `task` (see `core/Taskfile.yml`) from `core/`. Do not run the tools by hand.
 
-- Lint: `go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 run ./...` (cyclop <= 10, exhaustruct, wrapcheck)
-- Format: `go run mvdan.cc/gofumpt@v0.12.0 -w internal`
-- Test: `go test ./internal/...` (repository and engine tests need Docker for Postgres)
-- Generate the API: `go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.7.0 -config oapi-codegen.yaml ../openapi-spec/openapi.yml`, then `bun run generate:openapi-fetch` in `console/`
-- Generate SQL: `go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1 generate`
-- Generate mocks: `go run go.uber.org/mock/mockgen@v0.6.0 -source=internal/contract/runtime_{application,remote,repository}.go -destination=internal/testutil/runtime_*_mock.go -package=testutil`
+- Lint: `task lint` (cyclop <= 10, exhaustruct, wrapcheck)
+- Format: `task pretty`
+- Build: `task build`
+- Test: `task test` (generates the mocks first; repository and engine tests need Docker for Postgres)
+- Generate the API: `task generate:oapi-codegen`, then `bun run generate:openapi-fetch` in `console/`
+- Generate SQL: `task generate:sqlc`
+- Generate mocks: `task generate:test-mocks`
+- New migration: `task generate:migration NAME=<name>`
+- Vulnerability check: `task vulncheck`
 
 Rules:
 
@@ -44,7 +47,9 @@ Rules:
 
 ## console (TypeScript)
 
-- Typecheck: `bunx tsc --noEmit -p .`
+- Typecheck: `bun run typecheck`
+- Lint: `bun run lint`
+- Format: `bun run pretty`
 - Test hooks, not views. Put logic in a hook and test the hook; `vitest.setup.ts` mocks the page wrapper, i18n and sonner.
 - Forms use `<form action={fn}>`, not `onSubmit`.
 - No nested ternaries. Use `ts-pattern` `match`.
