@@ -47,7 +47,7 @@ func (o WorkflowOperation) Validate() error {
 
 // WorkflowStep is one step of a workflow: a connector operation.
 type WorkflowStep struct {
-	// Name is unique within the workflow.
+	// Name is unique within the workflow; it is also what continues a gate.
 	Name      string            `json:"name"`
 	Operation WorkflowOperation `json:"operation"`
 	// After lists the steps that must finish first. A step with none starts at once, so independent steps run in parallel.
@@ -58,6 +58,12 @@ type WorkflowStep struct {
 type WorkflowDefinition struct {
 	Name  string         `json:"name"`
 	Steps []WorkflowStep `json:"steps"`
+}
+
+// WorkflowRun is one run of a definition, about an identity. Workflows that touch no identity (e.g. listing accounts) leave it empty.
+type WorkflowRun struct {
+	Definition WorkflowDefinition `json:"definition"`
+	IdentityId uuid.UUID          `json:"identityId"`
 }
 
 // validateName rejects an empty name and one with a "/": names are path parts of the API, and the engine joins them with "/".
@@ -101,6 +107,25 @@ func (d WorkflowDefinition) Validate() error {
 
 		if err := step.Operation.Validate(); err != nil {
 			return fmt.Errorf("step %q: %w", step.Name, err)
+		}
+	}
+
+	return nil
+}
+
+// Validate also checks the run has an identity when a step works on one.
+func (r WorkflowRun) Validate() error {
+	if err := r.Definition.Validate(); err != nil {
+		return err
+	}
+
+	if r.IdentityId != uuid.Nil {
+		return nil
+	}
+
+	for _, step := range r.Definition.Steps {
+		if needsIdentity(step.Operation.Action) {
+			return fmt.Errorf("%w: step %q works on an identity but the run has none", ErrInvalidWorkflow, step.Name)
 		}
 	}
 

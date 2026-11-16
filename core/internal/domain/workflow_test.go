@@ -62,3 +62,12 @@ func TestWorkflowDefinitionValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestWorkflowRunValidate(t *testing.T) {
+	createDefinition := WorkflowDefinition{Name: "w", Steps: []WorkflowStep{{Name: "a", Operation: operation(AccountActionKind, "create")}}}
+	listDefinition := WorkflowDefinition{Name: "w", Steps: []WorkflowStep{{Name: "a", Operation: operation(AccountActionKind, "list")}}}
+
+	assert.NoError(t, WorkflowRun{Definition: createDefinition, IdentityId: uuid.New()}.Validate())
+	assert.NoError(t, WorkflowRun{Definition: listDefinition}.Validate(), "listing accounts needs no identity")
+	assert.ErrorIs(t, WorkflowRun{Definition: createDefinition}.Validate(), ErrInvalidWorkflow)
+}

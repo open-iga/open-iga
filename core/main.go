@@ -20,6 +20,9 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
+// workflowShutdownTimeout is how long running steps get to finish on shutdown; the rest resume on the next start.
+const workflowShutdownTimeout = 10 * time.Second
+
 const banner = "\n" +
 	" ██████╗ ██████╗ ███████╗███╗   ██╗    ██╗ ██████╗  █████╗ \n" +
 	"██╔═══██╗██╔══██╗██╔════╝████╗  ██║    ██║██╔════╝ ██╔══██╗\n" +
@@ -99,10 +102,14 @@ func main() {
 		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
+
 	defer func() {
 		logger.Info("Gracefully shutting down")
+		runtimeRemote.WorkflowEngine.Shutdown(workflowShutdownTimeout)
+
 		conn.Close()
 		logger.Info("Closed DB connection")
+
 		err = server.Close()
 		if err != nil {
 			logger.Error("Error closing server")
