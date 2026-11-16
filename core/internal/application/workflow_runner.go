@@ -72,11 +72,29 @@ func (w *WorkflowService) pickTenant(ctx context.Context, managedSystem *domain.
 		return uuid.Nil, fmt.Errorf("tenants of system %q: %w", operation.System, err)
 	}
 
-	// A system without tenant rows is single-tenant: no tenant is needed, and uuid.Nil stands for it.
-	if len(tenants) == 0 && operation.Tenant == "" && (entitlement == nil || entitlement.TenantId == "") {
+	// A system without tenant rows is single-tenant.
+	isSingleTenantSystem := len(tenants) == 0
+	// The operation or its entitlement can name the tenant to use.
+	entitlementNamesTenant := entitlement != nil && entitlement.TenantId != ""
+	tenantIsNamed := operation.Tenant != "" || entitlementNamesTenant
+	// An entitlement saved while the system had no tenants names none.
+	entitlementIsTenantless := entitlement != nil && entitlement.TenantId == ""
+
+	// A single-tenant system needs no tenant, and uuid.Nil stands for it.
+	if isSingleTenantSystem && !tenantIsNamed {
 		return uuid.Nil, nil
 	}
 
+	// A tenantless entitlement fits none of the tenants of a system that has some.
+	if !isSingleTenantSystem && entitlementIsTenantless {
+		return uuid.Nil, fmt.Errorf("%w: entitlement %s belongs to no tenant, but system %q has tenants", domain.ErrEntitlementNotFound, entitlement.Id, operation.System)
+	}
+
+	return selectTenant(tenants, operation, entitlement)
+}
+
+// selectTenant is the one tenant that fits; it is an error when none or several do.
+func selectTenant(tenants []*domain.ManagedSystemTenant, operation domain.WorkflowOperation, entitlement *domain.EntitlementCatalog) (uuid.UUID, error) {
 	tenants = filterFittingTenants(tenants, operation, entitlement)
 	if len(tenants) == 0 {
 		return uuid.Nil, fmt.Errorf("%w: system %q has no tenant that fits the operation", domain.ErrTenantNotFound, operation.System)

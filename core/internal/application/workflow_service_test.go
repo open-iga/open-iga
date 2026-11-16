@@ -166,6 +166,17 @@ func TestWorkflowService_CreateWorkflow(t *testing.T) {
 		assert.ErrorIs(t, err, domain.ErrTenantNotFound)
 	})
 
+	t.Run("rejects an entitlement that names no tenant on a system that has tenants", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.managedSystem.EXPECT().GetManagedSystemByName(ctx, "aws").Return(buildAwsSystem(), nil)
+		mocks.managedSystem.EXPECT().ListManagedSystemTenants(ctx, "system-1").Return([]*domain.ManagedSystemTenant{buildTenant(tenantId, "main")}, nil)
+		mocks.entitlement.EXPECT().GetEntitlementCatalog(ctx, entitlementId, "system-1", "iam-user").Return(&domain.EntitlementCatalog{Id: entitlementId.String(), TenantId: "", Resource: "iam-user"}, nil)
+
+		err := svc.CreateWorkflow(ctx, domain.WorkflowDefinition{Name: "w", Steps: []domain.WorkflowStep{buildGrantStep("grant", entitlementId)}})
+		assert.ErrorIs(t, err, domain.ErrEntitlementNotFound)
+		assert.ErrorContains(t, err, "belongs to no tenant")
+	})
+
 	t.Run("rejects an entitlement that is not in the catalog for the step's resource", func(t *testing.T) {
 		svc, mocks := setupWorkflowService(t)
 		mocks.managedSystem.EXPECT().GetManagedSystemByName(ctx, "aws").Return(buildAwsSystem(), nil)
