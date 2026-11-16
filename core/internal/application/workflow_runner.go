@@ -52,6 +52,10 @@ func (w *WorkflowService) pickTenant(ctx context.Context, managedSystem *domain.
 		return uuid.Nil, nil
 	}
 
+	if isTenantlessOnTenantedSystem(entitlement, tenants) {
+		return uuid.Nil, fmt.Errorf("%w: entitlement %s belongs to no tenant, but system %q has tenants", domain.ErrEntitlementNotFound, entitlement.Id, operation.System)
+	}
+
 	tenants = filterFittingTenants(tenants, operation, entitlement)
 	if len(tenants) == 0 {
 		return uuid.Nil, fmt.Errorf("%w: system %q has no tenant that fits the operation", domain.ErrTenantNotFound, operation.System)
@@ -67,6 +71,11 @@ func (w *WorkflowService) pickTenant(ctx context.Context, managedSystem *domain.
 	}
 
 	return tenantId, nil
+}
+
+// isTenantlessOnTenantedSystem is true for an entitlement saved while its system had no tenants, on a system that has some now: it fits none of them.
+func isTenantlessOnTenantedSystem(entitlement *domain.EntitlementCatalog, tenants []*domain.ManagedSystemTenant) bool {
+	return entitlement != nil && entitlement.TenantId == "" && len(tenants) > 0
 }
 
 // filterFittingTenants keeps the tenants that match the tenant the operation names and the tenant of its entitlement
