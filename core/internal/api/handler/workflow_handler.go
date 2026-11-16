@@ -77,3 +77,19 @@ func (h *Handler) GetWorkflowRun(ctx context.Context, request generated.GetWorkf
 
 	return generated.GetWorkflowRun200JSONResponse{Id: state.Id, Steps: state.Steps}, nil
 }
+
+func (h *Handler) ContinueWorkflowStep(ctx context.Context, request generated.ContinueWorkflowStepRequestObject) (generated.ContinueWorkflowStepResponseObject, error) {
+	if err := h.application.WorkflowService.Continue(ctx, request.Name, request.Id, request.Step); err != nil {
+		if errors.Is(err, domain.ErrWorkflowRunNotFound) {
+			return generated.ContinueWorkflowStep404JSONResponse{Message: err.Error()}, nil
+		}
+
+		if errors.Is(err, domain.ErrWorkflowStepNotGated) {
+			return generated.ContinueWorkflowStep409JSONResponse{Message: err.Error()}, nil
+		}
+
+		return generated.ContinueWorkflowStep500JSONResponse{Message: err.Error()}, nil
+	}
+
+	return generated.ContinueWorkflowStep204Response{}, nil
+}

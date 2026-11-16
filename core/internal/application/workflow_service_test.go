@@ -65,6 +65,7 @@ func buildGrantStep(name string, entitlementId uuid.UUID, after ...string) domai
 		Name:      name,
 		Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.EntitlementKind, Action: "grant", Entitlement: entitlementId},
 		After:     after,
+		Gate:      true,
 	}
 }
 

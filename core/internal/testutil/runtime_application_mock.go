@@ -336,6 +336,20 @@ func (m *MockWorkflowService) EXPECT() *MockWorkflowServiceMockRecorder {
 	return m.recorder
 }
 
+// Continue mocks base method.
+func (m *MockWorkflowService) Continue(ctx context.Context, workflowName, runId, stepName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Continue", ctx, workflowName, runId, stepName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Continue indicates an expected call of Continue.
+func (mr *MockWorkflowServiceMockRecorder) Continue(ctx, workflowName, runId, stepName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Continue", reflect.TypeOf((*MockWorkflowService)(nil).Continue), ctx, workflowName, runId, stepName)
+}
+
 // CreateWorkflow mocks base method.
 func (m *MockWorkflowService) CreateWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error {
 	m.ctrl.T.Helper()

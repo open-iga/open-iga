@@ -244,6 +244,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workflows/{name}/runs/{id}/steps/{step}/continue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Continue a step that is waiting at its gate */
+        post: operations["continueWorkflowStep"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -398,9 +415,9 @@ export interface components {
          * @enum {string}
          */
         "workflow-type": "onboarding";
-        /** @description The steps of a workflow. A step runs one connector operation on a resource of a managed system. Steps without `after` start together; a step with `after` starts when those steps finished. A failed step holds only the steps that come after it. */
+        /** @description The steps of a workflow. A step runs one connector operation on a resource of a managed system. Steps without `after` start together; a step with `after` starts when those steps finished. A failed or gated step holds only the steps that come after it. */
         "workflow-steps": {
-            /** @description Unique within the workflow; `after` refers to it */
+            /** @description Unique within the workflow; `after` and the continue endpoint refer to it */
             name: string;
             /** @description The connector operation to run. The identity comes from the run; the account and tenant are derived. */
             operation: {
@@ -422,6 +439,8 @@ export interface components {
             };
             /** @description Names of the earlier steps that must finish first */
             after?: string[];
+            /** @description Wait before this step until someone continues it from the UI or API */
+            gate?: boolean;
         }[];
     };
     responses: {
@@ -1026,10 +1045,10 @@ export interface operations {
                         steps: {
                             name: string;
                             /**
-                             * @description pending: waiting for earlier steps or running. succeeded. failed: see error. blocked: an earlier step did not succeed, so it never ran.
+                             * @description pending: waiting for earlier steps or running. gated: waiting to be continued. succeeded. failed: see error. blocked: an earlier step did not succeed, so it never ran.
                              * @enum {string}
                              */
-                            status: "pending" | "succeeded" | "failed" | "blocked";
+                            status: "pending" | "gated" | "succeeded" | "failed" | "blocked";
                             error?: string;
                             /** Format: date-time */
                             createdAt: string;
@@ -1046,6 +1065,35 @@ export interface operations {
             };
             401: components["responses"]["unauthenticated-error"];
             404: components["responses"]["not-found-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
+    continueWorkflowStep: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the workflow, e.g. onboarding */
+                name: string;
+                /** @description Id of the run, which must belong to the workflow */
+                id: string;
+                /** @description Name of the gated step */
+                step: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The step continues */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["unauthenticated-error"];
+            404: components["responses"]["not-found-error"];
+            409: components["responses"]["conflict-error"];
             500: components["responses"]["internal-server-error"];
         };
     };

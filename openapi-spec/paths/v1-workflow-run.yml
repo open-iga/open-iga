@@ -38,9 +38,9 @@ get:
                                         status:
                                             type: string
                                             description: >-
-                                                pending: waiting for earlier steps or running. succeeded. failed: see error.
-                                                blocked: an earlier step did not succeed, so it never ran.
-                                            enum: [pending, succeeded, failed, blocked]
+                                                pending: waiting for earlier steps or running. gated: waiting to be continued.
+                                                succeeded. failed: see error. blocked: an earlier step did not succeed, so it never ran.
+                                            enum: [pending, gated, succeeded, failed, blocked]
                                         error:
                                             type: string
                                         createdAt:

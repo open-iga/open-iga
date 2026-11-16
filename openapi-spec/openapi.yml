@@ -34,3 +34,5 @@ paths:
         $ref: './paths/v1-workflow-start.yml'
     '/api/v1/workflows/{name}/runs/{id}':
         $ref: './paths/v1-workflow-run.yml'
+    '/api/v1/workflows/{name}/runs/{id}/steps/{step}/continue':
+        $ref: './paths/v1-workflow-step-continue.yml'

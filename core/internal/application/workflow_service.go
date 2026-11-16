@@ -97,6 +97,18 @@ func (w *WorkflowService) StartWorkflow(ctx context.Context, name string, identi
 	return runId, nil
 }
 
+func (w *WorkflowService) Continue(ctx context.Context, workflowName string, runId string, stepName string) error {
+	if _, err := w.GetRun(ctx, workflowName, runId); err != nil {
+		return err
+	}
+
+	if err := w.workflowEngine.Continue(ctx, runId, stepName); err != nil {
+		return fmt.Errorf("continue workflow: %w", err)
+	}
+
+	return nil
+}
+
 // GetRun treats a run of another workflow as not found.
 func (w *WorkflowService) GetRun(ctx context.Context, workflowName string, runId string) (domain.WorkflowRunState, error) {
 	state, err := w.workflowEngine.Get(ctx, runId)
