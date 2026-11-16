@@ -135,7 +135,7 @@ func TestConnectorService_Execute_BuildsInputFromDB(t *testing.T) {
 	systems := testutil.NewMockManagedSystemRepository(ctrl)
 	identities := testutil.NewMockIdentityRepository(ctrl)
 	accounts := testutil.NewMockAccountRepository(ctrl)
-	service := NewConnectorService(runtime, systems, identities, accounts, testutil.NewMockEntitlementRepository(ctrl), testutil.NewTestLogger())
+	service := NewConnectorService(runtime, systems, identities, accounts, testutil.NewMockEntitlementCatalogRepository(ctrl), testutil.NewTestLogger())
 
 	tenantID, identityID := uuid.New(), uuid.New()
 	systems.EXPECT().GetManagedSystemByName(gomock.Any(), "aws").Return(&domain.ManagedSystem{
@@ -190,15 +190,15 @@ func TestConnectorService_Execute_GrantUsesAccountAndEntitlementFromDB(t *testin
 	systems := testutil.NewMockManagedSystemRepository(ctrl)
 	identities := testutil.NewMockIdentityRepository(ctrl)
 	accounts := testutil.NewMockAccountRepository(ctrl)
-	entitlements := testutil.NewMockEntitlementRepository(ctrl)
+	entitlements := testutil.NewMockEntitlementCatalogRepository(ctrl)
 	service := NewConnectorService(runtime, systems, identities, accounts, entitlements, testutil.NewTestLogger())
 
 	tenantID, identityID, entitlementID := uuid.New(), uuid.New(), uuid.New()
 	systems.EXPECT().GetManagedSystemByName(gomock.Any(), "aws").Return(&domain.ManagedSystem{Id: "ms1", ConnectorUrl: "u", ConnectorHash: "h"}, nil)
 	systems.EXPECT().GetManagedSystemTenant(gomock.Any(), tenantID).Return(&domain.ManagedSystemTenant{Id: tenantID.String(), ManagedSystemId: "ms1", ExternalId: "acct-1"}, nil)
 	identities.EXPECT().GetIdentityById(gomock.Any(), identityID).Return(&domain.Identity{}, nil)
-	accounts.EXPECT().GetAccountByTenantAndIdentity(gomock.Any(), tenantID, identityID).Return(&domain.Account{ExternalId: "arn:user"}, nil)
-	entitlements.EXPECT().GetEntitlement(gomock.Any(), entitlementID).Return(&domain.Entitlement{TenantId: tenantID.String(), Name: "group-1"}, nil)
+	accounts.EXPECT().GetAccount(gomock.Any(), gomock.Any(), tenantID, identityID).Return(&domain.Account{ExternalId: "arn:user"}, nil)
+	entitlements.EXPECT().GetEntitlementCatalog(gomock.Any(), entitlementID, gomock.Any(), gomock.Any()).Return(&domain.EntitlementCatalog{TenantId: tenantID.String(), ExternalId: "group-1"}, nil)
 	runtime.EXPECT().Execute(gomock.Any(), "u", "h", domain.ConnectorInvocation{
 		Kind: domain.EntitlementKind, ManagedResource: "iam-user-groups", Type: "grant",
 		Input: json.RawMessage(`{"tenant":{"id":"acct-1"},"accountId":"arn:user","entitlementId":"group-1"}`),
@@ -216,15 +216,15 @@ func TestConnectorService_Execute_RejectsEntitlementOfAnotherTenant(t *testing.T
 	systems := testutil.NewMockManagedSystemRepository(ctrl)
 	identities := testutil.NewMockIdentityRepository(ctrl)
 	accounts := testutil.NewMockAccountRepository(ctrl)
-	entitlements := testutil.NewMockEntitlementRepository(ctrl)
+	entitlements := testutil.NewMockEntitlementCatalogRepository(ctrl)
 	service := NewConnectorService(testutil.NewMockConnectorRuntime(ctrl), systems, identities, accounts, entitlements, testutil.NewTestLogger())
 
 	tenantID, identityID, entitlementID := uuid.New(), uuid.New(), uuid.New()
 	systems.EXPECT().GetManagedSystemByName(gomock.Any(), "aws").Return(&domain.ManagedSystem{Id: "ms1"}, nil)
 	systems.EXPECT().GetManagedSystemTenant(gomock.Any(), tenantID).Return(&domain.ManagedSystemTenant{Id: tenantID.String(), ManagedSystemId: "ms1"}, nil)
 	identities.EXPECT().GetIdentityById(gomock.Any(), identityID).Return(&domain.Identity{}, nil)
-	accounts.EXPECT().GetAccountByTenantAndIdentity(gomock.Any(), tenantID, identityID).Return(&domain.Account{ExternalId: "arn:user"}, nil)
-	entitlements.EXPECT().GetEntitlement(gomock.Any(), entitlementID).Return(&domain.Entitlement{TenantId: uuid.NewString()}, nil)
+	accounts.EXPECT().GetAccount(gomock.Any(), gomock.Any(), tenantID, identityID).Return(&domain.Account{ExternalId: "arn:user"}, nil)
+	entitlements.EXPECT().GetEntitlementCatalog(gomock.Any(), entitlementID, gomock.Any(), gomock.Any()).Return(&domain.EntitlementCatalog{TenantId: uuid.NewString()}, nil)
 
 	_, err := service.Execute(context.Background(), "aws", "iam-user-groups", domain.EntitlementKind, "grant",
 		domain.OperationRef{TenantId: tenantID, IdentityId: identityID, EntitlementId: entitlementID})

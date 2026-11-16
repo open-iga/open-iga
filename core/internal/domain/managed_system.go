@@ -15,6 +15,7 @@ var (
 	ErrManagedSystemNotFound   = errors.New("managed system not found")
 	ErrTenantNotFound          = errors.New("tenant not found")
 	ErrAccountNotFound         = errors.New("account not found")
+	ErrAccountConflict         = errors.New("the identity already has another account on this system")
 	ErrEntitlementNotFound     = errors.New("entitlement not found")
 	ErrEmptyOutput             = errors.New("connector returned an empty output")
 	ErrUnknownOperation        = errors.New("unknown connector operation")
@@ -39,20 +40,28 @@ type ManagedSystemTenant struct {
 	CreatedAt       time.Time
 }
 
-// Account is an identity's managed account on a tenant. ExternalId is empty until it is provisioned.
+// Account is an identity's managed account on a system, or on one of its tenants. ExternalId is empty until it is provisioned.
+// TenantId is empty for a single-tenant system.
 type Account struct {
-	Id         string
-	TenantId   string
-	IdentityId string
-	ExternalId string
-	Enabled    bool
+	Id              string
+	ManagedSystemId string
+	TenantId        string
+	IdentityId      string
+	ExternalId      string
+	Enabled         bool
 }
 
-// Entitlement is something a connector can grant; Name is its id in the target system.
-type Entitlement struct {
-	Id       string
-	TenantId string
-	Name     string
+// EntitlementCatalog is one row of the catalog: something a connector resource can grant, as found by discovery.
+// TenantId is empty for a single-tenant system.
+type EntitlementCatalog struct {
+	Id              string
+	ManagedSystemId string
+	TenantId        string
+	Resource        string // the connector resource that offers it
+	ExternalId      string // its id in the target system, which grant and revoke send
+	DisplayName     string
+	Description     string
+	Metadata        Metadata
 }
 
 // OperationRef is all a caller says about a call: which rows to use. Everything the connector
@@ -82,5 +91,10 @@ func (r OperationRef) NeedsAccount(kind ConnectorKind, action string) bool {
 
 // NeedsEntitlement is true when the ref names an entitlement and the operation grants or revokes it.
 func (r OperationRef) NeedsEntitlement(kind ConnectorKind, action string) bool {
-	return r.EntitlementId != uuid.Nil && kind == EntitlementKind && (action == "grant" || action == "revoke")
+	return r.EntitlementId != uuid.Nil && needsEntitlement(kind, action)
+}
+
+// needsEntitlement is true for the operations that grant or revoke one.
+func needsEntitlement(kind ConnectorKind, action string) bool {
+	return kind == EntitlementKind && (action == "grant" || action == "revoke")
 }

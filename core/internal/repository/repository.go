@@ -51,11 +51,12 @@ func NewRepository(appConfig *common.AppConfig, logger *slog.Logger) (*contract.
 	queries := db.New(pool)
 
 	return &contract.Repository{
-		AccountRepository:       NewAccountRepository(queries),
-		EntitlementRepository:   NewEntitlementRepository(queries),
-		IdentityRepository:      NewIdentityRepository(pool, queries, logger),
-		SessionRepository:       NewSessionRepository(queries, logger),
-		ManagedSystemRepository: NewManagedSystemRepository(queries, logger),
+		AccountRepository:            NewAccountRepository(queries),
+		EntitlementCatalogRepository: NewEntitlementCatalogRepository(queries),
+		IdentityRepository:           NewIdentityRepository(pool, queries, logger),
+		SessionRepository:            NewSessionRepository(queries, logger),
+		ManagedSystemRepository:      NewManagedSystemRepository(queries, logger),
+		WorkflowRepository:           NewWorkflowRepository(queries),
 	}, pool, nil
 }
 

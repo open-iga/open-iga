@@ -54,32 +54,38 @@ func (ns NullIdentityType) Value() (driver.Value, error) {
 }
 
 type Account struct {
-	ID         uuid.UUID
-	TenantID   uuid.UUID
-	IdentityID uuid.UUID
-	ExternalID pgtype.Text
-	Enabled    bool
-	Metadata   []byte
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
+	ID              uuid.UUID
+	ManagedSystemID uuid.UUID
+	TenantID        pgtype.UUID
+	IdentityID      uuid.UUID
+	ExternalID      pgtype.Text
+	Enabled         bool
+	Metadata        []byte
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 }
 
 type AccountEntitlement struct {
-	ID            uuid.UUID
-	AccountID     uuid.UUID
-	EntitlementID uuid.UUID
-	ExternalID    pgtype.Text
-	Metadata      []byte
-	CreatedAt     pgtype.Timestamptz
-	UpdatedAt     pgtype.Timestamptz
+	ID                   uuid.UUID
+	AccountID            uuid.UUID
+	EntitlementCatalogID uuid.UUID
+	ExternalID           pgtype.Text
+	Metadata             []byte
+	CreatedAt            pgtype.Timestamptz
+	UpdatedAt            pgtype.Timestamptz
 }
 
-type Entitlement struct {
-	ID        uuid.UUID
-	TenantID  uuid.UUID
-	Name      string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+type EntitlementCatalog struct {
+	ID              uuid.UUID
+	ManagedSystemID uuid.UUID
+	TenantID        pgtype.UUID
+	Resource        string
+	ExternalID      string
+	DisplayName     string
+	Description     pgtype.Text
+	Metadata        []byte
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 }
 
 type Identity struct {
@@ -130,4 +136,11 @@ type Session struct {
 	Active     bool
 	CreatedAt  pgtype.Timestamptz
 	ExpiresAt  pgtype.Timestamptz
+}
+
+type WorkflowDefinition struct {
+	Name       string
+	Definition []byte
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
 }
