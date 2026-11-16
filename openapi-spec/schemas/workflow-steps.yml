@@ -1,0 +1,46 @@
+# Steps are already decoded domain values, so handlers pass them as is.
+x-go-type: '[]domain.WorkflowStep'
+x-go-type-import:
+    path: github.com/open-iga/core/internal/domain
+type: array
+description: >-
+    The steps of a workflow. A step runs one connector operation on a resource of a managed system.
+    Steps without `after` start together; a step with `after` starts when those steps finished.
+    A failed step holds only the steps that come after it.
+items:
+    type: object
+    properties:
+        name:
+            type: string
+            description: Unique within the workflow; `after` refers to it
+        operation:
+            type: object
+            description: The connector operation to run. The identity comes from the run; the account and tenant are derived.
+            properties:
+                system:
+                    type: string
+                    description: Name of an onboarded managed system
+                resource:
+                    type: string
+                    description: A resource of the system's connector, e.g. iam-user
+                kind:
+                    type: string
+                    enum: [account-action, entitlement]
+                action:
+                    type: string
+                    description: >-
+                        For account-action one of create, enable, disable, delete, read, list.
+                        For entitlement one of discover, grant, revoke, read.
+                tenant:
+                    type: string
+                    description: Tenant name; needed only when the system has several tenants and no entitlement tells which
+                entitlement:
+                    type: string
+                    description: Id of the entitlement to grant or revoke. Required for those actions, not allowed for the others.
+            required: [system, resource, kind, action]
+        after:
+            type: array
+            description: Names of the earlier steps that must finish first
+            items:
+                type: string
+    required: [name, operation]

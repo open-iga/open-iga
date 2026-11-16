@@ -10,12 +10,14 @@ import (
 )
 
 func NewApplication(ctx context.Context, appConfig *common.AppConfig, logger *slog.Logger, remotes *contract.RuntimeRemote, repository *contract.Repository) (*contract.RuntimeApplication, error) {
-	connectorService := NewConnectorService(remotes.ConnectorRuntime, repository.ManagedSystemRepository, repository.IdentityRepository, repository.AccountRepository, repository.EntitlementRepository, logger)
+	connectorService := NewConnectorService(remotes.ConnectorRuntime, repository.ManagedSystemRepository, repository.IdentityRepository, repository.AccountRepository, repository.EntitlementCatalogRepository, logger)
+	workflowService := NewWorkflowService(logger, repository.WorkflowRepository, repository.ManagedSystemRepository, repository.EntitlementCatalogRepository)
 
 	application := &contract.RuntimeApplication{
 		AuthService:          NewAuthService(remotes.Oauth2Clients, logger, repository.SessionRepository, repository.IdentityRepository),
 		ConnectorService:     connectorService,
 		ManagedSystemService: NewManagedSystemService(logger, connectorService, repository.ManagedSystemRepository),
+		WorkflowService:      workflowService,
 	}
 
 	if err := application.AuthService.EnsureAdmin(ctx, appConfig.AdminUser.Email); err != nil {

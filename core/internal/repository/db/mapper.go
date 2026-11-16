@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log/slog"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/open-iga/core/internal/domain"
 )
 
@@ -57,14 +59,19 @@ func (t *ManagedSystemTenant) ToDomain() *domain.ManagedSystemTenant {
 
 func (a *Account) ToDomain() *domain.Account {
 	return &domain.Account{
-		Id:         a.ID.String(),
-		TenantId:   a.TenantID.String(),
-		IdentityId: a.IdentityID.String(),
-		ExternalId: a.ExternalID.String,
-		Enabled:    a.Enabled,
+		Id:              a.ID.String(),
+		ManagedSystemId: a.ManagedSystemID.String(),
+		TenantId:        FormatNullableUUID(a.TenantID),
+		IdentityId:      a.IdentityID.String(),
+		ExternalId:      a.ExternalID.String,
+		Enabled:         a.Enabled,
 	}
 }
 
-func (e *Entitlement) ToDomain() *domain.Entitlement {
-	return &domain.Entitlement{Id: e.ID.String(), TenantId: e.TenantID.String(), Name: e.Name}
+// FormatNullableUUID is empty for a missing id, like the tenant of a single-tenant system.
+func FormatNullableUUID(id pgtype.UUID) string {
+	if !id.Valid {
+		return ""
+	}
+	return uuid.UUID(id.Bytes).String()
 }

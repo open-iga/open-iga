@@ -47,7 +47,7 @@ type OperationData struct {
 	Tenant      *ManagedSystemTenant
 	Identity    *Identity
 	Account     *Account
-	Entitlement *Entitlement
+	Entitlement *EntitlementCatalog
 }
 
 // operationBuilders build the typed input of each operation, keyed by kind and action name.
@@ -110,7 +110,7 @@ func buildEntitlementAssignment(wrap func(EntitlementAssignmentInput) ConnectorO
 		return wrap(EntitlementAssignmentInput{
 			Tenant:        data.connectorTenant(),
 			AccountID:     accountID,
-			EntitlementID: data.Entitlement.Name,
+			EntitlementID: data.Entitlement.ExternalId,
 		}), nil
 	}
 }
@@ -128,6 +128,10 @@ func (d OperationData) accountExternalID() (string, error) {
 		return "", fmt.Errorf("%w: account is not provisioned yet", ErrMissingOperationData)
 	}
 	return d.Account.ExternalId, nil
+}
+
+func isConnectorOperation(kind ConnectorKind, action string) bool {
+	return operationBuilders[kind][action] != nil
 }
 
 // NewConnectorOperation builds the typed input of the action named by kind and name from the loaded data.

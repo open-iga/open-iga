@@ -70,19 +70,25 @@ CREATE UNIQUE INDEX idx_unique_managed_system_tenant ON managed_system_tenant(ma
 CREATE UNIQUE INDEX idx_unique_managed_system_tenant_name ON managed_system_tenant(managed_system_id, name);
 
 -- Entitlements are exposed by business owners/admins. These are owned by the connectors
-CREATE TABLE entitlement (
+CREATE TABLE entitlement_catalog (
     id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id  uuid REFERENCES managed_system_tenant(id) NOT NULL,
-    name       VARCHAR(255)     NOT NULL,
-    created_at TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP
+    managed_system_id uuid REFERENCES managed_system(id) NOT NULL,
+    tenant_id  uuid REFERENCES managed_system_tenant(id),
+    resource     VARCHAR(255)   NOT NULL,
+    external_id  VARCHAR(255)   NOT NULL,
+    display_name VARCHAR(255)   NOT NULL,
+    description  TEXT,
+    metadata     JSONB          NOT NULL DEFAULT '{}',
+    created_at   TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP
 );
-CREATE UNIQUE INDEX idx_unique_entitlement ON entitlement(tenant_id, name);
+CREATE UNIQUE INDEX idx_unique_entitlement_catalog ON entitlement_catalog(managed_system_id, tenant_id, resource, external_id) NULLS NOT DISTINCT;
 
 -- An identity's managed account on a tenant. Created before any entitlement is assigned.
 CREATE TABLE account (
     id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id   uuid REFERENCES managed_system_tenant(id) NOT NULL,
+    managed_system_id uuid REFERENCES managed_system(id) NOT NULL,
+    tenant_id   uuid REFERENCES managed_system_tenant(id),
     identity_id uuid REFERENCES identity(id) NOT NULL,
     -- account id in the target system, set once provisioned
     external_id VARCHAR(255),
@@ -91,16 +97,24 @@ CREATE TABLE account (
     created_at  TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP
 );
-CREATE UNIQUE INDEX idx_unique_account ON account(tenant_id, identity_id);
+CREATE UNIQUE INDEX idx_unique_account ON account(managed_system_id, tenant_id, identity_id) NULLS NOT DISTINCT;
 
 -- An entitlement assigned to an account
 CREATE TABLE account_entitlement (
     id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     account_id     uuid REFERENCES account(id) NOT NULL,
-    entitlement_id uuid REFERENCES entitlement(id) NOT NULL,
+    entitlement_catalog_id uuid REFERENCES entitlement_catalog(id) NOT NULL,
     external_id    VARCHAR(255),
     metadata       JSONB            NOT NULL DEFAULT '{}',
     created_at     TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP,
     updated_at     TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP
 );
-CREATE UNIQUE INDEX idx_unique_account_entitlement ON account_entitlement(account_id, entitlement_id);
+CREATE UNIQUE INDEX idx_unique_account_entitlement ON account_entitlement(account_id, entitlement_catalog_id);
+
+-- A workflow an admin defined: connector operation steps that the workflow engine runs. The definition is the domain JSON as is.
+CREATE TABLE workflow_definition (
+    name       VARCHAR(255) PRIMARY KEY,
+    definition JSONB          NOT NULL,
+    created_at TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP
+);

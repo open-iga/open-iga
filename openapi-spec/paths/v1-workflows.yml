@@ -1,0 +1,29 @@
+post:
+    operationId: createWorkflow
+    description: >-
+        Create a workflow. The systems, resources, tenants and entitlements its steps name must exist;
+        otherwise nothing is saved. A workflow with the same name is not replaced.
+    requestBody:
+        required: true
+        content:
+            'application/json':
+                schema:
+                    type: object
+                    properties:
+                        name:
+                            type: string
+                            description: Name of the workflow, e.g. onboarding
+                        steps:
+                            $ref: '../schemas/workflow-steps.yml'
+                    required: [name, steps]
+    responses:
+        201:
+            description: Workflow created
+        400:
+            $ref: '../components/responses/bad-request-error.yml'
+        401:
+            $ref: '../components/responses/unauthenticated-error.yml'
+        409:
+            $ref: '../components/responses/conflict-error.yml'
+        500:
+            $ref: '../components/responses/internal-server-error.yml'
