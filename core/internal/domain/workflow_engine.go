@@ -10,6 +10,7 @@ import (
 
 var (
 	ErrWorkflowRunNotFound   = errors.New("workflow run not found")
+	ErrWorkflowStepNotGated  = errors.New("workflow step is not waiting at a gate")
 	ErrWorkflowNotFound      = errors.New("workflow not found")
 	ErrWorkflowAlreadyExists = errors.New("workflow already exists")
 )
@@ -21,7 +22,9 @@ type WorkflowStepStatus string
 
 const (
 	// WorkflowStepPending covers waiting for the steps it follows and running.
-	WorkflowStepPending   WorkflowStepStatus = "pending"
+	WorkflowStepPending WorkflowStepStatus = "pending"
+	// WorkflowStepGated waits for someone to continue it manually.
+	WorkflowStepGated     WorkflowStepStatus = "gated"
 	WorkflowStepSucceeded WorkflowStepStatus = "succeeded"
 	WorkflowStepFailed    WorkflowStepStatus = "failed"
 	// WorkflowStepBlocked never ran because a step it follows did not succeed.

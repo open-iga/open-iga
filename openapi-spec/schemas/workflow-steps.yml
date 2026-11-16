@@ -6,13 +6,13 @@ type: array
 description: >-
     The steps of a workflow. A step runs one connector operation on a resource of a managed system.
     Steps without `after` start together; a step with `after` starts when those steps finished.
-    A failed step holds only the steps that come after it.
+    A failed or gated step holds only the steps that come after it.
 items:
     type: object
     properties:
         name:
             type: string
-            description: Unique within the workflow; `after` refers to it
+            description: Unique within the workflow; `after` and the continue endpoint refer to it
         operation:
             type: object
             description: The connector operation to run. The identity comes from the run; the account and tenant are derived.
@@ -43,4 +43,7 @@ items:
             description: Names of the earlier steps that must finish first
             items:
                 type: string
+        gate:
+            type: boolean
+            description: Wait before this step until someone continues it from the UI or API
     required: [name, operation]

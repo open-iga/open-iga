@@ -154,3 +154,26 @@ func TestHandler_GetWorkflowRun(t *testing.T) {
 		assert.Equal(t, http.StatusNotFound, sendRequest(router, http.MethodGet, "/api/v1/workflows/onboarding/runs/run-1", "").Code)
 	})
 }
+
+func TestHandler_ContinueWorkflowStep(t *testing.T) {
+	t.Run("returns 204 when the step continues", func(t *testing.T) {
+		router, service := setupRouterWithMockWorkflowService(t)
+		service.EXPECT().Continue(gomock.Any(), "onboarding", "run-1", "grant-admin").Return(nil)
+
+		assert.Equal(t, http.StatusNoContent, sendRequest(router, http.MethodPost, "/api/v1/workflows/onboarding/runs/run-1/steps/grant-admin/continue", "").Code)
+	})
+
+	t.Run("returns 404 for an unknown run", func(t *testing.T) {
+		router, service := setupRouterWithMockWorkflowService(t)
+		service.EXPECT().Continue(gomock.Any(), "onboarding", "run-1", "grant-admin").Return(domain.ErrWorkflowRunNotFound)
+
+		assert.Equal(t, http.StatusNotFound, sendRequest(router, http.MethodPost, "/api/v1/workflows/onboarding/runs/run-1/steps/grant-admin/continue", "").Code)
+	})
+
+	t.Run("returns 409 when the step is not waiting at a gate", func(t *testing.T) {
+		router, service := setupRouterWithMockWorkflowService(t)
+		service.EXPECT().Continue(gomock.Any(), "onboarding", "run-1", "grant-admin").Return(domain.ErrWorkflowStepNotGated)
+
+		assert.Equal(t, http.StatusConflict, sendRequest(router, http.MethodPost, "/api/v1/workflows/onboarding/runs/run-1/steps/grant-admin/continue", "").Code)
+	})
+}

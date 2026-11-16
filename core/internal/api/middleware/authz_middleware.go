@@ -28,6 +28,7 @@ var operationRoles = map[string][]string{
 	"GetWorkflow":                          {domain.AdminRole},
 	"StartWorkflow":                        {domain.AdminRole},
 	"GetWorkflowRun":                       {domain.AdminRole},
+	"ContinueWorkflowStep":                 {domain.AdminRole},
 }
 
 // AuthzStrictMiddleware enforces per-operation roles at the strict-handler layer.

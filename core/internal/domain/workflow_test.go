@@ -41,7 +41,7 @@ func TestWorkflowDefinitionValidate(t *testing.T) {
 	grant.Entitlement = uuid.New()
 	valid := WorkflowDefinition{Name: "onboarding", Type: WorkflowTypeOnboarding, Steps: []WorkflowStep{
 		{Name: "create-aws", Operation: create},
-		{Name: "create-github", Operation: create},
+		{Name: "create-github", Operation: create, Gate: true},
 		{Name: "grant-aws", Operation: grant, After: []string{"create-aws"}},
 	}}
 	assert.NoError(t, valid.Validate())

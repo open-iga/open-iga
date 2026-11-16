@@ -38,6 +38,7 @@ type WorkflowService interface {
 	GetWorkflow(ctx context.Context, name string) (domain.WorkflowDefinition, error)
 	// StartWorkflow runs the saved workflow for the identity (empty for workflows that touch none) and returns the run id.
 	StartWorkflow(ctx context.Context, name string, identityId uuid.UUID) (runId string, err error)
+	Continue(ctx context.Context, workflowName string, runId string, stepName string) error
 	GetRun(ctx context.Context, workflowName string, runId string) (domain.WorkflowRunState, error)
 }
 

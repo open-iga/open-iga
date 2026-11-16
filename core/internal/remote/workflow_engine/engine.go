@@ -16,19 +16,27 @@ import (
 const (
 	appName = "open-iga"
 	// applicationVersion changes only when a code change would break the replay of a run in flight.
-	// The default is a hash of the binary, which would orphan every run in flight on each deploy.
+	// The default is a hash of the binary, which would orphan every run waiting at a gate on each deploy.
 	applicationVersion = "1"
+	// gateTimeout is how long a step waits at a gate before it fails; DBOS needs a timeout, so it is very long.
+	gateTimeout = 30 * 24 * time.Hour
+	// eventReadTimeout is how long reading a step's gate state waits for the event to exist.
+	eventReadTimeout = 10 * time.Millisecond
 
 	runWorkflowName  = "run"
 	stepWorkflowName = "step"
+	gateTopic        = "continue"
+	gateEvent        = "gate"
+	gateWaiting      = "waiting"
+	gateContinued    = "continued"
 	blockedPrefix    = "blocked by "
 
-	// getRunTimeout stops a read that DBOS keeps retrying while the database is down.
-	getRunTimeout = 10 * time.Second
+	// requestTimeout stops a call that DBOS keeps retrying while the database is down.
+	requestTimeout = 10 * time.Second
 )
 
 // Engine runs workflow runs on DBOS, which keeps their state in the core's database (schema dbos).
-// A run is one DBOS workflow that starts one child workflow per step, so a failure holds only the steps after it.
+// A run is one DBOS workflow that starts one child workflow per step, so a gate or a failure holds only the steps after it.
 type Engine struct {
 	databaseUrl string
 	logger      *slog.Logger
@@ -77,8 +85,26 @@ func (e *Engine) Start(_ context.Context, runId string, run domain.WorkflowRun) 
 	return nil
 }
 
+func (e *Engine) Continue(_ context.Context, runId, stepName string) error {
+	stepId := buildStepWorkflowId(runId, stepName)
+
+	sendCtx, cancel := dbos.WithTimeout(e.dbosCtx, requestTimeout)
+	defer cancel()
+
+	if e.getGateState(sendCtx, stepId) != gateWaiting {
+		return fmt.Errorf("%w: %s", domain.ErrWorkflowStepNotGated, stepId)
+	}
+
+	// dbos.Recv in waitForGate receives this event and set the next stages for the gated step
+	if err := dbos.Send(sendCtx, stepId, gateContinued, gateTopic); err != nil {
+		return fmt.Errorf("continue step %s: %w", stepId, err)
+	}
+
+	return nil
+}
+
 func (e *Engine) Get(_ context.Context, runId string) (domain.WorkflowRunState, error) {
-	readCtx, cancel := dbos.WithTimeout(e.dbosCtx, getRunTimeout)
+	readCtx, cancel := dbos.WithTimeout(e.dbosCtx, requestTimeout)
 	defer cancel()
 
 	runs, err := dbos.ListWorkflows(readCtx, dbos.WithFilterWorkflowIDs(runId), dbos.WithFilterLoadInput(true))
@@ -113,7 +139,7 @@ func (e *Engine) Get(_ context.Context, runId string) (domain.WorkflowRunState, 
 	}
 	for _, step := range run.Definition.Steps {
 		workflowStep := workflowStepById[buildStepWorkflowId(runId, step.Name)]
-		workflowRunState.Steps = append(workflowRunState.Steps, e.toWorkflowStepState(workflowStep, step.Name))
+		workflowRunState.Steps = append(workflowRunState.Steps, e.toWorkflowStepState(readCtx, workflowStep, step.Name))
 	}
 
 	return workflowRunState, nil
@@ -129,7 +155,7 @@ func (e *Engine) Shutdown(timeout time.Duration) {
 	}
 }
 
-func (e *Engine) toWorkflowStepState(workflowStatus dbos.WorkflowStatus, name string) domain.WorkflowStepState {
+func (e *Engine) toWorkflowStepState(ctx dbos.Context, workflowStatus dbos.WorkflowStatus, name string) domain.WorkflowStepState {
 	workflowStepState := domain.WorkflowStepState{
 		Name:      name,
 		Status:    domain.WorkflowStepPending,
@@ -151,9 +177,23 @@ func (e *Engine) toWorkflowStepState(workflowStatus dbos.WorkflowStatus, name st
 		if strings.HasPrefix(workflowStepState.Error, blockedPrefix) {
 			workflowStepState.Status = domain.WorkflowStepBlocked
 		}
+	case dbos.WorkflowStatusPending, dbos.WorkflowStatusEnqueued, dbos.WorkflowStatusDelayed:
+		if e.getGateState(ctx, workflowStatus.ID) == gateWaiting {
+			workflowStepState.Status = domain.WorkflowStepGated
+		}
 	}
 
 	return workflowStepState
+}
+
+// getGateState is empty when the step has no gate or has not reached it: DBOS reports a missing event as a timeout.
+func (e *Engine) getGateState(ctx dbos.Context, stepId string) string {
+	gate, err := dbos.GetEvent[string](ctx, stepId, gateEvent, eventReadTimeout)
+	if err != nil {
+		return ""
+	}
+
+	return gate
 }
 
 func buildStepWorkflowId(runId, stepName string) string {

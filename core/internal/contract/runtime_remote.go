@@ -32,12 +32,14 @@ type ConnectorRuntime interface {
 	Execute(ctx context.Context, url string, hash string, invocation domain.ConnectorInvocation) ([]byte, error)
 }
 
-// WorkflowEngine runs workflow runs durably: a run survives a restart.
+// WorkflowEngine runs workflow runs durably: a run survives a restart. A step waits at its gate until it is continued, and fails after 30 days.
 type WorkflowEngine interface {
 	// Launch starts the engine with the runner that executes each step; it also picks up runs left from before a restart.
 	Launch(ctx context.Context, runner domain.WorkflowStepRunner) error
 	// Start begins a run under the given id. Steps without a dependency run in parallel.
 	Start(ctx context.Context, runId string, run domain.WorkflowRun) error
+	// Continue releases a step waiting at a gate.
+	Continue(ctx context.Context, runId, stepName string) error
 	Get(ctx context.Context, runId string) (domain.WorkflowRunState, error)
 	Shutdown(timeout time.Duration)
 }
