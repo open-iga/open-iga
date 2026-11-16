@@ -2,7 +2,9 @@ package application
 
 import (
 	"context"
+	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/open-iga/core/internal/domain"
@@ -34,6 +36,7 @@ func setupWorkflowService(t *testing.T) (*WorkflowService, workflowMocks) {
 		account:          testutil.NewMockAccountRepository(ctrl),
 	}
 	svc := NewWorkflowService(testutil.NewTestLogger(), mocks.engine, mocks.connectorService, mocks.workflowRepo, mocks.managedSystem, mocks.entitlement, mocks.identity, mocks.account)
+	close(svc.engineReady)
 	return svc, mocks
 }
 
@@ -251,4 +254,35 @@ func TestWorkflowService_GetRun(t *testing.T) {
 
 	_, err = svc.GetRun(context.Background(), "rehire", "run-1")
 	assert.ErrorIs(t, err, domain.ErrWorkflowRunNotFound)
+}
+
+func TestWorkflowService_LaunchEngine(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("workflow runs are refused until the engine has launched", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		svc.engineReady = make(chan struct{}) // the helper opens it; here the engine has not launched
+		mocks.engine.EXPECT().Launch(ctx, gomock.Any()).Return(nil)
+
+		_, err := svc.StartWorkflow(ctx, "onboarding", uuid.Nil)
+		assert.ErrorIs(t, err, domain.ErrWorkflowEngineNotReady)
+		_, err = svc.GetRun(ctx, "onboarding", "run-1")
+		assert.ErrorIs(t, err, domain.ErrWorkflowEngineNotReady)
+
+		svc.LaunchEngine(ctx)
+		assert.NoError(t, svc.checkEngineReady())
+	})
+
+	t.Run("a failed launch is tried again until it works", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		svc.engineReady = make(chan struct{})
+		svc.engineLaunchRetryInterval = time.Millisecond
+		gomock.InOrder(
+			mocks.engine.EXPECT().Launch(ctx, gomock.Any()).Return(errors.New("database down")),
+			mocks.engine.EXPECT().Launch(ctx, gomock.Any()).Return(nil),
+		)
+
+		svc.LaunchEngine(ctx)
+		assert.NoError(t, svc.checkEngineReady())
+	})
 }

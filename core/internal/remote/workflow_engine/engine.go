@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dbos-inc/dbos-transact-golang/dbos"
@@ -22,6 +23,8 @@ const (
 	gateTimeout = 30 * 24 * time.Hour
 	// eventReadTimeout is how long reading a step's gate state waits for the event to exist.
 	eventReadTimeout = 10 * time.Millisecond
+	// failedLaunchShutdownTimeout is how long a half-launched engine gets to release its resources.
+	failedLaunchShutdownTimeout = 5 * time.Second
 
 	runWorkflowName  = "run"
 	stepWorkflowName = "step"
@@ -41,13 +44,15 @@ type Engine struct {
 	databaseUrl string
 	logger      *slog.Logger
 	runner      domain.WorkflowStepRunner
-	dbosCtx     dbos.Context
+	// mutex guards dbosCtx: Launch sets it in the background while Shutdown may read it.
+	mutex   sync.Mutex
+	dbosCtx dbos.Context
 }
 
 var _ contract.WorkflowEngine = (*Engine)(nil)
 
 func NewEngine(databaseUrl string, logger *slog.Logger) *Engine {
-	return &Engine{databaseUrl: databaseUrl, logger: logger, runner: nil, dbosCtx: nil}
+	return &Engine{databaseUrl: databaseUrl, logger: logger, runner: nil, mutex: sync.Mutex{}, dbosCtx: nil}
 }
 
 func (e *Engine) Launch(ctx context.Context, runner domain.WorkflowStepRunner) error {
@@ -65,10 +70,17 @@ func (e *Engine) Launch(ctx context.Context, runner domain.WorkflowStepRunner) e
 	dbos.RegisterWorkflow(dbosCtx, e.executeWorkflowRun, dbos.WithWorkflowName(runWorkflowName))
 	dbos.RegisterWorkflow(dbosCtx, e.executeWorkflowStep, dbos.WithWorkflowName(stepWorkflowName))
 	if err := dbos.Launch(dbosCtx); err != nil {
+		// The context holds a database pool; release it so a later attempt starts clean.
+		if shutdownErr := dbos.Shutdown(dbosCtx, failedLaunchShutdownTimeout); shutdownErr != nil {
+			e.logger.Error("failed to release the workflow engine after a failed launch", "err", shutdownErr)
+		}
+
 		return fmt.Errorf("launch dbos: %w", err)
 	}
 
+	e.mutex.Lock()
 	e.dbosCtx = dbosCtx
+	e.mutex.Unlock()
 
 	return nil
 }
@@ -146,11 +158,15 @@ func (e *Engine) Get(_ context.Context, runId string) (domain.WorkflowRunState, 
 }
 
 func (e *Engine) Shutdown(timeout time.Duration) {
-	if e.dbosCtx == nil {
+	e.mutex.Lock()
+	dbosCtx := e.dbosCtx
+	e.mutex.Unlock()
+
+	if dbosCtx == nil {
 		return
 	}
 
-	if err := dbos.Shutdown(e.dbosCtx, timeout); err != nil {
+	if err := dbos.Shutdown(dbosCtx, timeout); err != nil {
 		e.logger.Error("failed to shut down workflow engine", "err", err)
 	}
 }
