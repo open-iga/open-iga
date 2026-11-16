@@ -22,6 +22,9 @@ const (
 	runWorkflowName  = "run"
 	stepWorkflowName = "step"
 	blockedPrefix    = "blocked by "
+
+	// getRunTimeout stops a read that DBOS keeps retrying while the database is down.
+	getRunTimeout = 10 * time.Second
 )
 
 // Engine runs workflow runs on DBOS, which keeps their state in the core's database (schema dbos).
@@ -75,7 +78,10 @@ func (e *Engine) Start(_ context.Context, runId string, run domain.WorkflowRun) 
 }
 
 func (e *Engine) Get(_ context.Context, runId string) (domain.WorkflowRunState, error) {
-	runs, err := dbos.ListWorkflows(e.dbosCtx, dbos.WithFilterWorkflowIDs(runId), dbos.WithFilterLoadInput(true))
+	readCtx, cancel := dbos.WithTimeout(e.dbosCtx, getRunTimeout)
+	defer cancel()
+
+	runs, err := dbos.ListWorkflows(readCtx, dbos.WithFilterWorkflowIDs(runId), dbos.WithFilterLoadInput(true))
 	if err != nil {
 		return domain.WorkflowRunState{}, fmt.Errorf("get run %s: %w", runId, err)
 	}
@@ -89,7 +95,7 @@ func (e *Engine) Get(_ context.Context, runId string) (domain.WorkflowRunState, 
 		return domain.WorkflowRunState{}, fmt.Errorf("decode run %s: %w", runId, err)
 	}
 
-	workflowSteps, err := dbos.ListWorkflows(e.dbosCtx, dbos.WithFilterWorkflowIDPrefix(runId+"/"))
+	workflowSteps, err := dbos.ListWorkflows(readCtx, dbos.WithFilterWorkflowIDPrefix(runId+"/"))
 	if err != nil {
 		return domain.WorkflowRunState{}, fmt.Errorf("get steps of run %s: %w", runId, err)
 	}
