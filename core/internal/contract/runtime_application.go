@@ -31,8 +31,16 @@ type ManagedSystemService interface {
 	ListTenants(ctx context.Context, managedSystemId string) ([]*domain.ManagedSystemTenant, error)
 }
 
+type WorkflowService interface {
+	// CreateWorkflow checks every step against the managed systems, tenants and entitlements, then saves the definition under its name.
+	// It returns domain.ErrWorkflowAlreadyExists when the name is taken.
+	CreateWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error
+	GetWorkflow(ctx context.Context, name string) (domain.WorkflowDefinition, error)
+}
+
 type RuntimeApplication struct {
 	AuthService          AuthService
 	ConnectorService     ConnectorService
 	ManagedSystemService ManagedSystemService
+	WorkflowService      WorkflowService
 }

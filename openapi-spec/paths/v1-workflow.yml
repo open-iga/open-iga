@@ -1,0 +1,30 @@
+get:
+    operationId: getWorkflow
+    description: Get a saved workflow
+    parameters:
+        - &workflowName
+          name: name
+          in: path
+          required: true
+          description: Name of the workflow, e.g. onboarding
+          schema:
+              type: string
+    responses:
+        200:
+            description: The workflow and its steps
+            content:
+                'application/json':
+                    schema:
+                        type: object
+                        properties:
+                            name:
+                                type: string
+                            steps:
+                                $ref: '../schemas/workflow-steps.yml'
+                        required: [name, steps]
+        401:
+            $ref: '../components/responses/unauthenticated-error.yml'
+        404:
+            $ref: '../components/responses/not-found-error.yml'
+        500:
+            $ref: '../components/responses/internal-server-error.yml'

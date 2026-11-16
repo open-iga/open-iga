@@ -311,3 +311,56 @@ func (mr *MockManagedSystemServiceMockRecorder) OnboardTenant(ctx, managedSystem
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnboardTenant", reflect.TypeOf((*MockManagedSystemService)(nil).OnboardTenant), ctx, managedSystemId, externalId, name)
 }
+
+// MockWorkflowService is a mock of WorkflowService interface.
+type MockWorkflowService struct {
+	ctrl     *gomock.Controller
+	recorder *MockWorkflowServiceMockRecorder
+	isgomock struct{}
+}
+
+// MockWorkflowServiceMockRecorder is the mock recorder for MockWorkflowService.
+type MockWorkflowServiceMockRecorder struct {
+	mock *MockWorkflowService
+}
+
+// NewMockWorkflowService creates a new mock instance.
+func NewMockWorkflowService(ctrl *gomock.Controller) *MockWorkflowService {
+	mock := &MockWorkflowService{ctrl: ctrl}
+	mock.recorder = &MockWorkflowServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockWorkflowService) EXPECT() *MockWorkflowServiceMockRecorder {
+	return m.recorder
+}
+
+// CreateWorkflow mocks base method.
+func (m *MockWorkflowService) CreateWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateWorkflow", ctx, definition)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateWorkflow indicates an expected call of CreateWorkflow.
+func (mr *MockWorkflowServiceMockRecorder) CreateWorkflow(ctx, definition any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWorkflow", reflect.TypeOf((*MockWorkflowService)(nil).CreateWorkflow), ctx, definition)
+}
+
+// GetWorkflow mocks base method.
+func (m *MockWorkflowService) GetWorkflow(ctx context.Context, name string) (domain.WorkflowDefinition, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWorkflow", ctx, name)
+	ret0, _ := ret[0].(domain.WorkflowDefinition)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWorkflow indicates an expected call of GetWorkflow.
+func (mr *MockWorkflowServiceMockRecorder) GetWorkflow(ctx, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorkflow", reflect.TypeOf((*MockWorkflowService)(nil).GetWorkflow), ctx, name)
+}

@@ -25,3 +25,8 @@ paths:
         $ref: './paths/v1-managed-system-details.yml'
     '/api/v1/managed-systems/{id}/tenant':
         $ref: './paths/v1-managed-system-tenant.yml'
+    # TODO: introduce modifying workflow through PUT
+    '/api/v1/workflows':
+        $ref: './paths/v1-workflows.yml'
+    '/api/v1/workflows/{name}':
+        $ref: './paths/v1-workflow.yml'
