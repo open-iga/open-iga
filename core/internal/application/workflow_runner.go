@@ -61,7 +61,7 @@ func (w *WorkflowService) resolveOperation(ctx context.Context, operation domain
 		return nil, domain.OperationRef{}, err
 	}
 
-	return managedSystem, domain.OperationRef{TenantId: tenantId, IdentityId: uuid.Nil, EntitlementId: operation.Entitlement}, nil
+	return managedSystem, domain.OperationRef{TenantId: tenantId, IdentityId: uuid.Nil, EntitlementId: operation.Entitlement, Cursor: ""}, nil
 }
 
 // pickTenant is the tenant of the system that fits what the operation names (its tenant, the tenant of its entitlement)

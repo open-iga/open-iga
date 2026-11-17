@@ -166,7 +166,7 @@ func (c *ConnectorService) loadOperationData(ctx context.Context, managedSystem 
 	if err != nil {
 		return nil, err
 	}
-	data := &domain.OperationData{Tenant: tenant, Identity: nil, Account: nil, Entitlement: nil}
+	data := &domain.OperationData{Tenant: tenant, Identity: nil, Account: nil, Entitlement: nil, Cursor: ref.Cursor}
 
 	if ref.IdentityId != uuid.Nil {
 		if data.Identity, err = c.identityRepository.GetIdentityById(ctx, ref.IdentityId); err != nil {

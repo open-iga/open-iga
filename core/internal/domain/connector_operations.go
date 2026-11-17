@@ -48,6 +48,17 @@ type OperationData struct {
 	Identity    *Identity
 	Account     *Account
 	Entitlement *EntitlementCatalog
+	// Cursor is the page to read; empty means the first page.
+	Cursor string
+}
+
+// toCursorPointer is nil for the first page, as the connector expects.
+func (d OperationData) toCursorPointer() *string {
+	if d.Cursor == "" {
+		return nil
+	}
+
+	return &d.Cursor
 }
 
 // operationBuilders build the typed input of each operation, keyed by kind and action name.
@@ -75,8 +86,7 @@ var operationBuilders = map[ConnectorKind]map[string]func(OperationData) (Connec
 	},
 	EntitlementKind: {
 		"discover": func(data OperationData) (ConnectorOperation, error) {
-			// TODO: pass cursor from the application layer
-			return EntitlementDiscoverInput{Tenant: data.connectorTenant(), Cursor: nil}, nil
+			return EntitlementDiscoverInput{Tenant: data.connectorTenant(), Cursor: data.toCursorPointer()}, nil
 		},
 		"grant": buildEntitlementAssignment(func(input EntitlementAssignmentInput) ConnectorOperation {
 			return EntitlementGrantInput(input)
