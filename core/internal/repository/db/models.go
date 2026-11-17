@@ -84,6 +84,7 @@ type EntitlementCatalog struct {
 	DisplayName     string
 	Description     pgtype.Text
 	Metadata        []byte
+	LastSeenAt      pgtype.Timestamptz
 	CreatedAt       pgtype.Timestamptz
 	UpdatedAt       pgtype.Timestamptz
 }

@@ -16,6 +16,7 @@ func NewApplication(ctx context.Context, appConfig *common.AppConfig, logger *sl
 	application := &contract.RuntimeApplication{
 		AuthService:          NewAuthService(remotes.Oauth2Clients, logger, repository.SessionRepository, repository.IdentityRepository),
 		ConnectorService:     connectorService,
+		DiscoveryService:     NewDiscoveryService(connectorService, repository.ManagedSystemRepository, repository.EntitlementCatalogRepository),
 		ManagedSystemService: NewManagedSystemService(logger, connectorService, repository.ManagedSystemRepository),
 		WorkflowService:      workflowService,
 	}

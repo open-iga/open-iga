@@ -13,7 +13,7 @@ import (
 )
 
 const getEntitlementCatalog = `-- name: GetEntitlementCatalog :one
-SELECT id, managed_system_id, tenant_id, resource, external_id, display_name, description, metadata, created_at, updated_at FROM entitlement_catalog
+SELECT id, managed_system_id, tenant_id, resource, external_id, display_name, description, metadata, last_seen_at, created_at, updated_at FROM entitlement_catalog
 WHERE id = $1
   AND managed_system_id = $2
   AND resource = $3
@@ -37,6 +37,7 @@ func (q *Queries) GetEntitlementCatalog(ctx context.Context, arg GetEntitlementC
 		&i.DisplayName,
 		&i.Description,
 		&i.Metadata,
+		&i.LastSeenAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -47,8 +48,8 @@ const upsertEntitlementCatalog = `-- name: UpsertEntitlementCatalog :one
 INSERT INTO entitlement_catalog (managed_system_id, tenant_id, resource, external_id, display_name, description, metadata)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (managed_system_id, tenant_id, resource, external_id) DO UPDATE
-SET display_name = EXCLUDED.display_name, description = EXCLUDED.description, metadata = EXCLUDED.metadata, updated_at = CURRENT_TIMESTAMP
-RETURNING id, managed_system_id, tenant_id, resource, external_id, display_name, description, metadata, created_at, updated_at
+SET display_name = EXCLUDED.display_name, description = EXCLUDED.description, metadata = EXCLUDED.metadata, last_seen_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+RETURNING id, managed_system_id, tenant_id, resource, external_id, display_name, description, metadata, last_seen_at, created_at, updated_at
 `
 
 type UpsertEntitlementCatalogParams struct {
@@ -81,6 +82,7 @@ func (q *Queries) UpsertEntitlementCatalog(ctx context.Context, arg UpsertEntitl
 		&i.DisplayName,
 		&i.Description,
 		&i.Metadata,
+		&i.LastSeenAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
