@@ -24,6 +24,15 @@ Open-source identity governance and administration (IGA). A serious, long-lived 
 - Function names start with a verb: `toX` maps, `buildX` builds, `getX` gets.
 - Blank line before `return`, and between consecutive `if` blocks.
 - Favor the standard library over a new dependency.
+- Treat comments as a maintenance liability. Prefer clear, domain-specific variable
+  and function names and small, focused functions with one responsibility. Split
+  a large function into meaningful operations rather than narrating its steps or
+  each line with comments; avoid extracting trivial helpers that add indirection.
+  Add comments only when necessary to explain non-obvious intent, constraints,
+  invariants or workarounds that the code cannot express, or when repository rules
+  require them. Do not restate what the code does. Preserve useful rationale and
+  required documentation, and update or remove comments made stale by your changes.
+  Pass this guidance to any delegated implementer and the implementation reviewer.
 
 ## core (Go)
 

@@ -408,3 +408,57 @@ func (mr *MockWorkflowServiceMockRecorder) StartWorkflow(ctx, name, identityId a
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartWorkflow", reflect.TypeOf((*MockWorkflowService)(nil).StartWorkflow), ctx, name, identityId)
 }
+
+// MockDiscoveryService is a mock of DiscoveryService interface.
+type MockDiscoveryService struct {
+	ctrl     *gomock.Controller
+	recorder *MockDiscoveryServiceMockRecorder
+	isgomock struct{}
+}
+
+// MockDiscoveryServiceMockRecorder is the mock recorder for MockDiscoveryService.
+type MockDiscoveryServiceMockRecorder struct {
+	mock *MockDiscoveryService
+}
+
+// NewMockDiscoveryService creates a new mock instance.
+func NewMockDiscoveryService(ctrl *gomock.Controller) *MockDiscoveryService {
+	mock := &MockDiscoveryService{ctrl: ctrl}
+	mock.recorder = &MockDiscoveryServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockDiscoveryService) EXPECT() *MockDiscoveryServiceMockRecorder {
+	return m.recorder
+}
+
+// DiscoverPage mocks base method.
+func (m *MockDiscoveryService) DiscoverPage(ctx context.Context, target domain.DiscoveryTarget, cursor string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DiscoverPage", ctx, target, cursor)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DiscoverPage indicates an expected call of DiscoverPage.
+func (mr *MockDiscoveryServiceMockRecorder) DiscoverPage(ctx, target, cursor any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiscoverPage", reflect.TypeOf((*MockDiscoveryService)(nil).DiscoverPage), ctx, target, cursor)
+}
+
+// ListDiscoveryTargets mocks base method.
+func (m *MockDiscoveryService) ListDiscoveryTargets(ctx context.Context) ([]domain.DiscoveryTarget, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListDiscoveryTargets", ctx)
+	ret0, _ := ret[0].([]domain.DiscoveryTarget)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListDiscoveryTargets indicates an expected call of ListDiscoveryTargets.
+func (mr *MockDiscoveryServiceMockRecorder) ListDiscoveryTargets(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDiscoveryTargets", reflect.TypeOf((*MockDiscoveryService)(nil).ListDiscoveryTargets), ctx)
+}

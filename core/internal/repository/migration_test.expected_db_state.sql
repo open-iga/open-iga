@@ -79,6 +79,7 @@ CREATE TABLE entitlement_catalog (
     display_name VARCHAR(255)   NOT NULL,
     description  TEXT,
     metadata     JSONB          NOT NULL DEFAULT '{}',
+    last_seen_at TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at   TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
     updated_at   TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP
 );
