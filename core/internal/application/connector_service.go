@@ -133,6 +133,11 @@ func (c *ConnectorService) Execute(ctx context.Context, connectorName string, ma
 		return nil, fmt.Errorf("execute connector %s: marshal input: %w", connectorName, err)
 	}
 
+	// A failed compile leaves no cache entry. Asking again starts a new compile, and does nothing when the connector is cached.
+	if managedSystem.ConnectorSpec != nil {
+		c.CompileConnector(ctx, managedSystem.ConnectorUrl, managedSystem.ConnectorHash, managedSystem.ConnectorSpec)
+	}
+
 	raw, err := c.connectorRuntime.Execute(ctx, managedSystem.ConnectorUrl, managedSystem.ConnectorHash, domain.ConnectorInvocation{
 		Kind:            operation.Kind(),
 		ManagedResource: managedResource,

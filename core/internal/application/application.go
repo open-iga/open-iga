@@ -30,9 +30,8 @@ func NewApplication(ctx context.Context, appConfig *common.AppConfig, logger *sl
 	}
 
 	// Launching resumes the runs left from before a restart, and they need the connectors loaded above.
-	if err := remotes.WorkflowEngine.Launch(ctx, workflowService.ExecuteConnectorOperation); err != nil {
-		return nil, fmt.Errorf("launch workflow engine: %w", err)
-	}
+	// It runs in the background so the server starts at once; workflow runs are refused until it is done.
+	go workflowService.LaunchEngine(ctx)
 
 	return application, nil
 }

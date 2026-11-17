@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/open-iga/core/internal/contract"
 	"github.com/open-iga/core/internal/domain"
 )
+
+const engineLaunchRetryInterval = 10 * time.Second
 
 type WorkflowService struct {
 	logger                       *slog.Logger
@@ -19,6 +22,10 @@ type WorkflowService struct {
 	entitlementCatalogRepository contract.EntitlementCatalogRepository
 	identityRepository           contract.IdentityRepository
 	accountRepository            contract.AccountRepository
+	// engineReady is closed once the engine has launched; the calls that need the engine fail until then.
+	engineReady chan struct{}
+	// engineLaunchRetryInterval is the wait before launching the engine again after a failed launch.
+	engineLaunchRetryInterval time.Duration
 }
 
 var _ contract.WorkflowService = (*WorkflowService)(nil)
@@ -33,6 +40,38 @@ func NewWorkflowService(logger *slog.Logger, workflowEngine contract.WorkflowEng
 		entitlementCatalogRepository,
 		identityRepository,
 		accountRepository,
+		make(chan struct{}),
+		engineLaunchRetryInterval,
+	}
+}
+
+// LaunchEngine launches the workflow engine, trying again until it works, then opens the engine calls.
+// Run it in the background so the server need not wait.
+func (w *WorkflowService) LaunchEngine(ctx context.Context) {
+	for {
+		err := w.workflowEngine.Launch(ctx, w.ExecuteConnectorOperation)
+		if err == nil {
+			break
+		}
+
+		w.logger.Error("failed to launch the workflow engine, workflow runs stay unavailable", "err", err, "retryIn", w.engineLaunchRetryInterval)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(w.engineLaunchRetryInterval):
+		}
+	}
+
+	close(w.engineReady)
+	w.logger.Info("workflow engine launched")
+}
+
+func (w *WorkflowService) checkEngineReady() error {
+	select {
+	case <-w.engineReady:
+		return nil
+	default:
+		return domain.ErrWorkflowEngineNotReady
 	}
 }
 
@@ -80,6 +119,10 @@ func (w *WorkflowService) GetWorkflow(ctx context.Context, name string) (domain.
 }
 
 func (w *WorkflowService) StartWorkflow(ctx context.Context, name string, identityId uuid.UUID) (string, error) {
+	if err := w.checkEngineReady(); err != nil {
+		return "", fmt.Errorf("start workflow: %w", err)
+	}
+
 	definition, err := w.workflowRepository.GetWorkflow(ctx, name)
 	if err != nil {
 		return "", fmt.Errorf("start workflow: %w", err)
@@ -111,6 +154,10 @@ func (w *WorkflowService) Continue(ctx context.Context, workflowName string, run
 
 // GetRun treats a run of another workflow as not found.
 func (w *WorkflowService) GetRun(ctx context.Context, workflowName string, runId string) (domain.WorkflowRunState, error) {
+	if err := w.checkEngineReady(); err != nil {
+		return domain.WorkflowRunState{}, fmt.Errorf("get workflow run: %w", err)
+	}
+
 	state, err := w.workflowEngine.Get(ctx, runId)
 	if err != nil {
 		return domain.WorkflowRunState{}, fmt.Errorf("get workflow run: %w", err)

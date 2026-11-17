@@ -231,3 +231,18 @@ func TestConnectorService_Execute_RejectsEntitlementOfAnotherTenant(t *testing.T
 
 	assert.ErrorIs(t, err, domain.ErrEntitlementNotFound)
 }
+
+func TestConnectorService_Execute_CompilesAgainWhenTheConnectorIsNotCached(t *testing.T) {
+	service, runtime, systems := setupConnectorServiceWithMocks(t)
+	spec := &domain.ConnectorSpec{Name: "aws"}
+	systems.EXPECT().GetManagedSystemByName(gomock.Any(), "aws").Return(&domain.ManagedSystem{Id: "ms1", ConnectorUrl: "u", ConnectorHash: "h", ConnectorSpec: spec}, nil)
+
+	gomock.InOrder(
+		runtime.EXPECT().CompileConnector(gomock.Any(), "u", "h", spec),
+		runtime.EXPECT().Execute(gomock.Any(), "u", "h", gomock.Any()).Return([]byte(`{"accounts":[]}`), nil),
+	)
+
+	_, err := service.Execute(context.Background(), "aws", "iam-user", domain.AccountActionKind, "list", domain.OperationRef{})
+
+	assert.NoError(t, err)
+}
