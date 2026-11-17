@@ -70,6 +70,8 @@ type OperationRef struct {
 	TenantId      uuid.UUID
 	IdentityId    uuid.UUID
 	EntitlementId uuid.UUID
+	// Cursor is the page to read; empty means the first page. Only discover uses it.
+	Cursor string
 }
 
 // needsExistingAccount is false for the operations does not require account level permissions
