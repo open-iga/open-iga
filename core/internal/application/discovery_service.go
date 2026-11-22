@@ -12,19 +12,13 @@ import (
 )
 
 type DiscoveryService struct {
-	connectorService             contract.ConnectorService
-	managedSystemRepository      contract.ManagedSystemRepository
-	entitlementCatalogRepository contract.EntitlementCatalogRepository
+	managedSystemRepository contract.ManagedSystemRepository
 }
 
 var _ contract.DiscoveryService = (*DiscoveryService)(nil)
 
-func NewDiscoveryService(connectorService contract.ConnectorService, managedSystemRepository contract.ManagedSystemRepository, entitlementCatalogRepository contract.EntitlementCatalogRepository) *DiscoveryService {
-	return &DiscoveryService{
-		connectorService:             connectorService,
-		managedSystemRepository:      managedSystemRepository,
-		entitlementCatalogRepository: entitlementCatalogRepository,
-	}
+func NewDiscoveryService(managedSystemRepository contract.ManagedSystemRepository) *DiscoveryService {
+	return &DiscoveryService{managedSystemRepository: managedSystemRepository}
 }
 
 // ListDiscoveryTargets lists every entitlement resource of every managed system, once per tenant.
@@ -55,29 +49,6 @@ func (d *DiscoveryService) ListDiscoveryTargets(ctx context.Context) ([]domain.D
 	}
 
 	return targets, nil
-}
-
-// DiscoverPage reads one page of the target from the connector and saves its entitlements.
-// An empty cursor reads the first page. It returns the cursor of the next page, empty after the last page.
-// Saving the same page again only updates its rows, so a replay is safe.
-func (d *DiscoveryService) DiscoverPage(ctx context.Context, target domain.DiscoveryTarget, cursor string) (string, error) {
-	output, err := d.connectorService.Execute(ctx, target.SystemName, target.Resource, domain.EntitlementKind, "discover", domain.OperationRef{TenantId: target.TenantId, IdentityId: uuid.Nil, EntitlementId: uuid.Nil, Cursor: cursor})
-	if err != nil {
-		return "", fmt.Errorf("discover %s/%s: %w", target.SystemName, target.Resource, err)
-	}
-
-	page, ok := output.(domain.EntitlementDiscoverOutput)
-	if !ok {
-		return "", fmt.Errorf("discover %s/%s: unexpected output %T", target.SystemName, target.Resource, output)
-	}
-
-	for _, discovered := range page.Entitlements {
-		if _, err := d.entitlementCatalogRepository.UpsertEntitlementCatalog(ctx, target.SystemId, target.TenantId, target.Resource, discovered); err != nil {
-			return "", fmt.Errorf("discover %s/%s: %w", target.SystemName, target.Resource, err)
-		}
-	}
-
-	return page.NextCursor, nil
 }
 
 // listTenantIds gives uuid.Nil alone for a single-tenant system.

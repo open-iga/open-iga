@@ -192,17 +192,17 @@ func (mr *MockWorkflowEngineMockRecorder) Get(ctx, runId any) *gomock.Call {
 }
 
 // Launch mocks base method.
-func (m *MockWorkflowEngine) Launch(ctx context.Context, runner domain.WorkflowStepRunner) error {
+func (m *MockWorkflowEngine) Launch(ctx context.Context, runner domain.WorkflowStepRunner, queues map[domain.WorkflowType]domain.WorkflowQueue) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Launch", ctx, runner)
+	ret := m.ctrl.Call(m, "Launch", ctx, runner, queues)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Launch indicates an expected call of Launch.
-func (mr *MockWorkflowEngineMockRecorder) Launch(ctx, runner any) *gomock.Call {
+func (mr *MockWorkflowEngineMockRecorder) Launch(ctx, runner, queues any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Launch", reflect.TypeOf((*MockWorkflowEngine)(nil).Launch), ctx, runner)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Launch", reflect.TypeOf((*MockWorkflowEngine)(nil).Launch), ctx, runner, queues)
 }
 
 // Shutdown mocks base method.

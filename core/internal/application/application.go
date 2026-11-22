@@ -11,12 +11,13 @@ import (
 
 func NewApplication(ctx context.Context, appConfig *common.AppConfig, logger *slog.Logger, remotes *contract.RuntimeRemote, repository *contract.Repository) (*contract.RuntimeApplication, error) {
 	connectorService := NewConnectorService(remotes.ConnectorRuntime, repository.ManagedSystemRepository, repository.IdentityRepository, repository.AccountRepository, repository.EntitlementCatalogRepository, logger)
+	discoveryService := NewDiscoveryService(repository.ManagedSystemRepository)
 	workflowService := NewWorkflowService(logger, remotes.WorkflowEngine, connectorService, repository.WorkflowRepository, repository.ManagedSystemRepository, repository.EntitlementCatalogRepository, repository.IdentityRepository, repository.AccountRepository)
 
 	application := &contract.RuntimeApplication{
 		AuthService:          NewAuthService(remotes.Oauth2Clients, logger, repository.SessionRepository, repository.IdentityRepository),
 		ConnectorService:     connectorService,
-		DiscoveryService:     NewDiscoveryService(connectorService, repository.ManagedSystemRepository, repository.EntitlementCatalogRepository),
+		DiscoveryService:     discoveryService,
 		ManagedSystemService: NewManagedSystemService(logger, connectorService, repository.ManagedSystemRepository),
 		WorkflowService:      workflowService,
 	}

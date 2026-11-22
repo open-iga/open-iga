@@ -87,7 +87,7 @@ func TestEngine(t *testing.T) {
 
 	launch := func(t *testing.T, runner domain.WorkflowStepRunner) *Engine {
 		engine := NewEngine(databaseUrl, testutil.NewTestLogger())
-		require.NoError(t, engine.Launch(ctx, runner))
+		require.NoError(t, engine.Launch(ctx, runner, nil))
 		t.Cleanup(func() { engine.Shutdown(5 * time.Second) })
 		return engine
 	}
@@ -138,7 +138,7 @@ func TestEngine(t *testing.T) {
 	t.Run("a run waiting at a gate survives a restart", func(t *testing.T) {
 		recorded := &calls{}
 		first := NewEngine(databaseUrl, testutil.NewTestLogger())
-		require.NoError(t, first.Launch(ctx, recorded.run))
+		require.NoError(t, first.Launch(ctx, recorded.run, nil))
 		require.NoError(t, first.Start(ctx, "restart-run", buildTwoLanesRun()))
 		waitFor(t, first, "restart-run", map[string]domain.WorkflowStepStatus{
 			"create-aws": domain.WorkflowStepSucceeded, "grant-aws": domain.WorkflowStepGated, "after-grant-aws": domain.WorkflowStepPending,
@@ -153,6 +153,39 @@ func TestEngine(t *testing.T) {
 			"create-github": domain.WorkflowStepSucceeded, "grant-github": domain.WorkflowStepSucceeded,
 		})
 		assert.Equal(t, 1, recorded.count("create-aws"), "a finished step is not repeated after the restart")
+	})
+
+	t.Run("a queued type runs one run at a time and does not slow other types", func(t *testing.T) {
+		recorded := &calls{}
+		releaseSlowStep := make(chan struct{})
+		runner := func(stepCtx context.Context, workflowStep domain.WorkflowStep, identityId uuid.UUID) error {
+			_ = recorded.run(stepCtx, workflowStep, identityId)
+			if workflowStep.Name == "slow" {
+				<-releaseSlowStep
+			}
+
+			return nil
+		}
+		engine := NewEngine(databaseUrl, testutil.NewTestLogger())
+		require.NoError(t, engine.Launch(ctx, runner, domain.QueuedWorkflowTypes()))
+		t.Cleanup(func() { engine.Shutdown(5 * time.Second) })
+		discoveryRun := func(stepName string) domain.WorkflowRun {
+			operation := domain.WorkflowOperation{System: "s", Resource: "r", Kind: domain.EntitlementKind, Action: "discover"}
+			definition := domain.WorkflowDefinition{Name: "discovery", Type: domain.WorkflowTypeDiscovery, Steps: []domain.WorkflowStep{{Name: stepName, Operation: operation}}}
+
+			return domain.WorkflowRun{Definition: definition, IdentityId: uuid.Nil}
+		}
+
+		require.NoError(t, engine.Start(ctx, "queue-first", discoveryRun("slow")))
+		require.Eventually(t, func() bool { return recorded.count("slow") == 1 }, 15*time.Second, 50*time.Millisecond)
+		require.NoError(t, engine.Start(ctx, "queue-second", discoveryRun("fast")))
+		require.NoError(t, engine.Start(ctx, "queue-onboarding", run(step("create-aws", false))))
+
+		require.Eventually(t, func() bool { return recorded.count("create-aws") == 1 }, 15*time.Second, 50*time.Millisecond, "onboarding has no queue")
+		assert.Never(t, func() bool { return recorded.count("fast") > 0 }, time.Second, 100*time.Millisecond, "the second discovery run waits for the first")
+
+		close(releaseSlowStep)
+		require.Eventually(t, func() bool { return recorded.count("fast") == 1 }, 15*time.Second, 50*time.Millisecond)
 	})
 
 	t.Run("rejects an invalid run", func(t *testing.T) {

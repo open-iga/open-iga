@@ -44,6 +44,7 @@ type Engine struct {
 	databaseUrl string
 	logger      *slog.Logger
 	runner      domain.WorkflowStepRunner
+	queues      map[domain.WorkflowType]dbos.Queue
 	// mutex guards dbosCtx: Launch sets it in the background while Shutdown may read it.
 	mutex   sync.Mutex
 	dbosCtx dbos.Context
@@ -52,10 +53,10 @@ type Engine struct {
 var _ contract.WorkflowEngine = (*Engine)(nil)
 
 func NewEngine(databaseUrl string, logger *slog.Logger) *Engine {
-	return &Engine{databaseUrl: databaseUrl, logger: logger, runner: nil, mutex: sync.Mutex{}, dbosCtx: nil}
+	return &Engine{databaseUrl: databaseUrl, logger: logger, runner: nil, queues: nil, mutex: sync.Mutex{}, dbosCtx: nil}
 }
 
-func (e *Engine) Launch(ctx context.Context, runner domain.WorkflowStepRunner) error {
+func (e *Engine) Launch(ctx context.Context, runner domain.WorkflowStepRunner, queues map[domain.WorkflowType]domain.WorkflowQueue) error {
 	dbosCtx, err := dbos.NewContext(ctx, dbos.Config{
 		AppName:            appName,
 		DatabaseURL:        e.databaseUrl,
@@ -69,7 +70,14 @@ func (e *Engine) Launch(ctx context.Context, runner domain.WorkflowStepRunner) e
 	e.runner = runner
 	dbos.RegisterWorkflow(dbosCtx, e.executeWorkflowRun, dbos.WithWorkflowName(runWorkflowName))
 	dbos.RegisterWorkflow(dbosCtx, e.executeWorkflowStep, dbos.WithWorkflowName(stepWorkflowName))
-	if err := dbos.Launch(dbosCtx); err != nil {
+
+	registeredQueues, err := registerQueues(dbosCtx, queues)
+	if err == nil {
+		e.queues = registeredQueues
+		err = dbos.Launch(dbosCtx)
+	}
+
+	if err != nil {
 		// The context holds a database pool; release it so a later attempt starts clean.
 		if shutdownErr := dbos.Shutdown(dbosCtx, failedLaunchShutdownTimeout); shutdownErr != nil {
 			e.logger.Error("failed to release the workflow engine after a failed launch", "err", shutdownErr)
@@ -90,11 +98,31 @@ func (e *Engine) Start(_ context.Context, runId string, run domain.WorkflowRun) 
 		return fmt.Errorf("start run %s: %w", runId, err)
 	}
 
-	if _, err := dbos.RunWorkflow(e.dbosCtx, e.executeWorkflowRun, run, dbos.WithWorkflowID(runId)); err != nil {
+	options := []dbos.WorkflowOption{dbos.WithWorkflowID(runId)}
+	if queue, ok := e.queues[run.Definition.Type]; ok {
+		options = append(options, dbos.WithQueue(queue))
+	}
+
+	if _, err := dbos.RunWorkflow(e.dbosCtx, e.executeWorkflowRun, run, options...); err != nil {
 		return fmt.Errorf("start run %s: %w", runId, err)
 	}
 
 	return nil
+}
+
+// registerQueues creates one queue per type, named as the type. The code is the source of truth, so it overwrites a saved queue.
+func registerQueues(dbosCtx dbos.Context, queues map[domain.WorkflowType]domain.WorkflowQueue) (map[domain.WorkflowType]dbos.Queue, error) {
+	registeredQueues := make(map[domain.WorkflowType]dbos.Queue, len(queues))
+	for workflowType, queue := range queues {
+		registeredQueue, err := dbos.RegisterQueue(dbosCtx, string(workflowType), dbos.WithGlobalConcurrency(queue.Concurrency), dbos.WithQueueOnConflict(dbos.QueueConflictAlwaysUpdate))
+		if err != nil {
+			return nil, fmt.Errorf("register queue %s: %w", workflowType, err)
+		}
+
+		registeredQueues[workflowType] = registeredQueue
+	}
+
+	return registeredQueues, nil
 }
 
 func (e *Engine) Continue(_ context.Context, runId, stepName string) error {

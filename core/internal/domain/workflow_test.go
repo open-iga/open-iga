@@ -12,7 +12,7 @@ func operation(kind ConnectorKind) WorkflowOperation {
 }
 
 func TestWorkflowOperationValidate(t *testing.T) {
-	actions := workflowActions["onboarding"]
+	actions := workflowTypes[WorkflowTypeOnboarding].Actions
 	grant := operation(EntitlementKind)
 	grant.Entitlement = uuid.New()
 	assert.NoError(t, operation(AccountActionKind).Validate(actions))
@@ -67,6 +67,37 @@ func TestWorkflowDefinitionValidate(t *testing.T) {
 			assert.ErrorIs(t, definition.Validate(), ErrInvalidWorkflow)
 		})
 	}
+}
+
+// A queued run holds its queue slot until it ends, and a gated step waits up to 30 days.
+// With gates in a queued type, a few runs waiting at a gate would block every other run of the type.
+func TestWorkflowTypes_QueuedTypeAllowsNoGates(t *testing.T) {
+	for workflowType, spec := range workflowTypes {
+		if spec.Queue == nil {
+			continue
+		}
+
+		assert.False(t, spec.AllowsGates, "type %q has a queue, so it must not allow gates: a gated step would hold a queue slot for days", workflowType)
+		assert.Positive(t, spec.Queue.Concurrency, "type %q has a queue without a limit", workflowType)
+	}
+}
+
+func TestWorkflowTypes_OnboardingHasNoQueueAndDiscoveryHasOne(t *testing.T) {
+	queues := QueuedWorkflowTypes()
+
+	assert.NotContains(t, queues, WorkflowTypeOnboarding)
+	assert.Equal(t, WorkflowQueue{Concurrency: 1}, queues[WorkflowTypeDiscovery])
+}
+
+func TestDiscoveryWorkflowValidate(t *testing.T) {
+	discover := operation(EntitlementKind)
+	definition := WorkflowDefinition{Name: "discovery", Type: WorkflowTypeDiscovery, Steps: []WorkflowStep{{Name: "aws", Operation: discover}}}
+
+	assert.NoError(t, definition.Validate(), "discover takes no entitlement")
+	assert.NoError(t, WorkflowRun{Definition: definition}.Validate(), "a discovery run is about no identity")
+
+	definition.Steps[0].Gate = true
+	assert.ErrorIs(t, definition.Validate(), ErrInvalidWorkflow, "a queued type has no gates")
 }
 
 func TestWorkflowRunValidate(t *testing.T) {

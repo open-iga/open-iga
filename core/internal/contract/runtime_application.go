@@ -43,12 +43,9 @@ type WorkflowService interface {
 }
 
 // DiscoveryService finds the entitlements of the managed systems and saves them in the catalog.
-// The caller loops over the pages, so it can make each page durable.
 type DiscoveryService interface {
 	// ListDiscoveryTargets lists every entitlement resource of every managed system, once per tenant.
 	ListDiscoveryTargets(ctx context.Context) ([]domain.DiscoveryTarget, error)
-	// DiscoverPage saves one page of the target and returns the next cursor; empty cursor in reads the first page, empty cursor out means the last page.
-	DiscoverPage(ctx context.Context, target domain.DiscoveryTarget, cursor string) (nextCursor string, err error)
 }
 
 type RuntimeApplication struct {

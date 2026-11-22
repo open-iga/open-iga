@@ -49,7 +49,7 @@ func NewWorkflowService(logger *slog.Logger, workflowEngine contract.WorkflowEng
 // Run it in the background so the server need not wait.
 func (w *WorkflowService) LaunchEngine(ctx context.Context) {
 	for {
-		err := w.workflowEngine.Launch(ctx, w.ExecuteConnectorOperation)
+		err := w.workflowEngine.Launch(ctx, w.ExecuteConnectorOperation, domain.QueuedWorkflowTypes())
 		if err == nil {
 			break
 		}

@@ -46,13 +46,20 @@ func buildAwsSystem() *domain.ManagedSystem {
 		Id: "system-1", Name: "aws",
 		ConnectorSpec: &domain.ConnectorSpec{
 			Actions:      map[string]domain.AccountActions{"iam-user": {Create: &domain.Operation{}, Disable: &domain.Operation{}}},
-			Entitlements: map[string]domain.UserEntitlements{"iam-user": {Grant: &domain.Operation{}, Revoke: &domain.Operation{}}},
+			Entitlements: map[string]domain.UserEntitlements{"iam-user": {Discover: &domain.Operation{}, Grant: &domain.Operation{}, Revoke: &domain.Operation{}}},
 		},
 	}
 }
 
 func buildTenant(id uuid.UUID, name string) *domain.ManagedSystemTenant {
 	return &domain.ManagedSystemTenant{Id: id.String(), ManagedSystemId: "system-1", Name: name}
+}
+
+func buildDiscoverStep(name string) domain.WorkflowStep {
+	return domain.WorkflowStep{
+		Name:      name,
+		Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.EntitlementKind, Action: "discover"},
+	}
 }
 
 func buildCreateStep(name string, after ...string) domain.WorkflowStep {
@@ -262,7 +269,7 @@ func TestWorkflowService_LaunchEngine(t *testing.T) {
 	t.Run("workflow runs are refused until the engine has launched", func(t *testing.T) {
 		svc, mocks := setupWorkflowService(t)
 		svc.engineReady = make(chan struct{}) // the helper opens it; here the engine has not launched
-		mocks.engine.EXPECT().Launch(ctx, gomock.Any()).Return(nil)
+		mocks.engine.EXPECT().Launch(ctx, gomock.Any(), domain.QueuedWorkflowTypes()).Return(nil)
 
 		_, err := svc.StartWorkflow(ctx, "onboarding", uuid.Nil)
 		assert.ErrorIs(t, err, domain.ErrWorkflowEngineNotReady)
@@ -278,8 +285,8 @@ func TestWorkflowService_LaunchEngine(t *testing.T) {
 		svc.engineReady = make(chan struct{})
 		svc.engineLaunchRetryInterval = time.Millisecond
 		gomock.InOrder(
-			mocks.engine.EXPECT().Launch(ctx, gomock.Any()).Return(errors.New("database down")),
-			mocks.engine.EXPECT().Launch(ctx, gomock.Any()).Return(nil),
+			mocks.engine.EXPECT().Launch(ctx, gomock.Any(), domain.QueuedWorkflowTypes()).Return(errors.New("database down")),
+			mocks.engine.EXPECT().Launch(ctx, gomock.Any(), domain.QueuedWorkflowTypes()).Return(nil),
 		)
 
 		svc.LaunchEngine(ctx)
