@@ -17,6 +17,7 @@ import (
 type workflowMocks struct {
 	engine           *testutil.MockWorkflowEngine
 	connectorService *testutil.MockConnectorService
+	discovery        *testutil.MockDiscoveryService
 	workflowRepo     *testutil.MockWorkflowRepository
 	managedSystem    *testutil.MockManagedSystemRepository
 	entitlement      *testutil.MockEntitlementCatalogRepository
@@ -29,13 +30,14 @@ func setupWorkflowService(t *testing.T) (*WorkflowService, workflowMocks) {
 	mocks := workflowMocks{
 		engine:           testutil.NewMockWorkflowEngine(ctrl),
 		connectorService: testutil.NewMockConnectorService(ctrl),
+		discovery:        testutil.NewMockDiscoveryService(ctrl),
 		workflowRepo:     testutil.NewMockWorkflowRepository(ctrl),
 		managedSystem:    testutil.NewMockManagedSystemRepository(ctrl),
 		entitlement:      testutil.NewMockEntitlementCatalogRepository(ctrl),
 		identity:         testutil.NewMockIdentityRepository(ctrl),
 		account:          testutil.NewMockAccountRepository(ctrl),
 	}
-	svc := NewWorkflowService(testutil.NewTestLogger(), mocks.engine, mocks.connectorService, mocks.workflowRepo, mocks.managedSystem, mocks.entitlement, mocks.identity, mocks.account)
+	svc := NewWorkflowService(testutil.NewTestLogger(), mocks.engine, mocks.connectorService, mocks.discovery, mocks.workflowRepo, mocks.managedSystem, mocks.entitlement, mocks.identity, mocks.account)
 	close(svc.engineReady)
 	return svc, mocks
 }
@@ -248,6 +250,41 @@ func TestWorkflowService_StartWorkflow(t *testing.T) {
 
 		_, err := svc.StartWorkflow(ctx, "onboarding", identityId)
 		assert.ErrorIs(t, err, domain.ErrNoIdentityFound)
+	})
+}
+
+func TestWorkflowService_StartDiscovery(t *testing.T) {
+	ctx := context.Background()
+	tenantId := uuid.New()
+
+	t.Run("starts one discovery step per target", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.discovery.EXPECT().ListDiscoveryTargets(ctx).Return([]domain.DiscoveryTarget{
+			{SystemId: "system-1", SystemName: "keycloak", TenantId: tenantId, TenantName: "realm-a", Resource: "role"},
+			{SystemId: "system-2", SystemName: "aws", TenantId: uuid.Nil, Resource: "iam-user"},
+		}, nil)
+		mocks.engine.EXPECT().Start(ctx, gomock.Any(), domain.WorkflowRun{
+			Definition: domain.WorkflowDefinition{Name: "discovery", Type: domain.WorkflowTypeDiscovery, Steps: []domain.WorkflowStep{
+				{Name: "keycloak-realm-a-role", Operation: domain.WorkflowOperation{System: "keycloak", Resource: "role", Kind: domain.EntitlementKind, Action: "discover", Tenant: "realm-a"}},
+				{Name: "aws-iam-user", Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.EntitlementKind, Action: "discover"}},
+			}},
+			IdentityId: uuid.Nil,
+		}).Return(nil)
+
+		runId, err := svc.StartDiscovery(ctx)
+
+		require.NoError(t, err)
+		assert.NotEmpty(t, runId)
+	})
+
+	t.Run("starts nothing when there is no target", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.discovery.EXPECT().ListDiscoveryTargets(ctx).Return(nil, nil)
+
+		runId, err := svc.StartDiscovery(ctx)
+
+		require.NoError(t, err)
+		assert.Empty(t, runId)
 	})
 }
 

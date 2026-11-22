@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,6 +19,7 @@ type WorkflowService struct {
 	logger                       *slog.Logger
 	workflowEngine               contract.WorkflowEngine
 	connectorService             contract.ConnectorService
+	discoveryService             contract.DiscoveryService
 	workflowRepository           contract.WorkflowRepository
 	managedSystemRepository      contract.ManagedSystemRepository
 	entitlementCatalogRepository contract.EntitlementCatalogRepository
@@ -30,11 +33,12 @@ type WorkflowService struct {
 
 var _ contract.WorkflowService = (*WorkflowService)(nil)
 
-func NewWorkflowService(logger *slog.Logger, workflowEngine contract.WorkflowEngine, connectorService contract.ConnectorService, workflowRepository contract.WorkflowRepository, managedSystemRepository contract.ManagedSystemRepository, entitlementCatalogRepository contract.EntitlementCatalogRepository, identityRepository contract.IdentityRepository, accountRepository contract.AccountRepository) *WorkflowService {
+func NewWorkflowService(logger *slog.Logger, workflowEngine contract.WorkflowEngine, connectorService contract.ConnectorService, discoveryService contract.DiscoveryService, workflowRepository contract.WorkflowRepository, managedSystemRepository contract.ManagedSystemRepository, entitlementCatalogRepository contract.EntitlementCatalogRepository, identityRepository contract.IdentityRepository, accountRepository contract.AccountRepository) *WorkflowService {
 	return &WorkflowService{
 		logger,
 		workflowEngine,
 		connectorService,
+		discoveryService,
 		workflowRepository,
 		managedSystemRepository,
 		entitlementCatalogRepository,
@@ -138,6 +142,46 @@ func (w *WorkflowService) StartWorkflow(ctx context.Context, name string, identi
 	}
 
 	return runId, nil
+}
+
+func (w *WorkflowService) StartDiscovery(ctx context.Context) (string, error) {
+	if err := w.checkEngineReady(); err != nil {
+		return "", fmt.Errorf("start discovery: %w", err)
+	}
+
+	targets, err := w.discoveryService.ListDiscoveryTargets(ctx)
+	if err != nil {
+		return "", fmt.Errorf("start discovery: %w", err)
+	}
+
+	if len(targets) == 0 {
+		return "", nil
+	}
+
+	definition := buildDiscoveryDefinition(targets)
+	runId := uuid.NewString()
+	if err := w.workflowEngine.Start(ctx, runId, domain.WorkflowRun{Definition: definition, IdentityId: uuid.Nil}); err != nil {
+		return "", fmt.Errorf("start discovery: %w", err)
+	}
+
+	return runId, nil
+}
+
+// buildDiscoveryDefinition makes one step per target; the steps depend on none, so they start together.
+func buildDiscoveryDefinition(targets []domain.DiscoveryTarget) domain.WorkflowDefinition {
+	definition := domain.WorkflowDefinition{Name: "discovery", Type: domain.WorkflowTypeDiscovery, Steps: make([]domain.WorkflowStep, 0, len(targets))}
+	for _, target := range targets {
+		operation := domain.WorkflowOperation{System: target.SystemName, Resource: target.Resource, Kind: domain.EntitlementKind, Action: "", Tenant: target.TenantName, Entitlement: uuid.Nil}
+		definition.Steps = append(definition.Steps, domain.WorkflowStep{Name: buildDiscoveryStepName(target), Operation: operation, After: nil, Gate: false})
+	}
+	definition.SetActions()
+
+	return definition
+}
+
+// buildDiscoveryStepName joins the parts with "-", as step names cannot hold a "/".
+func buildDiscoveryStepName(target domain.DiscoveryTarget) string {
+	return strings.Join(slices.DeleteFunc([]string{target.SystemName, target.TenantName, target.Resource}, func(part string) bool { return part == "" }), "-")
 }
 
 func (w *WorkflowService) Continue(ctx context.Context, workflowName string, runId string, stepName string) error {

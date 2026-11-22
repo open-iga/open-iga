@@ -8,5 +8,7 @@ type DiscoveryTarget struct {
 	SystemId   string    `json:"systemId"`
 	SystemName string    `json:"systemName"`
 	TenantId   uuid.UUID `json:"tenantId"`
-	Resource   string    `json:"resource"`
+	// TenantName is empty for a single-tenant system.
+	TenantName string `json:"tenantName,omitempty"`
+	Resource   string `json:"resource"`
 }

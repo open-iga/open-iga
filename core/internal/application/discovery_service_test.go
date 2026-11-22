@@ -45,10 +45,10 @@ func TestDiscoveryService_ListDiscoveryTargets(t *testing.T) {
 
 		require.NoError(t, err)
 		assert.Equal(t, []domain.DiscoveryTarget{
-			{SystemId: "system-1", SystemName: "keycloak", TenantId: firstTenantId, Resource: "group"},
-			{SystemId: "system-1", SystemName: "keycloak", TenantId: secondTenantId, Resource: "group"},
-			{SystemId: "system-1", SystemName: "keycloak", TenantId: firstTenantId, Resource: "role"},
-			{SystemId: "system-1", SystemName: "keycloak", TenantId: secondTenantId, Resource: "role"},
+			{SystemId: "system-1", SystemName: "keycloak", TenantId: firstTenantId, TenantName: "realm-a", Resource: "group"},
+			{SystemId: "system-1", SystemName: "keycloak", TenantId: secondTenantId, TenantName: "realm-b", Resource: "group"},
+			{SystemId: "system-1", SystemName: "keycloak", TenantId: firstTenantId, TenantName: "realm-a", Resource: "role"},
+			{SystemId: "system-1", SystemName: "keycloak", TenantId: secondTenantId, TenantName: "realm-b", Resource: "role"},
 			{SystemId: "system-2", SystemName: "aws", TenantId: uuid.Nil, Resource: "iam-user"},
 		}, targets)
 	})

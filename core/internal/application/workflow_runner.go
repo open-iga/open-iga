@@ -20,7 +20,7 @@ func (w *WorkflowService) ExecuteConnectorOperation(ctx context.Context, step do
 		return fmt.Errorf("run step %q: %w", step.Name, err)
 	}
 	ref.IdentityId = identityId
-	
+
 	// A buggy connector can return a cursor again; without this check the loop would never end.
 	seenCursors := map[string]bool{}
 	for {

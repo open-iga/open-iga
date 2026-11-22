@@ -15,6 +15,12 @@ type DiscoveryService struct {
 	managedSystemRepository contract.ManagedSystemRepository
 }
 
+// discoveryTenant is a tenant of a system as discovery needs it; the zero value stands for the one tenant of a single-tenant system.
+type discoveryTenant struct {
+	id   uuid.UUID
+	name string
+}
+
 var _ contract.DiscoveryService = (*DiscoveryService)(nil)
 
 func NewDiscoveryService(managedSystemRepository contract.ManagedSystemRepository) *DiscoveryService {
@@ -35,15 +41,15 @@ func (d *DiscoveryService) ListDiscoveryTargets(ctx context.Context) ([]domain.D
 			continue
 		}
 
-		tenantIds, err := d.listTenantIds(ctx, managedSystem.Id)
+		tenants, err := d.listDiscoveryTenants(ctx, managedSystem.Id)
 		if err != nil {
 			return nil, fmt.Errorf("list discovery targets: %w", err)
 		}
 
 		// Sorted, so the same systems give the same list on every run.
 		for _, resource := range slices.Sorted(maps.Keys(managedSystem.ConnectorSpec.Entitlements)) {
-			for _, tenantId := range tenantIds {
-				targets = append(targets, domain.DiscoveryTarget{SystemId: managedSystem.Id, SystemName: managedSystem.Name, TenantId: tenantId, Resource: resource})
+			for _, tenant := range tenants {
+				targets = append(targets, domain.DiscoveryTarget{SystemId: managedSystem.Id, SystemName: managedSystem.Name, TenantId: tenant.id, TenantName: tenant.name, Resource: resource})
 			}
 		}
 	}
@@ -51,26 +57,25 @@ func (d *DiscoveryService) ListDiscoveryTargets(ctx context.Context) ([]domain.D
 	return targets, nil
 }
 
-// listTenantIds gives uuid.Nil alone for a single-tenant system.
-func (d *DiscoveryService) listTenantIds(ctx context.Context, managedSystemId string) ([]uuid.UUID, error) {
+func (d *DiscoveryService) listDiscoveryTenants(ctx context.Context, managedSystemId string) ([]discoveryTenant, error) {
 	tenants, err := d.managedSystemRepository.ListManagedSystemTenants(ctx, managedSystemId)
 	if err != nil {
 		return nil, fmt.Errorf("tenants of system %s: %w", managedSystemId, err)
 	}
 
 	if len(tenants) == 0 {
-		return []uuid.UUID{uuid.Nil}, nil
+		return []discoveryTenant{{id: uuid.Nil, name: ""}}, nil
 	}
 
-	tenantIds := make([]uuid.UUID, 0, len(tenants))
+	discoveryTenants := make([]discoveryTenant, 0, len(tenants))
 	for _, tenant := range tenants {
 		tenantId, err := uuid.Parse(tenant.Id)
 		if err != nil {
 			return nil, fmt.Errorf("tenant id %q: %w", tenant.Id, err)
 		}
 
-		tenantIds = append(tenantIds, tenantId)
+		discoveryTenants = append(discoveryTenants, discoveryTenant{id: tenantId, name: tenant.Name})
 	}
 
-	return tenantIds, nil
+	return discoveryTenants, nil
 }
