@@ -40,11 +40,20 @@ type WorkflowService interface {
 	StartWorkflow(ctx context.Context, name string, identityId uuid.UUID) (runId string, err error)
 	Continue(ctx context.Context, workflowName string, runId string, stepName string) error
 	GetRun(ctx context.Context, workflowName string, runId string) (domain.WorkflowRunState, error)
+	// StartDiscovery starts a discovery run with one step per target and returns the run id. It returns an empty id when there is no target.
+	StartDiscovery(ctx context.Context) (runId string, err error)
+}
+
+// DiscoveryService finds the entitlements of the managed systems and saves them in the catalog.
+type DiscoveryService interface {
+	// ListDiscoveryTargets lists every entitlement resource of every managed system, once per tenant.
+	ListDiscoveryTargets(ctx context.Context) ([]domain.DiscoveryTarget, error)
 }
 
 type RuntimeApplication struct {
 	AuthService          AuthService
 	ConnectorService     ConnectorService
+	DiscoveryService     DiscoveryService
 	ManagedSystemService ManagedSystemService
 	WorkflowService      WorkflowService
 }

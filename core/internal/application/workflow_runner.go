@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -9,7 +10,10 @@ import (
 	"github.com/open-iga/core/internal/domain"
 )
 
+var errCursorRepeated = errors.New("connector returned a cursor it already returned")
+
 // ExecuteConnectorOperation is the runner the workflow engine launches with: it runs the step's connector operation on the run's identity.
+// It calls the connector again with the cursor it returns, until it returns none.
 func (w *WorkflowService) ExecuteConnectorOperation(ctx context.Context, step domain.WorkflowStep, identityId uuid.UUID) error {
 	managedSystem, ref, err := w.resolveOperation(ctx, step.Operation)
 	if err != nil {
@@ -17,21 +21,74 @@ func (w *WorkflowService) ExecuteConnectorOperation(ctx context.Context, step do
 	}
 	ref.IdentityId = identityId
 
-	operation := step.Operation
-	output, err := w.connectorService.Execute(ctx, operation.System, operation.Resource, operation.Kind, operation.Action, ref)
-	if err != nil {
-		return fmt.Errorf("run step %q: %w", step.Name, err)
+	// A buggy connector can return a cursor again; without this check the loop would never end.
+	seenCursors := map[string]bool{}
+	for {
+		operation := step.Operation
+		output, err := w.connectorService.Execute(ctx, operation.System, operation.Resource, operation.Kind, operation.Action, ref)
+		if err != nil {
+			return fmt.Errorf("run step %q: %w", step.Name, err)
+		}
+
+		nextCursor, err := w.saveResult(ctx, managedSystem, ref, operation, output)
+		if err != nil {
+			return fmt.Errorf("run step %q: %w", step.Name, err)
+		}
+
+		if nextCursor == "" {
+			return nil
+		}
+
+		if seenCursors[nextCursor] {
+			return fmt.Errorf("run step %q: %w: %q", step.Name, errCursorRepeated, nextCursor)
+		}
+
+		seenCursors[nextCursor] = true
+		ref.Cursor = nextCursor
+	}
+}
+
+// saveResult saves what the operation returned and gives the next cursor, empty when there is none.
+// TODO: save the results of the other operations too, once a workflow needs them.
+func (w *WorkflowService) saveResult(ctx context.Context, managedSystem *domain.ManagedSystem, ref domain.OperationRef, operation domain.WorkflowOperation, output domain.ConnectorOutput) (string, error) {
+	switch {
+	case operation.Kind == domain.AccountActionKind && operation.Action == "create":
+		return "", w.saveCreatedAccount(ctx, managedSystem, ref, output)
+	case operation.Kind == domain.EntitlementKind && operation.Action == "discover":
+		return w.saveDiscoveredEntitlements(ctx, managedSystem, ref, operation, output)
+	default:
+		return "", nil
+	}
+}
+
+// saveCreatedAccount saves the account: later steps load it from the DB.
+func (w *WorkflowService) saveCreatedAccount(ctx context.Context, managedSystem *domain.ManagedSystem, ref domain.OperationRef, output domain.ConnectorOutput) error {
+	created, ok := output.(domain.AccountCreateOutput)
+	if !ok {
+		return fmt.Errorf("unexpected output %T", output)
 	}
 
-	// Later steps load the account from the DB, so a created account must be saved here.
-	// TODO: save the results of the other operations too, once a workflow needs them.
-	if created, ok := output.(domain.AccountCreateOutput); ok {
-		if _, err := w.accountRepository.UpsertAccount(ctx, managedSystem.Id, ref.TenantId, identityId, created.AccountID); err != nil {
-			return fmt.Errorf("run step %q: save account: %w", step.Name, err)
-		}
+	if _, err := w.accountRepository.UpsertAccount(ctx, managedSystem.Id, ref.TenantId, ref.IdentityId, created.AccountID); err != nil {
+		return fmt.Errorf("save account: %w", err)
 	}
 
 	return nil
+}
+
+// saveDiscoveredEntitlements saves one page into the catalog. Saving a page again only updates its rows, so a replay is safe.
+func (w *WorkflowService) saveDiscoveredEntitlements(ctx context.Context, managedSystem *domain.ManagedSystem, ref domain.OperationRef, operation domain.WorkflowOperation, output domain.ConnectorOutput) (string, error) {
+	page, ok := output.(domain.EntitlementDiscoverOutput)
+	if !ok {
+		return "", fmt.Errorf("unexpected output %T", output)
+	}
+
+	for _, discovered := range page.Entitlements {
+		if _, err := w.entitlementCatalogRepository.UpsertEntitlementCatalog(ctx, managedSystem.Id, ref.TenantId, operation.Resource, discovered); err != nil {
+			return "", fmt.Errorf("save entitlement: %w", err)
+		}
+	}
+
+	return page.NextCursor, nil
 }
 
 // resolveOperation checks the operation against the managed systems and finds the rows it works on: the tenant and the entitlement.
@@ -61,7 +118,7 @@ func (w *WorkflowService) resolveOperation(ctx context.Context, operation domain
 		return nil, domain.OperationRef{}, err
 	}
 
-	return managedSystem, domain.OperationRef{TenantId: tenantId, IdentityId: uuid.Nil, EntitlementId: operation.Entitlement}, nil
+	return managedSystem, domain.OperationRef{TenantId: tenantId, IdentityId: uuid.Nil, EntitlementId: operation.Entitlement, Cursor: ""}, nil
 }
 
 // pickTenant is the tenant of the system that fits what the operation names (its tenant, the tenant of its entitlement)

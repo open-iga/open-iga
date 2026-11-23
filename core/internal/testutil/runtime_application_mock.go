@@ -394,6 +394,21 @@ func (mr *MockWorkflowServiceMockRecorder) GetWorkflow(ctx, name any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorkflow", reflect.TypeOf((*MockWorkflowService)(nil).GetWorkflow), ctx, name)
 }
 
+// StartDiscovery mocks base method.
+func (m *MockWorkflowService) StartDiscovery(ctx context.Context) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StartDiscovery", ctx)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StartDiscovery indicates an expected call of StartDiscovery.
+func (mr *MockWorkflowServiceMockRecorder) StartDiscovery(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartDiscovery", reflect.TypeOf((*MockWorkflowService)(nil).StartDiscovery), ctx)
+}
+
 // StartWorkflow mocks base method.
 func (m *MockWorkflowService) StartWorkflow(ctx context.Context, name string, identityId uuid.UUID) (string, error) {
 	m.ctrl.T.Helper()
@@ -407,4 +422,43 @@ func (m *MockWorkflowService) StartWorkflow(ctx context.Context, name string, id
 func (mr *MockWorkflowServiceMockRecorder) StartWorkflow(ctx, name, identityId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartWorkflow", reflect.TypeOf((*MockWorkflowService)(nil).StartWorkflow), ctx, name, identityId)
+}
+
+// MockDiscoveryService is a mock of DiscoveryService interface.
+type MockDiscoveryService struct {
+	ctrl     *gomock.Controller
+	recorder *MockDiscoveryServiceMockRecorder
+	isgomock struct{}
+}
+
+// MockDiscoveryServiceMockRecorder is the mock recorder for MockDiscoveryService.
+type MockDiscoveryServiceMockRecorder struct {
+	mock *MockDiscoveryService
+}
+
+// NewMockDiscoveryService creates a new mock instance.
+func NewMockDiscoveryService(ctrl *gomock.Controller) *MockDiscoveryService {
+	mock := &MockDiscoveryService{ctrl: ctrl}
+	mock.recorder = &MockDiscoveryServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockDiscoveryService) EXPECT() *MockDiscoveryServiceMockRecorder {
+	return m.recorder
+}
+
+// ListDiscoveryTargets mocks base method.
+func (m *MockDiscoveryService) ListDiscoveryTargets(ctx context.Context) ([]domain.DiscoveryTarget, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListDiscoveryTargets", ctx)
+	ret0, _ := ret[0].([]domain.DiscoveryTarget)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListDiscoveryTargets indicates an expected call of ListDiscoveryTargets.
+func (mr *MockDiscoveryServiceMockRecorder) ListDiscoveryTargets(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDiscoveryTargets", reflect.TypeOf((*MockDiscoveryService)(nil).ListDiscoveryTargets), ctx)
 }

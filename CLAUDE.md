@@ -19,9 +19,11 @@ Open-source identity governance and administration (IGA). A serious, long-lived 
 
 ## Code style
 
-- Comments: one line, two at most, simple English, say what the code does.
-- Descriptive names. No `ret0`, `tp`, `mp`. Generated code is exempt.
-- Function names start with a verb: `toX` maps, `buildX` builds, `getX` gets.
+- Treat comments as a maintenance liability; leave comments only when something is not trivial and make sure it is one line, two at most, simple English, say what the code does.
+    - Preserve useful rationale and required documentation, and update or remove comments made stale by your changes.
+- Prefer clear, domain-specific variable and function names and small, focused functions with one responsibility.
+    - Descriptive names. No `ret0`, `tp`, `mp`. Generated code is exempt.
+    - Function names start with a verb: `toX` maps, `buildX` builds, `getX` gets.
 - Blank line before `return`, and between consecutive `if` blocks.
 - Favor the standard library over a new dependency.
 

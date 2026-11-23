@@ -71,6 +71,19 @@ func TestNewConnectorOperation(t *testing.T) {
 	assert.ErrorIs(t, err, ErrUnknownOperation)
 }
 
+func TestNewConnectorOperation_DiscoverReadsPageByCursor(t *testing.T) {
+	tenant := &ManagedSystemTenant{ExternalId: "acct-1"}
+
+	firstPage, err := NewConnectorOperation(EntitlementKind, "discover", OperationData{Tenant: tenant})
+	require.NoError(t, err)
+	assert.Equal(t, EntitlementDiscoverInput{Tenant: ConnectorTenant{ID: "acct-1"}, Cursor: nil}, firstPage)
+
+	nextCursor := "p2"
+	nextPage, err := NewConnectorOperation(EntitlementKind, "discover", OperationData{Tenant: tenant, Cursor: nextCursor})
+	require.NoError(t, err)
+	assert.Equal(t, EntitlementDiscoverInput{Tenant: ConnectorTenant{ID: "acct-1"}, Cursor: &nextCursor}, nextPage)
+}
+
 func TestNewConnectorOperation_NeedsProvisionedAccount(t *testing.T) {
 	tenant := &ManagedSystemTenant{ExternalId: "acct-1"}
 

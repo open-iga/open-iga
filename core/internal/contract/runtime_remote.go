@@ -34,9 +34,9 @@ type ConnectorRuntime interface {
 
 // WorkflowEngine runs workflow runs durably: a run survives a restart. A step waits at its gate until it is continued, and fails after 30 days.
 type WorkflowEngine interface {
-	// Launch starts the engine with the runner that executes each step; it also picks up runs left from before a restart.
-	Launch(ctx context.Context, runner domain.WorkflowStepRunner) error
-	// Start begins a run under the given id. Steps without a dependency run in parallel.
+	// Launch starts the engine with the runner that executes each step and the queue of each type that has one; it also picks up runs left from before a restart.
+	Launch(ctx context.Context, runner domain.WorkflowStepRunner, queues map[domain.WorkflowType]domain.WorkflowQueue) error
+	// Start begins a run under the given id. A run of a type with a queue waits for its turn. Steps without a dependency run in parallel.
 	Start(ctx context.Context, runId string, run domain.WorkflowRun) error
 	// Continue releases a step waiting at a gate.
 	Continue(ctx context.Context, runId, stepName string) error

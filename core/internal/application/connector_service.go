@@ -112,12 +112,12 @@ func (c *ConnectorService) CompileConnector(ctx context.Context, connectorUrl st
 }
 
 // Execute looks up the connector by name, builds the typed input of the kind and action only from rows loaded from the DB, runs it on the connector and returns the typed output.
-// TODO: save the call on an approval request and run it in the background once approved.
 func (c *ConnectorService) Execute(ctx context.Context, connectorName string, managedResource string, kind domain.ConnectorKind, action string, ref domain.OperationRef) (domain.ConnectorOutput, error) {
 	managedSystem, err := c.managedSystemRepository.GetManagedSystemByName(ctx, connectorName)
 	if err != nil {
 		return nil, fmt.Errorf("execute connector %s: %w", connectorName, err)
 	}
+
 	data, err := c.loadOperationData(ctx, managedSystem, managedResource, kind, action, ref)
 	if err != nil {
 		return nil, fmt.Errorf("execute connector %s: %w", connectorName, err)
@@ -166,7 +166,7 @@ func (c *ConnectorService) loadOperationData(ctx context.Context, managedSystem 
 	if err != nil {
 		return nil, err
 	}
-	data := &domain.OperationData{Tenant: tenant, Identity: nil, Account: nil, Entitlement: nil}
+	data := &domain.OperationData{Tenant: tenant, Identity: nil, Account: nil, Entitlement: nil, Cursor: ref.Cursor}
 
 	if ref.IdentityId != uuid.Nil {
 		if data.Identity, err = c.identityRepository.GetIdentityById(ctx, ref.IdentityId); err != nil {

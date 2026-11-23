@@ -27,6 +27,34 @@ func TestWorkflowService_ExecuteConnectorOperation(t *testing.T) {
 		require.NoError(t, svc.ExecuteConnectorOperation(ctx, buildCreateStep("create-aws"), identityId))
 	})
 
+	t.Run("discover reads every page of the resource on the tenant", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.managedSystem.EXPECT().GetManagedSystemByName(ctx, "aws").Return(buildAwsSystem(), nil)
+		mocks.managedSystem.EXPECT().ListManagedSystemTenants(ctx, "system-1").Return([]*domain.ManagedSystemTenant{buildTenant(tenantId, "main")}, nil)
+		admin := domain.DiscoveredEntitlement{EntitlementID: "role-admin", Name: "Admin"}
+		reader := domain.DiscoveredEntitlement{EntitlementID: "role-reader", Name: "Reader"}
+		mocks.connectorService.EXPECT().
+			Execute(ctx, "aws", "iam-user", domain.EntitlementKind, "discover", domain.OperationRef{TenantId: tenantId, Cursor: ""}).
+			Return(domain.EntitlementDiscoverOutput{Entitlements: []domain.DiscoveredEntitlement{admin}, NextCursor: "p2"}, nil)
+		mocks.connectorService.EXPECT().
+			Execute(ctx, "aws", "iam-user", domain.EntitlementKind, "discover", domain.OperationRef{TenantId: tenantId, Cursor: "p2"}).
+			Return(domain.EntitlementDiscoverOutput{Entitlements: []domain.DiscoveredEntitlement{reader}}, nil)
+		mocks.entitlement.EXPECT().UpsertEntitlementCatalog(ctx, "system-1", tenantId, "iam-user", admin).Return(&domain.EntitlementCatalog{}, nil)
+		mocks.entitlement.EXPECT().UpsertEntitlementCatalog(ctx, "system-1", tenantId, "iam-user", reader).Return(&domain.EntitlementCatalog{}, nil)
+
+		require.NoError(t, svc.ExecuteConnectorOperation(ctx, buildDiscoverStep("discover-aws"), uuid.Nil))
+	})
+
+	t.Run("discover stops when the connector repeats a cursor", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.managedSystem.EXPECT().GetManagedSystemByName(ctx, "aws").Return(buildAwsSystem(), nil)
+		mocks.managedSystem.EXPECT().ListManagedSystemTenants(ctx, "system-1").Return([]*domain.ManagedSystemTenant{buildTenant(tenantId, "main")}, nil)
+		mocks.connectorService.EXPECT().Execute(ctx, "aws", "iam-user", domain.EntitlementKind, "discover", gomock.Any()).
+			Return(domain.EntitlementDiscoverOutput{NextCursor: "p2"}, nil).Times(2)
+
+		require.ErrorIs(t, svc.ExecuteConnectorOperation(ctx, buildDiscoverStep("discover-aws"), uuid.Nil), errCursorRepeated)
+	})
+
 	t.Run("a single-tenant system runs without a tenant and saves the account on the system", func(t *testing.T) {
 		svc, mocks := setupWorkflowService(t)
 		mocks.managedSystem.EXPECT().GetManagedSystemByName(ctx, "aws").Return(buildAwsSystem(), nil)

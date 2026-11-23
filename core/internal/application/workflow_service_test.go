@@ -17,6 +17,7 @@ import (
 type workflowMocks struct {
 	engine           *testutil.MockWorkflowEngine
 	connectorService *testutil.MockConnectorService
+	discovery        *testutil.MockDiscoveryService
 	workflowRepo     *testutil.MockWorkflowRepository
 	managedSystem    *testutil.MockManagedSystemRepository
 	entitlement      *testutil.MockEntitlementCatalogRepository
@@ -29,13 +30,14 @@ func setupWorkflowService(t *testing.T) (*WorkflowService, workflowMocks) {
 	mocks := workflowMocks{
 		engine:           testutil.NewMockWorkflowEngine(ctrl),
 		connectorService: testutil.NewMockConnectorService(ctrl),
+		discovery:        testutil.NewMockDiscoveryService(ctrl),
 		workflowRepo:     testutil.NewMockWorkflowRepository(ctrl),
 		managedSystem:    testutil.NewMockManagedSystemRepository(ctrl),
 		entitlement:      testutil.NewMockEntitlementCatalogRepository(ctrl),
 		identity:         testutil.NewMockIdentityRepository(ctrl),
 		account:          testutil.NewMockAccountRepository(ctrl),
 	}
-	svc := NewWorkflowService(testutil.NewTestLogger(), mocks.engine, mocks.connectorService, mocks.workflowRepo, mocks.managedSystem, mocks.entitlement, mocks.identity, mocks.account)
+	svc := NewWorkflowService(testutil.NewTestLogger(), mocks.engine, mocks.connectorService, mocks.discovery, mocks.workflowRepo, mocks.managedSystem, mocks.entitlement, mocks.identity, mocks.account)
 	close(svc.engineReady)
 	return svc, mocks
 }
@@ -46,13 +48,20 @@ func buildAwsSystem() *domain.ManagedSystem {
 		Id: "system-1", Name: "aws",
 		ConnectorSpec: &domain.ConnectorSpec{
 			Actions:      map[string]domain.AccountActions{"iam-user": {Create: &domain.Operation{}, Disable: &domain.Operation{}}},
-			Entitlements: map[string]domain.UserEntitlements{"iam-user": {Grant: &domain.Operation{}, Revoke: &domain.Operation{}}},
+			Entitlements: map[string]domain.UserEntitlements{"iam-user": {Discover: &domain.Operation{}, Grant: &domain.Operation{}, Revoke: &domain.Operation{}}},
 		},
 	}
 }
 
 func buildTenant(id uuid.UUID, name string) *domain.ManagedSystemTenant {
 	return &domain.ManagedSystemTenant{Id: id.String(), ManagedSystemId: "system-1", Name: name}
+}
+
+func buildDiscoverStep(name string) domain.WorkflowStep {
+	return domain.WorkflowStep{
+		Name:      name,
+		Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.EntitlementKind, Action: "discover"},
+	}
 }
 
 func buildCreateStep(name string, after ...string) domain.WorkflowStep {
@@ -244,6 +253,41 @@ func TestWorkflowService_StartWorkflow(t *testing.T) {
 	})
 }
 
+func TestWorkflowService_StartDiscovery(t *testing.T) {
+	ctx := context.Background()
+	tenantId := uuid.New()
+
+	t.Run("starts one discovery step per target", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.discovery.EXPECT().ListDiscoveryTargets(ctx).Return([]domain.DiscoveryTarget{
+			{SystemId: "system-1", SystemName: "keycloak", TenantId: tenantId, TenantName: "realm-a", Resource: "role"},
+			{SystemId: "system-2", SystemName: "aws", TenantId: uuid.Nil, Resource: "iam-user"},
+		}, nil)
+		mocks.engine.EXPECT().Start(ctx, gomock.Any(), domain.WorkflowRun{
+			Definition: domain.WorkflowDefinition{Name: "discovery", Type: domain.WorkflowTypeDiscovery, Steps: []domain.WorkflowStep{
+				{Name: "system-1-" + tenantId.String() + "-role", Operation: domain.WorkflowOperation{System: "keycloak", Resource: "role", Kind: domain.EntitlementKind, Action: "discover", Tenant: "realm-a"}},
+				{Name: "system-2-" + uuid.Nil.String() + "-iam-user", Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.EntitlementKind, Action: "discover"}},
+			}},
+			IdentityId: uuid.Nil,
+		}).Return(nil)
+
+		runId, err := svc.StartDiscovery(ctx)
+
+		require.NoError(t, err)
+		assert.NotEmpty(t, runId)
+	})
+
+	t.Run("starts nothing when there is no target", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.discovery.EXPECT().ListDiscoveryTargets(ctx).Return(nil, nil)
+
+		runId, err := svc.StartDiscovery(ctx)
+
+		require.NoError(t, err)
+		assert.Empty(t, runId)
+	})
+}
+
 func TestWorkflowService_GetRun(t *testing.T) {
 	svc, mocks := setupWorkflowService(t)
 	mocks.engine.EXPECT().Get(gomock.Any(), "run-1").Return(domain.WorkflowRunState{Id: "run-1", Name: "onboarding"}, nil).Times(2)
@@ -262,7 +306,7 @@ func TestWorkflowService_LaunchEngine(t *testing.T) {
 	t.Run("workflow runs are refused until the engine has launched", func(t *testing.T) {
 		svc, mocks := setupWorkflowService(t)
 		svc.engineReady = make(chan struct{}) // the helper opens it; here the engine has not launched
-		mocks.engine.EXPECT().Launch(ctx, gomock.Any()).Return(nil)
+		mocks.engine.EXPECT().Launch(ctx, gomock.Any(), domain.QueuedWorkflowTypes()).Return(nil)
 
 		_, err := svc.StartWorkflow(ctx, "onboarding", uuid.Nil)
 		assert.ErrorIs(t, err, domain.ErrWorkflowEngineNotReady)
@@ -278,8 +322,8 @@ func TestWorkflowService_LaunchEngine(t *testing.T) {
 		svc.engineReady = make(chan struct{})
 		svc.engineLaunchRetryInterval = time.Millisecond
 		gomock.InOrder(
-			mocks.engine.EXPECT().Launch(ctx, gomock.Any()).Return(errors.New("database down")),
-			mocks.engine.EXPECT().Launch(ctx, gomock.Any()).Return(nil),
+			mocks.engine.EXPECT().Launch(ctx, gomock.Any(), domain.QueuedWorkflowTypes()).Return(errors.New("database down")),
+			mocks.engine.EXPECT().Launch(ctx, gomock.Any(), domain.QueuedWorkflowTypes()).Return(nil),
 		)
 
 		svc.LaunchEngine(ctx)
