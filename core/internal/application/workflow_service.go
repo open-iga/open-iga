@@ -177,7 +177,7 @@ func buildDiscoveryDefinition(targets []domain.DiscoveryTarget) domain.WorkflowD
 	return definition
 }
 
-// buildDiscoveryStepName is unique per target, as it is made of ids and the resource; it holds no "/".
+// buildDiscoveryStepName is unique per target, as it is made of ids and the resource.
 func buildDiscoveryStepName(target domain.DiscoveryTarget) string {
 	return fmt.Sprintf("%s-%s-%s", target.SystemId, target.TenantId, target.Resource)
 }
