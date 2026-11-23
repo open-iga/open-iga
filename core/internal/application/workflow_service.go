@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -179,9 +177,9 @@ func buildDiscoveryDefinition(targets []domain.DiscoveryTarget) domain.WorkflowD
 	return definition
 }
 
-// buildDiscoveryStepName joins the parts with "-", as step names cannot hold a "/".
+// buildDiscoveryStepName is unique per target, as it is made of ids and the resource; it holds no "/".
 func buildDiscoveryStepName(target domain.DiscoveryTarget) string {
-	return strings.Join(slices.DeleteFunc([]string{target.SystemName, target.TenantName, target.Resource}, func(part string) bool { return part == "" }), "-")
+	return fmt.Sprintf("%s-%s-%s", target.SystemId, target.TenantId, target.Resource)
 }
 
 func (w *WorkflowService) Continue(ctx context.Context, workflowName string, runId string, stepName string) error {

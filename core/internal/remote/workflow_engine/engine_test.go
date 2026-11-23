@@ -158,6 +158,11 @@ func TestEngine(t *testing.T) {
 	t.Run("a queued type runs one run at a time and does not slow other types", func(t *testing.T) {
 		recorded := &calls{}
 		releaseSlowStep := make(chan struct{})
+
+		var releaseOnce sync.Once
+		release := func() { releaseOnce.Do(func() { close(releaseSlowStep) }) }
+		defer release()
+
 		runner := func(stepCtx context.Context, workflowStep domain.WorkflowStep, identityId uuid.UUID) error {
 			_ = recorded.run(stepCtx, workflowStep, identityId)
 			if workflowStep.Name == "slow" {
@@ -184,7 +189,7 @@ func TestEngine(t *testing.T) {
 		require.Eventually(t, func() bool { return recorded.count("create-aws") == 1 }, 15*time.Second, 50*time.Millisecond, "onboarding has no queue")
 		assert.Never(t, func() bool { return recorded.count("fast") > 0 }, time.Second, 100*time.Millisecond, "the second discovery run waits for the first")
 
-		close(releaseSlowStep)
+		release()
 		require.Eventually(t, func() bool { return recorded.count("fast") == 1 }, 15*time.Second, 50*time.Millisecond)
 	})
 

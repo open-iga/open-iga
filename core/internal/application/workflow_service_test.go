@@ -265,8 +265,8 @@ func TestWorkflowService_StartDiscovery(t *testing.T) {
 		}, nil)
 		mocks.engine.EXPECT().Start(ctx, gomock.Any(), domain.WorkflowRun{
 			Definition: domain.WorkflowDefinition{Name: "discovery", Type: domain.WorkflowTypeDiscovery, Steps: []domain.WorkflowStep{
-				{Name: "keycloak-realm-a-role", Operation: domain.WorkflowOperation{System: "keycloak", Resource: "role", Kind: domain.EntitlementKind, Action: "discover", Tenant: "realm-a"}},
-				{Name: "aws-iam-user", Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.EntitlementKind, Action: "discover"}},
+				{Name: "system-1-" + tenantId.String() + "-role", Operation: domain.WorkflowOperation{System: "keycloak", Resource: "role", Kind: domain.EntitlementKind, Action: "discover", Tenant: "realm-a"}},
+				{Name: "system-2-" + uuid.Nil.String() + "-iam-user", Operation: domain.WorkflowOperation{System: "aws", Resource: "iam-user", Kind: domain.EntitlementKind, Action: "discover"}},
 			}},
 			IdentityId: uuid.Nil,
 		}).Return(nil)
