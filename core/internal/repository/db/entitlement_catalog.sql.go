@@ -44,6 +44,77 @@ func (q *Queries) GetEntitlementCatalog(ctx context.Context, arg GetEntitlementC
 	return i, err
 }
 
+const searchEntitlementCatalog = `-- name: SearchEntitlementCatalog :many
+SELECT entitlement_catalog.id, entitlement_catalog.managed_system_id, entitlement_catalog.tenant_id, entitlement_catalog.resource, entitlement_catalog.external_id, entitlement_catalog.display_name, entitlement_catalog.description, entitlement_catalog.metadata, entitlement_catalog.last_seen_at, entitlement_catalog.created_at, entitlement_catalog.updated_at, COUNT(*) OVER () AS total
+FROM entitlement_catalog
+WHERE ($1::uuid IS NULL OR managed_system_id = $1)
+  AND ($2::uuid IS NULL OR tenant_id = $2)
+  AND ($3::text IS NULL OR resource = $3)
+  AND ($4::text IS NULL OR display_name ILIKE '%' || $4::text || '%' OR external_id ILIKE '%' || $4::text || '%')
+ORDER BY
+  (display_name ILIKE $4::text || '%' OR external_id ILIKE $4::text || '%') DESC,
+  GREATEST(word_similarity($5::text, display_name), word_similarity($5::text, external_id)) DESC,
+  display_name, id
+LIMIT $7 OFFSET $6
+`
+
+type SearchEntitlementCatalogParams struct {
+	ManagedSystemID pgtype.UUID
+	TenantID        pgtype.UUID
+	Resource        pgtype.Text
+	QueryPattern    pgtype.Text
+	Query           pgtype.Text
+	PageOffset      int32
+	PageSize        int32
+}
+
+type SearchEntitlementCatalogRow struct {
+	EntitlementCatalog EntitlementCatalog
+	Total              int64
+}
+
+// query_pattern is the query with its LIKE wildcards escaped; query is the query as typed, for ranking.
+func (q *Queries) SearchEntitlementCatalog(ctx context.Context, arg SearchEntitlementCatalogParams) ([]SearchEntitlementCatalogRow, error) {
+	rows, err := q.db.Query(ctx, searchEntitlementCatalog,
+		arg.ManagedSystemID,
+		arg.TenantID,
+		arg.Resource,
+		arg.QueryPattern,
+		arg.Query,
+		arg.PageOffset,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchEntitlementCatalogRow
+	for rows.Next() {
+		var i SearchEntitlementCatalogRow
+		if err := rows.Scan(
+			&i.EntitlementCatalog.ID,
+			&i.EntitlementCatalog.ManagedSystemID,
+			&i.EntitlementCatalog.TenantID,
+			&i.EntitlementCatalog.Resource,
+			&i.EntitlementCatalog.ExternalID,
+			&i.EntitlementCatalog.DisplayName,
+			&i.EntitlementCatalog.Description,
+			&i.EntitlementCatalog.Metadata,
+			&i.EntitlementCatalog.LastSeenAt,
+			&i.EntitlementCatalog.CreatedAt,
+			&i.EntitlementCatalog.UpdatedAt,
+			&i.Total,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertEntitlementCatalog = `-- name: UpsertEntitlementCatalog :one
 INSERT INTO entitlement_catalog (managed_system_id, tenant_id, resource, external_id, display_name, description, metadata)
 VALUES ($1, $2, $3, $4, $5, $6, $7)

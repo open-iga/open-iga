@@ -64,6 +64,17 @@ type EntitlementCatalog struct {
 	Metadata        Metadata
 }
 
+// EntitlementSearch picks entitlements of the catalog; an empty field matches all.
+type EntitlementSearch struct {
+	// Query is part of the display name or of the external id, in any case.
+	Query           string
+	ManagedSystemId uuid.UUID
+	TenantId        uuid.UUID
+	Resource        string
+	Limit           int32
+	Offset          int32
+}
+
 // OperationRef is all a caller says about a call: which rows to use. Everything the connector
 // receives is loaded from these rows.
 type OperationRef struct {
