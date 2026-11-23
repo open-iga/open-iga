@@ -18,6 +18,8 @@ type EntitlementCatalogRepository struct {
 	queries *db.Queries
 }
 
+var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+
 func NewEntitlementCatalogRepository(queries *db.Queries) *EntitlementCatalogRepository {
 	return &EntitlementCatalogRepository{queries: queries}
 }
@@ -106,8 +108,6 @@ func (e *EntitlementCatalogRepository) SearchEntitlementCatalog(ctx context.Cont
 
 	return entitlements, total, nil
 }
-
-var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 
 // toNullableUuid stores uuid.Nil, which here means "any", as NULL.
 func toNullableUuid(id uuid.UUID) pgtype.UUID {

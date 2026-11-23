@@ -462,3 +462,19 @@ func (mr *MockDiscoveryServiceMockRecorder) ListDiscoveryTargets(ctx any) *gomoc
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDiscoveryTargets", reflect.TypeOf((*MockDiscoveryService)(nil).ListDiscoveryTargets), ctx)
 }
+
+// SearchEntitlements mocks base method.
+func (m *MockDiscoveryService) SearchEntitlements(ctx context.Context, search domain.EntitlementSearch) ([]*domain.EntitlementCatalog, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchEntitlements", ctx, search)
+	ret0, _ := ret[0].([]*domain.EntitlementCatalog)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// SearchEntitlements indicates an expected call of SearchEntitlements.
+func (mr *MockDiscoveryServiceMockRecorder) SearchEntitlements(ctx, search any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchEntitlements", reflect.TypeOf((*MockDiscoveryService)(nil).SearchEntitlements), ctx, search)
+}

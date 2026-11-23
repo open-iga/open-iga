@@ -26,3 +26,8 @@ func WithErrorLogged(ctx context.Context, logger *slog.Logger, cls func(ctx cont
 		logger.Error(err.Error())
 	}
 }
+
+// MakeSliceLike makes a slice of the same type as the given one; use it when the element type has no name to write, such as a generated anonymous struct.
+func MakeSliceLike[S []E, E any](_ S, length int) S {
+	return make(S, length)
+}

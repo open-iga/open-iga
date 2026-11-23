@@ -176,6 +176,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/entitlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Search the entitlement catalog by name or external id. Matches that start with the query come first. Without a query, the result is sorted by name. */
+        get: operations["searchEntitlements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workflows": {
         parameters: {
             query?: never;
@@ -919,6 +936,55 @@ export interface operations {
             401: components["responses"]["unauthenticated-error"];
             404: components["responses"]["not-found-error"];
             409: components["responses"]["conflict-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
+    searchEntitlements: {
+        parameters: {
+            query?: {
+                /** @description Part of the display name or of the external id, in any case */
+                q?: string;
+                /** @description Only entitlements of this managed system */
+                systemId?: string;
+                /** @description Only entitlements of this tenant */
+                tenantId?: string;
+                /** @description Only entitlements of this connector resource */
+                resource?: string;
+                /** @description Page size, 20 when not set, at most 100 */
+                limit?: number;
+                /** @description Number of entitlements to skip, 0 when not set */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of matches and the number of matches in all */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        entitlements: {
+                            id: string;
+                            managedSystemId: string;
+                            /** @description Not set for a single-tenant system */
+                            tenantId?: string;
+                            resource: string;
+                            externalId: string;
+                            displayName: string;
+                            description?: string;
+                        }[];
+                        /** Format: int64 */
+                        total: number;
+                    };
+                };
+            };
+            400: components["responses"]["bad-request-error"];
+            401: components["responses"]["unauthenticated-error"];
             500: components["responses"]["internal-server-error"];
         };
     };

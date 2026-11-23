@@ -1,0 +1,81 @@
+get:
+    operationId: searchEntitlements
+    description: >-
+        Search the entitlement catalog by name or external id. Matches that start with the query come first.
+        Without a query, the result is sorted by name.
+    parameters:
+        - name: q
+          in: query
+          required: false
+          description: Part of the display name or of the external id, in any case
+          schema:
+              type: string
+        - name: systemId
+          in: query
+          required: false
+          description: Only entitlements of this managed system
+          schema:
+              type: string
+        - name: tenantId
+          in: query
+          required: false
+          description: Only entitlements of this tenant
+          schema:
+              type: string
+        - name: resource
+          in: query
+          required: false
+          description: Only entitlements of this connector resource
+          schema:
+              type: string
+        - name: limit
+          in: query
+          required: false
+          description: Page size, 20 when not set, at most 100
+          schema:
+              type: integer
+        - name: offset
+          in: query
+          required: false
+          description: Number of entitlements to skip, 0 when not set
+          schema:
+              type: integer
+    responses:
+        200:
+            description: One page of matches and the number of matches in all
+            content:
+                'application/json':
+                    schema:
+                        type: object
+                        properties:
+                            entitlements:
+                                type: array
+                                items:
+                                    type: object
+                                    properties:
+                                        id:
+                                            type: string
+                                        managedSystemId:
+                                            type: string
+                                        tenantId:
+                                            type: string
+                                            description: Not set for a single-tenant system
+                                        resource:
+                                            type: string
+                                        externalId:
+                                            type: string
+                                        displayName:
+                                            type: string
+                                        description:
+                                            type: string
+                                    required: [id, managedSystemId, resource, externalId, displayName]
+                            total:
+                                type: integer
+                                format: int64
+                        required: [entitlements, total]
+        400:
+            $ref: '../components/responses/bad-request-error.yml'
+        401:
+            $ref: '../components/responses/unauthenticated-error.yml'
+        500:
+            $ref: '../components/responses/internal-server-error.yml'

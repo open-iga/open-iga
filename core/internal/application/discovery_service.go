@@ -12,7 +12,17 @@ import (
 )
 
 type DiscoveryService struct {
-	managedSystemRepository contract.ManagedSystemRepository
+	managedSystemRepository      contract.ManagedSystemRepository
+	entitlementCatalogRepository contract.EntitlementCatalogRepository
+}
+
+func (d *DiscoveryService) SearchEntitlements(ctx context.Context, search domain.EntitlementSearch) ([]*domain.EntitlementCatalog, int64, error) {
+	entitlements, total, err := d.entitlementCatalogRepository.SearchEntitlementCatalog(ctx, search)
+	if err != nil {
+		return nil, 0, fmt.Errorf("search entitlements: %w", err)
+	}
+
+	return entitlements, total, nil
 }
 
 // discoveryTenant is a tenant of a system as discovery needs it; the zero value stands for the one tenant of a single-tenant system.
@@ -23,8 +33,8 @@ type discoveryTenant struct {
 
 var _ contract.DiscoveryService = (*DiscoveryService)(nil)
 
-func NewDiscoveryService(managedSystemRepository contract.ManagedSystemRepository) *DiscoveryService {
-	return &DiscoveryService{managedSystemRepository: managedSystemRepository}
+func NewDiscoveryService(managedSystemRepository contract.ManagedSystemRepository, entitlementCatalogRepository contract.EntitlementCatalogRepository) *DiscoveryService {
+	return &DiscoveryService{managedSystemRepository: managedSystemRepository, entitlementCatalogRepository: entitlementCatalogRepository}
 }
 
 // ListDiscoveryTargets lists every entitlement resource of every managed system, once per tenant.
