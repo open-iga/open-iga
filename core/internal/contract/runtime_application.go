@@ -48,6 +48,8 @@ type WorkflowService interface {
 type DiscoveryService interface {
 	// ListDiscoveryTargets lists every entitlement resource of every managed system, once per tenant.
 	ListDiscoveryTargets(ctx context.Context) ([]domain.DiscoveryTarget, error)
+	// SearchEntitlements returns one page of the catalog and the number of entitlements that match in all.
+	SearchEntitlements(ctx context.Context, search domain.EntitlementSearch) (entitlements []*domain.EntitlementCatalog, total int64, err error)
 }
 
 type RuntimeApplication struct {

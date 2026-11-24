@@ -52,6 +52,8 @@ type WorkflowRepository interface {
 type EntitlementCatalogRepository interface {
 	// GetEntitlementCatalog is not found when the entitlement belongs to another system or resource.
 	GetEntitlementCatalog(ctx context.Context, entitlementId uuid.UUID, managedSystemId string, resource string) (*domain.EntitlementCatalog, error)
+	// SearchEntitlementCatalog returns one page, sorted by display name, and the number of entitlements that match in all.
+	SearchEntitlementCatalog(ctx context.Context, search domain.EntitlementSearch) (entitlements []*domain.EntitlementCatalog, total int64, err error)
 	// UpsertEntitlementCatalog saves what discovery found for a resource of a tenant; repeating it updates the row.
 	UpsertEntitlementCatalog(ctx context.Context, managedSystemId string, tenantId uuid.UUID, resource string, discovered domain.DiscoveredEntitlement) (*domain.EntitlementCatalog, error)
 }

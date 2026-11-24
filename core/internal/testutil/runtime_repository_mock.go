@@ -493,6 +493,22 @@ func (mr *MockEntitlementCatalogRepositoryMockRecorder) GetEntitlementCatalog(ct
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEntitlementCatalog", reflect.TypeOf((*MockEntitlementCatalogRepository)(nil).GetEntitlementCatalog), ctx, entitlementId, managedSystemId, resource)
 }
 
+// SearchEntitlementCatalog mocks base method.
+func (m *MockEntitlementCatalogRepository) SearchEntitlementCatalog(ctx context.Context, search domain.EntitlementSearch) ([]*domain.EntitlementCatalog, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchEntitlementCatalog", ctx, search)
+	ret0, _ := ret[0].([]*domain.EntitlementCatalog)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// SearchEntitlementCatalog indicates an expected call of SearchEntitlementCatalog.
+func (mr *MockEntitlementCatalogRepositoryMockRecorder) SearchEntitlementCatalog(ctx, search any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchEntitlementCatalog", reflect.TypeOf((*MockEntitlementCatalogRepository)(nil).SearchEntitlementCatalog), ctx, search)
+}
+
 // UpsertEntitlementCatalog mocks base method.
 func (m *MockEntitlementCatalogRepository) UpsertEntitlementCatalog(ctx context.Context, managedSystemId string, tenantId uuid.UUID, resource string, discovered domain.DiscoveredEntitlement) (*domain.EntitlementCatalog, error) {
 	m.ctrl.T.Helper()

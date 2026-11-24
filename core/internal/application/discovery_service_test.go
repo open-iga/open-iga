@@ -22,7 +22,7 @@ func setupDiscoveryService(t *testing.T) (*DiscoveryService, discoveryMocks) {
 		managedSystem: testutil.NewMockManagedSystemRepository(ctrl),
 	}
 
-	return NewDiscoveryService(mocks.managedSystem), mocks
+	return NewDiscoveryService(mocks.managedSystem, testutil.NewMockEntitlementCatalogRepository(ctrl)), mocks
 }
 
 func TestDiscoveryService_ListDiscoveryTargets(t *testing.T) {

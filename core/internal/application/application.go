@@ -11,7 +11,7 @@ import (
 
 func NewApplication(ctx context.Context, appConfig *common.AppConfig, logger *slog.Logger, remotes *contract.RuntimeRemote, repository *contract.Repository) (*contract.RuntimeApplication, error) {
 	connectorService := NewConnectorService(remotes.ConnectorRuntime, repository.ManagedSystemRepository, repository.IdentityRepository, repository.AccountRepository, repository.EntitlementCatalogRepository, logger)
-	discoveryService := NewDiscoveryService(repository.ManagedSystemRepository)
+	discoveryService := NewDiscoveryService(repository.ManagedSystemRepository, repository.EntitlementCatalogRepository)
 	workflowService := NewWorkflowService(logger, remotes.WorkflowEngine, connectorService, discoveryService, repository.WorkflowRepository, repository.ManagedSystemRepository, repository.EntitlementCatalogRepository, repository.IdentityRepository, repository.AccountRepository)
 
 	application := &contract.RuntimeApplication{

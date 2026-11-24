@@ -42,6 +42,10 @@ CREATE TABLE entitlement_catalog (
     updated_at   TIMESTAMPTZ(6)   DEFAULT CURRENT_TIMESTAMP
 );
 CREATE UNIQUE INDEX idx_unique_entitlement_catalog ON entitlement_catalog(managed_system_id, tenant_id, resource, external_id) NULLS NOT DISTINCT;
+-- Trigram indexes make the substring search (ILIKE '%text%') on name and external id use an index
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX idx_entitlement_catalog_display_name_trgm ON entitlement_catalog USING GIN (display_name gin_trgm_ops);
+CREATE INDEX idx_entitlement_catalog_external_id_trgm ON entitlement_catalog USING GIN (external_id gin_trgm_ops);
 
 -- An identity's managed account on a system, or on one of its tenants. Created before any entitlement is assigned.
 CREATE TABLE account (
