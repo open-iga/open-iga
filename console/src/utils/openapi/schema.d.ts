@@ -467,6 +467,11 @@ export interface components {
             /** @description Wait before this step until someone continues it from the UI or API */
             gate?: boolean;
         }[];
+        /**
+         * @description What the workflow does; it decides the action each step runs. Discovery is built in and cannot be created.
+         * @enum {string}
+         */
+        "workflow-type-response": "onboarding" | "discovery";
     };
     responses: {
         /** @description Internal Server error */
@@ -1076,7 +1081,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         name: string;
-                        type: components["schemas"]["workflow-type"];
+                        type: components["schemas"]["workflow-type-response"];
                         steps: components["schemas"]["workflow-steps"];
                         schedule?: components["schemas"]["workflow-schedule"];
                     };

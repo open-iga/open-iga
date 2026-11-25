@@ -22,7 +22,7 @@ get:
                             name:
                                 type: string
                             type:
-                                $ref: '../schemas/workflow-type.yml'
+                                $ref: '../schemas/workflow-type-response.yml'
                             steps:
                                 $ref: '../schemas/workflow-steps.yml'
                             schedule:

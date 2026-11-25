@@ -68,8 +68,23 @@ func (w *WorkflowService) LaunchEngine(ctx context.Context) {
 	close(w.engineReady)
 	w.logger.Info("workflow engine launched")
 
-	if err := w.saveDefaultDiscoverySchedule(ctx); err != nil {
-		w.logger.Error("failed to save the default discovery schedule", "err", err)
+	w.keepSavingDefaultDiscoverySchedule(ctx)
+}
+
+// keepSavingDefaultDiscoverySchedule tries again until the default is saved or the context ends.
+func (w *WorkflowService) keepSavingDefaultDiscoverySchedule(ctx context.Context) {
+	for {
+		err := w.saveDefaultDiscoverySchedule(ctx)
+		if err == nil {
+			return
+		}
+
+		w.logger.Error("failed to save the default discovery schedule", "err", err, "retryIn", w.engineLaunchRetryInterval)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(w.engineLaunchRetryInterval):
+		}
 	}
 }
 
@@ -102,7 +117,7 @@ func (w *WorkflowService) startScheduledWorkflow(ctx context.Context, workflowNa
 	return err
 }
 
-func (w *WorkflowService) checkEngineReady() error {
+func (w *WorkflowService) isEngineReady() error {
 	select {
 	case <-w.engineReady:
 		return nil
@@ -112,6 +127,10 @@ func (w *WorkflowService) checkEngineReady() error {
 }
 
 func (w *WorkflowService) CreateWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error {
+	if definition.Name == domain.DiscoveryWorkflowName {
+		return fmt.Errorf("create workflow: %w: the name %q is taken by the built-in discovery workflow", domain.ErrInvalidWorkflow, definition.Name)
+	}
+
 	if err := definition.Validate(); err != nil {
 		return fmt.Errorf("create workflow: %w", err)
 	}
@@ -163,11 +182,15 @@ func (w *WorkflowService) GetWorkflowSchedule(ctx context.Context, name string) 
 		return nil, nil
 	}
 
-	if err := w.checkEngineReady(); err != nil {
+	if err := w.isEngineReady(); err != nil {
 		return nil, fmt.Errorf("get workflow schedule: %w", err)
 	}
 
 	schedule, err := w.workflowEngine.GetSchedule(ctx, name)
+	if errors.Is(err, domain.ErrScheduleNotFound) {
+		return nil, nil
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("get workflow schedule: %w", err)
 	}
@@ -180,7 +203,7 @@ func (w *WorkflowService) SetWorkflowSchedule(ctx context.Context, name string, 
 		return fmt.Errorf("%w: workflow %q has no schedule", domain.ErrInvalidWorkflow, name)
 	}
 
-	if err := w.checkEngineReady(); err != nil {
+	if err := w.isEngineReady(); err != nil {
 		return fmt.Errorf("set workflow schedule: %w", err)
 	}
 
@@ -196,7 +219,7 @@ func (w *WorkflowService) StartWorkflow(ctx context.Context, name string, identi
 		return w.startDiscovery(ctx)
 	}
 
-	if err := w.checkEngineReady(); err != nil {
+	if err := w.isEngineReady(); err != nil {
 		return "", fmt.Errorf("start workflow: %w", err)
 	}
 
@@ -218,7 +241,7 @@ func (w *WorkflowService) StartWorkflow(ctx context.Context, name string, identi
 }
 
 func (w *WorkflowService) startDiscovery(ctx context.Context) (string, error) {
-	if err := w.checkEngineReady(); err != nil {
+	if err := w.isEngineReady(); err != nil {
 		return "", fmt.Errorf("start discovery: %w", err)
 	}
 
@@ -271,7 +294,7 @@ func (w *WorkflowService) Continue(ctx context.Context, workflowName string, run
 
 // GetRun treats a run of another workflow as not found.
 func (w *WorkflowService) GetRun(ctx context.Context, workflowName string, runId string) (domain.WorkflowRunState, error) {
-	if err := w.checkEngineReady(); err != nil {
+	if err := w.isEngineReady(); err != nil {
 		return domain.WorkflowRunState{}, fmt.Errorf("get workflow run: %w", err)
 	}
 

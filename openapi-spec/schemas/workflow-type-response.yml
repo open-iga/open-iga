@@ -1,0 +1,8 @@
+x-go-type: domain.WorkflowType
+x-go-type-import:
+    path: github.com/open-iga/core/internal/domain
+type: string
+enum: [onboarding, discovery]
+description: >-
+    What the workflow does; it decides the action each step runs.
+    Discovery is built in and cannot be created.
