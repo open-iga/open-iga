@@ -35,13 +35,17 @@ type WorkflowService interface {
 	// CreateWorkflow checks every step against the managed systems, tenants and entitlements, then saves the definition under its name.
 	// It returns domain.ErrWorkflowAlreadyExists when the name is taken.
 	CreateWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error
+	// GetWorkflow also finds the built-in discovery workflow, which has no steps.
 	GetWorkflow(ctx context.Context, name string) (domain.WorkflowDefinition, error)
+	// GetWorkflowSchedule is nil for a workflow that has no schedule.
+	GetWorkflowSchedule(ctx context.Context, name string) (*domain.WorkflowSchedule, error)
+	// SetWorkflowSchedule saves the schedule of the workflow. It returns domain.ErrInvalidWorkflow when the workflow has no schedule or the cron is not valid.
+	SetWorkflowSchedule(ctx context.Context, name string, schedule domain.WorkflowSchedule) error
 	// StartWorkflow runs the saved workflow for the identity (empty for workflows that touch none) and returns the run id.
+	// For discovery it starts a run with one step per target, and returns an empty id when there is no target.
 	StartWorkflow(ctx context.Context, name string, identityId uuid.UUID) (runId string, err error)
 	Continue(ctx context.Context, workflowName string, runId string, stepName string) error
 	GetRun(ctx context.Context, workflowName string, runId string) (domain.WorkflowRunState, error)
-	// StartDiscovery starts a discovery run with one step per target and returns the run id. It returns an empty id when there is no target.
-	StartDiscovery(ctx context.Context) (runId string, err error)
 }
 
 // DiscoveryService finds the entitlements of the managed systems and saves them in the catalog.

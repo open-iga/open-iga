@@ -18,6 +18,11 @@ type WorkflowType string
 const (
 	WorkflowTypeOnboarding WorkflowType = "onboarding"
 	WorkflowTypeDiscovery  WorkflowType = "discovery"
+
+	// DiscoveryWorkflowName is the name of the one built-in discovery workflow; its steps are built from the managed systems at each run.
+	DiscoveryWorkflowName = "discovery"
+	// DefaultDiscoveryCron is every day at midnight UTC; a cron has a seconds field first.
+	DefaultDiscoveryCron = "0 0 0 * * *"
 )
 
 // WorkflowQueue limits how many runs of a type run at the same time; the other runs wait.

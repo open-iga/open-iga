@@ -87,7 +87,7 @@ func TestEngine(t *testing.T) {
 
 	launch := func(t *testing.T, runner domain.WorkflowStepRunner) *Engine {
 		engine := NewEngine(databaseUrl, testutil.NewTestLogger())
-		require.NoError(t, engine.Launch(ctx, runner, nil))
+		require.NoError(t, engine.Launch(ctx, runner, nil, nil))
 		t.Cleanup(func() { engine.Shutdown(5 * time.Second) })
 		return engine
 	}
@@ -138,7 +138,7 @@ func TestEngine(t *testing.T) {
 	t.Run("a run waiting at a gate survives a restart", func(t *testing.T) {
 		recorded := &calls{}
 		first := NewEngine(databaseUrl, testutil.NewTestLogger())
-		require.NoError(t, first.Launch(ctx, recorded.run, nil))
+		require.NoError(t, first.Launch(ctx, recorded.run, nil, nil))
 		require.NoError(t, first.Start(ctx, "restart-run", buildTwoLanesRun()))
 		waitFor(t, first, "restart-run", map[string]domain.WorkflowStepStatus{
 			"create-aws": domain.WorkflowStepSucceeded, "grant-aws": domain.WorkflowStepGated, "after-grant-aws": domain.WorkflowStepPending,
@@ -153,6 +153,36 @@ func TestEngine(t *testing.T) {
 			"create-github": domain.WorkflowStepSucceeded, "grant-github": domain.WorkflowStepSucceeded,
 		})
 		assert.Equal(t, 1, recorded.count("create-aws"), "a finished step is not repeated after the restart")
+	})
+
+	t.Run("a saved schedule fires the starter, can be paused and read back", func(t *testing.T) {
+		started := make(chan string, 10)
+		engine := NewEngine(databaseUrl, testutil.NewTestLogger())
+		starter := func(_ context.Context, workflowName string) error {
+			started <- workflowName
+			return nil
+		}
+		require.NoError(t, engine.Launch(ctx, nil, nil, starter))
+		t.Cleanup(func() { engine.Shutdown(5 * time.Second) })
+
+		_, err := engine.GetSchedule(ctx, "discovery")
+		require.ErrorIs(t, err, domain.ErrScheduleNotFound)
+
+		every := domain.WorkflowSchedule{Cron: "* * * * * *", Enabled: true}
+		require.NoError(t, engine.SetSchedule(ctx, "discovery", every))
+		saved, err := engine.GetSchedule(ctx, "discovery")
+		require.NoError(t, err)
+		assert.Equal(t, every, saved)
+		assert.Equal(t, "discovery", <-started)
+
+		invalid := domain.WorkflowSchedule{Cron: "not a cron", Enabled: true}
+		require.ErrorIs(t, engine.SetSchedule(ctx, "discovery", invalid), domain.ErrInvalidWorkflow)
+
+		every.Enabled = false
+		require.NoError(t, engine.SetSchedule(ctx, "discovery", every))
+		saved, err = engine.GetSchedule(ctx, "discovery")
+		require.NoError(t, err)
+		assert.Equal(t, every, saved)
 	})
 
 	t.Run("a queued type runs one run at a time and does not slow other types", func(t *testing.T) {
@@ -172,7 +202,7 @@ func TestEngine(t *testing.T) {
 			return nil
 		}
 		engine := NewEngine(databaseUrl, testutil.NewTestLogger())
-		require.NoError(t, engine.Launch(ctx, runner, domain.QueuedWorkflowTypes()))
+		require.NoError(t, engine.Launch(ctx, runner, domain.QueuedWorkflowTypes(), nil))
 		t.Cleanup(func() { engine.Shutdown(5 * time.Second) })
 		discoveryRun := func(stepName string) domain.WorkflowRun {
 			operation := domain.WorkflowOperation{System: "s", Resource: "r", Kind: domain.EntitlementKind, Action: "discover"}

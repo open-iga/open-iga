@@ -14,10 +14,20 @@ var (
 	ErrWorkflowStepNotGated   = errors.New("workflow step is not waiting at a gate")
 	ErrWorkflowNotFound       = errors.New("workflow not found")
 	ErrWorkflowAlreadyExists  = errors.New("workflow already exists")
+	ErrScheduleNotFound       = errors.New("workflow schedule not found")
 )
 
 // WorkflowStepRunner runs one step of a run about the given identity; the engine calls it, it knows nothing of what a step does.
 type WorkflowStepRunner func(ctx context.Context, step WorkflowStep, identityId uuid.UUID) error
+
+// ScheduledWorkflowStarter starts a run of the named workflow; the engine calls it on each tick of the workflow's schedule.
+type ScheduledWorkflowStarter func(ctx context.Context, workflowName string) error
+
+// WorkflowSchedule says when a workflow starts on its own: a cron expression in UTC, and whether it is on.
+type WorkflowSchedule struct {
+	Cron    string `json:"cron"`
+	Enabled bool   `json:"enabled"`
+}
 
 type WorkflowStepStatus string
 

@@ -76,7 +76,7 @@ func (e *Engine) executeWorkflowStep(ctx dbos.Context, input stepInput) (string,
 
 	// A returned error is not retried. A crash can still replay the step, so connector operations must be idempotent.
 	_, err := dbos.RunAsStep(ctx, func(stepCtx context.Context) (string, error) {
-		return "", e.runner(stepCtx, input.Step, input.IdentityId)
+		return "", e.workflowStepRunner(stepCtx, input.Step, input.IdentityId)
 	}, dbos.WithStepName(input.Step.Name))
 	if err != nil {
 		return "", fmt.Errorf("run step %s: %w", input.Step.Name, err)
@@ -105,4 +105,18 @@ func waitForGate(ctx dbos.Context) error {
 	}
 
 	return nil
+}
+
+// executeScheduledWorkflow is what a schedule fires on each tick: it starts a run of the workflow the schedule is for.
+func (e *Engine) executeScheduledWorkflow(ctx dbos.Context, input dbos.ScheduledWorkflowInput) (any, error) {
+	workflowName, err := dbos.DecodeScheduleContext[string](input)
+	if err != nil {
+		return nil, fmt.Errorf("read the schedule: %w", err)
+	}
+
+	if err := e.scheduledWorkflowStarter(ctx, workflowName); err != nil {
+		return nil, fmt.Errorf("start scheduled workflow %q: %w", workflowName, err)
+	}
+
+	return nil, nil
 }
