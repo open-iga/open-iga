@@ -80,10 +80,21 @@ func TestHandler_GetWorkflow(t *testing.T) {
 	t.Run("returns the workflow", func(t *testing.T) {
 		router, service := setupRouterWithMockWorkflowService(t)
 		service.EXPECT().GetWorkflow(gomock.Any(), "onboarding").Return(domain.WorkflowDefinition{Name: "onboarding", Type: domain.WorkflowTypeOnboarding, Steps: []domain.WorkflowStep{createStep}}, nil)
+		service.EXPECT().GetWorkflowSchedule(gomock.Any(), "onboarding").Return(nil, nil)
 
 		rec := sendRequest(router, http.MethodGet, "/api/v1/workflows/onboarding", "")
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.JSONEq(t, `{"name": "onboarding", "type": "onboarding", "steps": [`+createStepJSON+`]}`, rec.Body.String())
+	})
+
+	t.Run("returns the schedule of discovery", func(t *testing.T) {
+		router, service := setupRouterWithMockWorkflowService(t)
+		service.EXPECT().GetWorkflow(gomock.Any(), "discovery").Return(domain.WorkflowDefinition{Name: "discovery", Type: domain.WorkflowTypeDiscovery, Steps: []domain.WorkflowStep{}}, nil)
+		service.EXPECT().GetWorkflowSchedule(gomock.Any(), "discovery").Return(&domain.WorkflowSchedule{Cron: "0 0 0 * * *", Enabled: true}, nil)
+
+		rec := sendRequest(router, http.MethodGet, "/api/v1/workflows/discovery", "")
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.JSONEq(t, `{"name": "discovery", "type": "discovery", "steps": [], "schedule": {"cron": "0 0 0 * * *", "enabled": true}}`, rec.Body.String())
 	})
 
 	t.Run("returns 404 when there is no such workflow", func(t *testing.T) {
@@ -175,5 +186,41 @@ func TestHandler_ContinueWorkflowStep(t *testing.T) {
 		service.EXPECT().Continue(gomock.Any(), "onboarding", "run-1", "grant-admin").Return(domain.ErrWorkflowStepNotGated)
 
 		assert.Equal(t, http.StatusConflict, sendRequest(router, http.MethodPost, "/api/v1/workflows/onboarding/runs/run-1/steps/grant-admin/continue", "").Code)
+	})
+}
+
+func TestHandler_StartDiscoveryRun(t *testing.T) {
+	t.Run("returns 201 with the run id, without an identity", func(t *testing.T) {
+		router, service := setupRouterWithMockWorkflowService(t)
+		service.EXPECT().StartWorkflow(gomock.Any(), "discovery", uuid.Nil).Return("run-1", nil)
+
+		rec := sendRequest(router, http.MethodPost, "/api/v1/workflows/discovery/runs", "")
+		assert.Equal(t, http.StatusCreated, rec.Code)
+		assert.JSONEq(t, `{"id": "run-1"}`, rec.Body.String())
+	})
+
+	t.Run("returns 204 when there is nothing to discover", func(t *testing.T) {
+		router, service := setupRouterWithMockWorkflowService(t)
+		service.EXPECT().StartWorkflow(gomock.Any(), "discovery", uuid.Nil).Return("", nil)
+
+		assert.Equal(t, http.StatusNoContent, sendRequest(router, http.MethodPost, "/api/v1/workflows/discovery/runs", "").Code)
+	})
+}
+
+func TestHandler_SetWorkflowSchedule(t *testing.T) {
+	body := `{"name": "discovery", "schedule": {"cron": "0 0 6 * * *", "enabled": false}}`
+
+	t.Run("returns 204 when the schedule is saved", func(t *testing.T) {
+		router, service := setupRouterWithMockWorkflowService(t)
+		service.EXPECT().SetWorkflowSchedule(gomock.Any(), "discovery", domain.WorkflowSchedule{Cron: "0 0 6 * * *", Enabled: false}).Return(nil)
+
+		assert.Equal(t, http.StatusNoContent, sendRequest(router, http.MethodPut, "/api/v1/workflows", body).Code)
+	})
+
+	t.Run("returns 400 for a workflow without a schedule or a bad cron", func(t *testing.T) {
+		router, service := setupRouterWithMockWorkflowService(t)
+		service.EXPECT().SetWorkflowSchedule(gomock.Any(), "discovery", gomock.Any()).Return(domain.ErrInvalidWorkflow)
+
+		assert.Equal(t, http.StatusBadRequest, sendRequest(router, http.MethodPut, "/api/v1/workflows", body).Code)
 	})
 }
