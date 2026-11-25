@@ -28,6 +28,10 @@ const (
 
 	runWorkflowName  = "run"
 	stepWorkflowName = "step"
+	// scheduledWorkflowName is the DBOS workflow every schedule fires; the schedule's context names the workflow to start.
+	scheduledWorkflowName = "scheduled"
+	// scheduleTimezone is the timezone the cron expressions are read in.
+	scheduleTimezone = "UTC"
 	gateTopic        = "continue"
 	gateEvent        = "gate"
 	gateWaiting      = "waiting"
@@ -41,10 +45,11 @@ const (
 // Engine runs workflow runs on DBOS, which keeps their state in the core's database (schema dbos).
 // A run is one DBOS workflow that starts one child workflow per step, so a gate or a failure holds only the steps after it.
 type Engine struct {
-	databaseUrl string
-	logger      *slog.Logger
-	runner      domain.WorkflowStepRunner
-	queues      map[domain.WorkflowType]dbos.Queue
+	databaseUrl              string
+	logger                   *slog.Logger
+	workflowStepRunner       domain.WorkflowStepRunner
+	scheduledWorkflowStarter domain.ScheduledWorkflowStarter
+	queues                   map[domain.WorkflowType]dbos.Queue
 	// mutex guards dbosCtx: Launch sets it in the background while Shutdown may read it.
 	mutex   sync.Mutex
 	dbosCtx dbos.Context
@@ -53,10 +58,10 @@ type Engine struct {
 var _ contract.WorkflowEngine = (*Engine)(nil)
 
 func NewEngine(databaseUrl string, logger *slog.Logger) *Engine {
-	return &Engine{databaseUrl: databaseUrl, logger: logger, runner: nil, queues: nil, mutex: sync.Mutex{}, dbosCtx: nil}
+	return &Engine{databaseUrl: databaseUrl, logger: logger, workflowStepRunner: nil, scheduledWorkflowStarter: nil, queues: nil, mutex: sync.Mutex{}, dbosCtx: nil}
 }
 
-func (e *Engine) Launch(ctx context.Context, runner domain.WorkflowStepRunner, queues map[domain.WorkflowType]domain.WorkflowQueue) error {
+func (e *Engine) Launch(ctx context.Context, workflowStepRunner domain.WorkflowStepRunner, queues map[domain.WorkflowType]domain.WorkflowQueue, scheduledWorkflowStarter domain.ScheduledWorkflowStarter) error {
 	dbosCtx, err := dbos.NewContext(ctx, dbos.Config{
 		AppName:            appName,
 		DatabaseURL:        e.databaseUrl,
@@ -67,9 +72,11 @@ func (e *Engine) Launch(ctx context.Context, runner domain.WorkflowStepRunner, q
 		return fmt.Errorf("create dbos context: %w", err)
 	}
 
-	e.runner = runner
+	e.workflowStepRunner = workflowStepRunner
+	e.scheduledWorkflowStarter = scheduledWorkflowStarter
 	dbos.RegisterWorkflow(dbosCtx, e.executeWorkflowRun, dbos.WithWorkflowName(runWorkflowName))
 	dbos.RegisterWorkflow(dbosCtx, e.executeWorkflowStep, dbos.WithWorkflowName(stepWorkflowName))
+	dbos.RegisterWorkflow(dbosCtx, e.executeScheduledWorkflow, dbos.WithWorkflowName(scheduledWorkflowName))
 
 	registeredQueues, err := registerQueues(dbosCtx, queues)
 	if err == nil {

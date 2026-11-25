@@ -34,13 +34,17 @@ type ConnectorRuntime interface {
 
 // WorkflowEngine runs workflow runs durably: a run survives a restart. A step waits at its gate until it is continued, and fails after 30 days.
 type WorkflowEngine interface {
-	// Launch starts the engine with the runner that executes each step and the queue of each type that has one; it also picks up runs left from before a restart.
-	Launch(ctx context.Context, runner domain.WorkflowStepRunner, queues map[domain.WorkflowType]domain.WorkflowQueue) error
+	// Launch starts the engine with the step runner that executes each step, the queue of each type that has one, and the starter it calls on each tick of a schedule; it also picks up runs left from before a restart.
+	Launch(ctx context.Context, workflowStepRunner domain.WorkflowStepRunner, queues map[domain.WorkflowType]domain.WorkflowQueue, scheduledWorkflowStarter domain.ScheduledWorkflowStarter) error
 	// Start begins a run under the given id. A run of a type with a queue waits for its turn. Steps without a dependency run in parallel.
 	Start(ctx context.Context, runId string, run domain.WorkflowRun) error
 	// Continue releases a step waiting at a gate.
 	Continue(ctx context.Context, runId, stepName string) error
 	Get(ctx context.Context, runId string) (domain.WorkflowRunState, error)
+	// SetSchedule saves the schedule of a workflow, replacing the one it has. The change applies within seconds, without a restart.
+	SetSchedule(ctx context.Context, workflowName string, schedule domain.WorkflowSchedule) error
+	// GetSchedule fails with ErrScheduleNotFound when the workflow has no schedule.
+	GetSchedule(ctx context.Context, workflowName string) (domain.WorkflowSchedule, error)
 	Shutdown(timeout time.Duration)
 }
 

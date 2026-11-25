@@ -201,7 +201,8 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        /** @description Save the schedule of a workflow, replacing the one it has. Only the discovery workflow has a schedule so far. A change applies within seconds. */
+        put: operations["setWorkflowSchedule"];
         /** @description Create a workflow. The systems, resources, tenants and entitlements its steps name must exist; otherwise nothing is saved. A workflow with the same name is not replaced. */
         post: operations["createWorkflow"];
         delete?: never;
@@ -217,7 +218,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get a saved workflow */
+        /** @description Get a saved workflow. The discovery workflow is built in and has no steps, as they are built from the managed systems at each run. */
         get: operations["getWorkflow"];
         put?: never;
         post?: never;
@@ -236,7 +237,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Start a run of a saved workflow. The run goes on in the background; follow it with the run id. */
+        /** @description Start a run of a saved workflow, or of the built-in discovery workflow. The run goes on in the background; follow it with the run id. */
         post: operations["startWorkflow"];
         delete?: never;
         options?: never;
@@ -427,6 +428,13 @@ export interface components {
                 };
             };
         };
+        /** @description When a workflow starts on its own. */
+        "workflow-schedule": {
+            /** @description Cron expression in UTC with a seconds field first, e.g. `0 0 0 * * *` for every day at midnight. */
+            cron: string;
+            /** @description Whether the schedule is on */
+            enabled: boolean;
+        };
         /**
          * @description What the workflow does; it decides the action each step runs. With onboarding, an account-action step creates the account and an entitlement step grants the entitlement.
          * @enum {string}
@@ -459,6 +467,11 @@ export interface components {
             /** @description Wait before this step until someone continues it from the UI or API */
             gate?: boolean;
         }[];
+        /**
+         * @description What the workflow does; it decides the action each step runs. Discovery is built in and cannot be created.
+         * @enum {string}
+         */
+        "workflow-type-response": "onboarding" | "discovery";
     };
     responses: {
         /** @description Internal Server error */
@@ -988,6 +1001,35 @@ export interface operations {
             500: components["responses"]["internal-server-error"];
         };
     };
+    setWorkflowSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Name of the workflow, e.g. discovery */
+                    name: string;
+                    schedule: components["schemas"]["workflow-schedule"];
+                };
+            };
+        };
+        responses: {
+            /** @description Schedule saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["bad-request-error"];
+            401: components["responses"]["unauthenticated-error"];
+            500: components["responses"]["internal-server-error"];
+        };
+    };
     createWorkflow: {
         parameters: {
             query?: never;
@@ -1039,8 +1081,9 @@ export interface operations {
                 content: {
                     "application/json": {
                         name: string;
-                        type: components["schemas"]["workflow-type"];
+                        type: components["schemas"]["workflow-type-response"];
                         steps: components["schemas"]["workflow-steps"];
+                        schedule?: components["schemas"]["workflow-schedule"];
                     };
                 };
             };
@@ -1059,11 +1102,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": {
-                    /** @description Id of the identity the run is about */
-                    identityId: string;
+                    /** @description Id of the identity the run is about. Required, except for discovery, which is about no identity. */
+                    identityId?: string;
                 };
             };
         };
@@ -1079,6 +1122,13 @@ export interface operations {
                         id: string;
                     };
                 };
+            };
+            /** @description Nothing to run, so no run started. Only discovery does this, when there is no system to discover. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             400: components["responses"]["bad-request-error"];
             401: components["responses"]["unauthenticated-error"];

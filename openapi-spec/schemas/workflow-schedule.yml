@@ -1,0 +1,15 @@
+# The schedule is already a decoded domain value, so handlers pass it as is.
+x-go-type: domain.WorkflowSchedule
+x-go-type-import:
+    path: github.com/open-iga/core/internal/domain
+type: object
+description: When a workflow starts on its own.
+properties:
+    cron:
+        type: string
+        description: >-
+            Cron expression in UTC with a seconds field first, e.g. `0 0 0 * * *` for every day at midnight.
+    enabled:
+        type: boolean
+        description: Whether the schedule is on
+required: [cron, enabled]

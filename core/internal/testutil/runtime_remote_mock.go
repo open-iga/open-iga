@@ -191,18 +191,47 @@ func (mr *MockWorkflowEngineMockRecorder) Get(ctx, runId any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockWorkflowEngine)(nil).Get), ctx, runId)
 }
 
-// Launch mocks base method.
-func (m *MockWorkflowEngine) Launch(ctx context.Context, runner domain.WorkflowStepRunner, queues map[domain.WorkflowType]domain.WorkflowQueue) error {
+// GetSchedule mocks base method.
+func (m *MockWorkflowEngine) GetSchedule(ctx context.Context, workflowName string) (domain.WorkflowSchedule, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Launch", ctx, runner, queues)
+	ret := m.ctrl.Call(m, "GetSchedule", ctx, workflowName)
+	ret0, _ := ret[0].(domain.WorkflowSchedule)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSchedule indicates an expected call of GetSchedule.
+func (mr *MockWorkflowEngineMockRecorder) GetSchedule(ctx, workflowName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedule", reflect.TypeOf((*MockWorkflowEngine)(nil).GetSchedule), ctx, workflowName)
+}
+
+// Launch mocks base method.
+func (m *MockWorkflowEngine) Launch(ctx context.Context, workflowStepRunner domain.WorkflowStepRunner, queues map[domain.WorkflowType]domain.WorkflowQueue, scheduledWorkflowStarter domain.ScheduledWorkflowStarter) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Launch", ctx, workflowStepRunner, queues, scheduledWorkflowStarter)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Launch indicates an expected call of Launch.
-func (mr *MockWorkflowEngineMockRecorder) Launch(ctx, runner, queues any) *gomock.Call {
+func (mr *MockWorkflowEngineMockRecorder) Launch(ctx, workflowStepRunner, queues, scheduledWorkflowStarter any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Launch", reflect.TypeOf((*MockWorkflowEngine)(nil).Launch), ctx, runner, queues)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Launch", reflect.TypeOf((*MockWorkflowEngine)(nil).Launch), ctx, workflowStepRunner, queues, scheduledWorkflowStarter)
+}
+
+// SetSchedule mocks base method.
+func (m *MockWorkflowEngine) SetSchedule(ctx context.Context, workflowName string, schedule domain.WorkflowSchedule) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetSchedule", ctx, workflowName, schedule)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetSchedule indicates an expected call of SetSchedule.
+func (mr *MockWorkflowEngineMockRecorder) SetSchedule(ctx, workflowName, schedule any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSchedule", reflect.TypeOf((*MockWorkflowEngine)(nil).SetSchedule), ctx, workflowName, schedule)
 }
 
 // Shutdown mocks base method.

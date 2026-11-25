@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -51,7 +52,7 @@ func NewWorkflowService(logger *slog.Logger, workflowEngine contract.WorkflowEng
 // Run it in the background so the server need not wait.
 func (w *WorkflowService) LaunchEngine(ctx context.Context) {
 	for {
-		err := w.workflowEngine.Launch(ctx, w.ExecuteConnectorOperation, domain.QueuedWorkflowTypes())
+		err := w.workflowEngine.Launch(ctx, w.ExecuteConnectorOperation, domain.QueuedWorkflowTypes(), w.startScheduledWorkflow)
 		if err == nil {
 			break
 		}
@@ -66,9 +67,57 @@ func (w *WorkflowService) LaunchEngine(ctx context.Context) {
 
 	close(w.engineReady)
 	w.logger.Info("workflow engine launched")
+
+	w.keepSavingDefaultDiscoverySchedule(ctx)
 }
 
-func (w *WorkflowService) checkEngineReady() error {
+// keepSavingDefaultDiscoverySchedule tries again until the default is saved or the context ends.
+func (w *WorkflowService) keepSavingDefaultDiscoverySchedule(ctx context.Context) {
+	for {
+		err := w.saveDefaultDiscoverySchedule(ctx)
+		if err == nil {
+			return
+		}
+
+		w.logger.Error("failed to save the default discovery schedule", "err", err, "retryIn", w.engineLaunchRetryInterval)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(w.engineLaunchRetryInterval):
+		}
+	}
+}
+
+// saveDefaultDiscoverySchedule gives discovery its default schedule when it has none, so an admin's change is never overwritten.
+func (w *WorkflowService) saveDefaultDiscoverySchedule(ctx context.Context) error {
+	_, err := w.workflowEngine.GetSchedule(ctx, domain.DiscoveryWorkflowName)
+	if err == nil {
+		return nil
+	}
+
+	if !errors.Is(err, domain.ErrScheduleNotFound) {
+		return fmt.Errorf("get discovery schedule: %w", err)
+	}
+
+	if err := w.workflowEngine.SetSchedule(ctx, domain.DiscoveryWorkflowName, domain.WorkflowSchedule{Cron: domain.DefaultDiscoveryCron, Enabled: true}); err != nil {
+		return fmt.Errorf("set discovery schedule: %w", err)
+	}
+
+	return nil
+}
+
+// startScheduledWorkflow is what the engine calls on a schedule tick. Only discovery has a schedule so far.
+func (w *WorkflowService) startScheduledWorkflow(ctx context.Context, workflowName string) error {
+	if workflowName != domain.DiscoveryWorkflowName {
+		return fmt.Errorf("%w: workflow %q has no schedule", domain.ErrInvalidWorkflow, workflowName)
+	}
+
+	_, err := w.startDiscovery(ctx)
+
+	return err
+}
+
+func (w *WorkflowService) isEngineReady() error {
 	select {
 	case <-w.engineReady:
 		return nil
@@ -78,6 +127,10 @@ func (w *WorkflowService) checkEngineReady() error {
 }
 
 func (w *WorkflowService) CreateWorkflow(ctx context.Context, definition domain.WorkflowDefinition) error {
+	if definition.Name == domain.DiscoveryWorkflowName {
+		return fmt.Errorf("create workflow: %w: the name %q is taken by the built-in discovery workflow", domain.ErrInvalidWorkflow, definition.Name)
+	}
+
 	if err := definition.Validate(); err != nil {
 		return fmt.Errorf("create workflow: %w", err)
 	}
@@ -112,6 +165,10 @@ func (w *WorkflowService) CreateWorkflow(ctx context.Context, definition domain.
 }
 
 func (w *WorkflowService) GetWorkflow(ctx context.Context, name string) (domain.WorkflowDefinition, error) {
+	if name == domain.DiscoveryWorkflowName {
+		return domain.WorkflowDefinition{Name: name, Type: domain.WorkflowTypeDiscovery, Steps: []domain.WorkflowStep{}}, nil
+	}
+
 	definition, err := w.workflowRepository.GetWorkflow(ctx, name)
 	if err != nil {
 		return domain.WorkflowDefinition{}, fmt.Errorf("get workflow: %w", err)
@@ -120,8 +177,49 @@ func (w *WorkflowService) GetWorkflow(ctx context.Context, name string) (domain.
 	return definition, nil
 }
 
+func (w *WorkflowService) GetWorkflowSchedule(ctx context.Context, name string) (*domain.WorkflowSchedule, error) {
+	if name != domain.DiscoveryWorkflowName {
+		return nil, nil
+	}
+
+	if err := w.isEngineReady(); err != nil {
+		return nil, fmt.Errorf("get workflow schedule: %w", err)
+	}
+
+	schedule, err := w.workflowEngine.GetSchedule(ctx, name)
+	if errors.Is(err, domain.ErrScheduleNotFound) {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("get workflow schedule: %w", err)
+	}
+
+	return &schedule, nil
+}
+
+func (w *WorkflowService) SetWorkflowSchedule(ctx context.Context, name string, schedule domain.WorkflowSchedule) error {
+	if name != domain.DiscoveryWorkflowName {
+		return fmt.Errorf("%w: workflow %q has no schedule", domain.ErrInvalidWorkflow, name)
+	}
+
+	if err := w.isEngineReady(); err != nil {
+		return fmt.Errorf("set workflow schedule: %w", err)
+	}
+
+	if err := w.workflowEngine.SetSchedule(ctx, name, schedule); err != nil {
+		return fmt.Errorf("set workflow schedule: %w", err)
+	}
+
+	return nil
+}
+
 func (w *WorkflowService) StartWorkflow(ctx context.Context, name string, identityId uuid.UUID) (string, error) {
-	if err := w.checkEngineReady(); err != nil {
+	if name == domain.DiscoveryWorkflowName {
+		return w.startDiscovery(ctx)
+	}
+
+	if err := w.isEngineReady(); err != nil {
 		return "", fmt.Errorf("start workflow: %w", err)
 	}
 
@@ -142,8 +240,8 @@ func (w *WorkflowService) StartWorkflow(ctx context.Context, name string, identi
 	return runId, nil
 }
 
-func (w *WorkflowService) StartDiscovery(ctx context.Context) (string, error) {
-	if err := w.checkEngineReady(); err != nil {
+func (w *WorkflowService) startDiscovery(ctx context.Context) (string, error) {
+	if err := w.isEngineReady(); err != nil {
 		return "", fmt.Errorf("start discovery: %w", err)
 	}
 
@@ -167,7 +265,7 @@ func (w *WorkflowService) StartDiscovery(ctx context.Context) (string, error) {
 
 // buildDiscoveryDefinition makes one step per target; the steps depend on none, so they start together.
 func buildDiscoveryDefinition(targets []domain.DiscoveryTarget) domain.WorkflowDefinition {
-	definition := domain.WorkflowDefinition{Name: "discovery", Type: domain.WorkflowTypeDiscovery, Steps: make([]domain.WorkflowStep, 0, len(targets))}
+	definition := domain.WorkflowDefinition{Name: domain.DiscoveryWorkflowName, Type: domain.WorkflowTypeDiscovery, Steps: make([]domain.WorkflowStep, 0, len(targets))}
 	for _, target := range targets {
 		operation := domain.WorkflowOperation{System: target.SystemName, Resource: target.Resource, Kind: domain.EntitlementKind, Action: "", Tenant: target.TenantName, Entitlement: uuid.Nil}
 		definition.Steps = append(definition.Steps, domain.WorkflowStep{Name: buildDiscoveryStepName(target), Operation: operation, After: nil, Gate: false})
@@ -196,7 +294,7 @@ func (w *WorkflowService) Continue(ctx context.Context, workflowName string, run
 
 // GetRun treats a run of another workflow as not found.
 func (w *WorkflowService) GetRun(ctx context.Context, workflowName string, runId string) (domain.WorkflowRunState, error) {
-	if err := w.checkEngineReady(); err != nil {
+	if err := w.isEngineReady(); err != nil {
 		return domain.WorkflowRunState{}, fmt.Errorf("get workflow run: %w", err)
 	}
 

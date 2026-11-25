@@ -271,7 +271,7 @@ func TestWorkflowService_StartDiscovery(t *testing.T) {
 			IdentityId: uuid.Nil,
 		}).Return(nil)
 
-		runId, err := svc.StartDiscovery(ctx)
+		runId, err := svc.StartWorkflow(ctx, "discovery", uuid.Nil)
 
 		require.NoError(t, err)
 		assert.NotEmpty(t, runId)
@@ -281,7 +281,7 @@ func TestWorkflowService_StartDiscovery(t *testing.T) {
 		svc, mocks := setupWorkflowService(t)
 		mocks.discovery.EXPECT().ListDiscoveryTargets(ctx).Return(nil, nil)
 
-		runId, err := svc.StartDiscovery(ctx)
+		runId, err := svc.StartWorkflow(ctx, "discovery", uuid.Nil)
 
 		require.NoError(t, err)
 		assert.Empty(t, runId)
@@ -306,7 +306,8 @@ func TestWorkflowService_LaunchEngine(t *testing.T) {
 	t.Run("workflow runs are refused until the engine has launched", func(t *testing.T) {
 		svc, mocks := setupWorkflowService(t)
 		svc.engineReady = make(chan struct{}) // the helper opens it; here the engine has not launched
-		mocks.engine.EXPECT().Launch(ctx, gomock.Any(), domain.QueuedWorkflowTypes()).Return(nil)
+		mocks.engine.EXPECT().Launch(ctx, gomock.Any(), domain.QueuedWorkflowTypes(), gomock.Any()).Return(nil)
+		mocks.engine.EXPECT().GetSchedule(ctx, domain.DiscoveryWorkflowName).Return(domain.WorkflowSchedule{}, nil)
 
 		_, err := svc.StartWorkflow(ctx, "onboarding", uuid.Nil)
 		assert.ErrorIs(t, err, domain.ErrWorkflowEngineNotReady)
@@ -314,7 +315,7 @@ func TestWorkflowService_LaunchEngine(t *testing.T) {
 		assert.ErrorIs(t, err, domain.ErrWorkflowEngineNotReady)
 
 		svc.LaunchEngine(ctx)
-		assert.NoError(t, svc.checkEngineReady())
+		assert.NoError(t, svc.isEngineReady())
 	})
 
 	t.Run("a failed launch is tried again until it works", func(t *testing.T) {
@@ -322,11 +323,95 @@ func TestWorkflowService_LaunchEngine(t *testing.T) {
 		svc.engineReady = make(chan struct{})
 		svc.engineLaunchRetryInterval = time.Millisecond
 		gomock.InOrder(
-			mocks.engine.EXPECT().Launch(ctx, gomock.Any(), domain.QueuedWorkflowTypes()).Return(errors.New("database down")),
-			mocks.engine.EXPECT().Launch(ctx, gomock.Any(), domain.QueuedWorkflowTypes()).Return(nil),
+			mocks.engine.EXPECT().Launch(ctx, gomock.Any(), domain.QueuedWorkflowTypes(), gomock.Any()).Return(errors.New("database down")),
+			mocks.engine.EXPECT().Launch(ctx, gomock.Any(), domain.QueuedWorkflowTypes(), gomock.Any()).Return(nil),
+			mocks.engine.EXPECT().GetSchedule(ctx, domain.DiscoveryWorkflowName).Return(domain.WorkflowSchedule{}, nil),
 		)
 
 		svc.LaunchEngine(ctx)
-		assert.NoError(t, svc.checkEngineReady())
+		assert.NoError(t, svc.isEngineReady())
+	})
+
+	t.Run("discovery gets a midnight UTC schedule when it has none", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		svc.engineReady = make(chan struct{})
+		mocks.engine.EXPECT().Launch(ctx, gomock.Any(), domain.QueuedWorkflowTypes(), gomock.Any()).Return(nil)
+		mocks.engine.EXPECT().GetSchedule(ctx, domain.DiscoveryWorkflowName).Return(domain.WorkflowSchedule{}, domain.ErrScheduleNotFound)
+		mocks.engine.EXPECT().SetSchedule(ctx, domain.DiscoveryWorkflowName, domain.WorkflowSchedule{Cron: "0 0 0 * * *", Enabled: true}).Return(nil)
+
+		svc.LaunchEngine(ctx)
+	})
+
+	t.Run("a failed save of the default schedule is tried again", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		svc.engineReady = make(chan struct{})
+		svc.engineLaunchRetryInterval = time.Millisecond
+		mocks.engine.EXPECT().Launch(ctx, gomock.Any(), domain.QueuedWorkflowTypes(), gomock.Any()).Return(nil)
+		gomock.InOrder(
+			mocks.engine.EXPECT().GetSchedule(ctx, domain.DiscoveryWorkflowName).Return(domain.WorkflowSchedule{}, errors.New("database down")),
+			mocks.engine.EXPECT().GetSchedule(ctx, domain.DiscoveryWorkflowName).Return(domain.WorkflowSchedule{}, domain.ErrScheduleNotFound),
+			mocks.engine.EXPECT().SetSchedule(ctx, domain.DiscoveryWorkflowName, domain.WorkflowSchedule{Cron: domain.DefaultDiscoveryCron, Enabled: true}).Return(nil),
+		)
+
+		svc.LaunchEngine(ctx)
+	})
+
+	t.Run("the schedule an admin saved is kept", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		svc.engineReady = make(chan struct{})
+		mocks.engine.EXPECT().Launch(ctx, gomock.Any(), domain.QueuedWorkflowTypes(), gomock.Any()).Return(nil)
+		mocks.engine.EXPECT().GetSchedule(ctx, domain.DiscoveryWorkflowName).Return(domain.WorkflowSchedule{Cron: "0 0 6 * * *", Enabled: false}, nil)
+
+		svc.LaunchEngine(ctx)
+	})
+}
+
+func TestWorkflowService_DiscoverySchedule(t *testing.T) {
+	ctx := context.Background()
+	schedule := domain.WorkflowSchedule{Cron: "0 0 6 * * *", Enabled: true}
+
+	t.Run("discovery is a built-in workflow without steps", func(t *testing.T) {
+		svc, _ := setupWorkflowService(t)
+
+		definition, err := svc.GetWorkflow(ctx, "discovery")
+		require.NoError(t, err)
+		assert.Equal(t, domain.WorkflowTypeDiscovery, definition.Type)
+		assert.Empty(t, definition.Steps)
+	})
+
+	t.Run("saves and reads the schedule of discovery", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.engine.EXPECT().SetSchedule(ctx, "discovery", schedule).Return(nil)
+		mocks.engine.EXPECT().GetSchedule(ctx, "discovery").Return(schedule, nil)
+
+		require.NoError(t, svc.SetWorkflowSchedule(ctx, "discovery", schedule))
+		saved, err := svc.GetWorkflowSchedule(ctx, "discovery")
+		require.NoError(t, err)
+		assert.Equal(t, &schedule, saved)
+	})
+
+	t.Run("no schedule saved yet is no schedule", func(t *testing.T) {
+		svc, mocks := setupWorkflowService(t)
+		mocks.engine.EXPECT().GetSchedule(ctx, "discovery").Return(domain.WorkflowSchedule{}, domain.ErrScheduleNotFound)
+
+		saved, err := svc.GetWorkflowSchedule(ctx, "discovery")
+		require.NoError(t, err)
+		assert.Nil(t, saved)
+	})
+
+	t.Run("a workflow cannot take the name of discovery", func(t *testing.T) {
+		svc, _ := setupWorkflowService(t)
+
+		err := svc.CreateWorkflow(ctx, domain.WorkflowDefinition{Name: "discovery", Type: domain.WorkflowTypeOnboarding, Steps: []domain.WorkflowStep{buildCreateStep("create-aws")}})
+		assert.ErrorIs(t, err, domain.ErrInvalidWorkflow)
+	})
+
+	t.Run("another workflow has no schedule", func(t *testing.T) {
+		svc, _ := setupWorkflowService(t)
+
+		assert.ErrorIs(t, svc.SetWorkflowSchedule(ctx, "onboarding", schedule), domain.ErrInvalidWorkflow)
+		saved, err := svc.GetWorkflowSchedule(ctx, "onboarding")
+		require.NoError(t, err)
+		assert.Nil(t, saved)
 	})
 }

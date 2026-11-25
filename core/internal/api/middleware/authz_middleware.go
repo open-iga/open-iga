@@ -26,6 +26,7 @@ var operationRoles = map[string][]string{
 	"ListManagedSystems":                   {domain.AdminRole, domain.DefaultIdentityRole},
 	"CreateWorkflow":                       {domain.AdminRole},
 	"GetWorkflow":                          {domain.AdminRole},
+	"SetWorkflowSchedule":                  {domain.AdminRole},
 	"StartWorkflow":                        {domain.AdminRole},
 	"GetWorkflowRun":                       {domain.AdminRole},
 	"ContinueWorkflowStep":                 {domain.AdminRole},

@@ -29,3 +29,31 @@ post:
             $ref: '../components/responses/conflict-error.yml'
         500:
             $ref: '../components/responses/internal-server-error.yml'
+put:
+    operationId: setWorkflowSchedule
+    description: >-
+        Save the schedule of a workflow, replacing the one it has. Only the discovery workflow has a schedule so far.
+        A change applies within seconds.
+    requestBody:
+        required: true
+        content:
+            'application/json':
+                schema:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                        name:
+                            type: string
+                            description: Name of the workflow, e.g. discovery
+                        schedule:
+                            $ref: '../schemas/workflow-schedule.yml'
+                    required: [name, schedule]
+    responses:
+        204:
+            description: Schedule saved
+        400:
+            $ref: '../components/responses/bad-request-error.yml'
+        401:
+            $ref: '../components/responses/unauthenticated-error.yml'
+        500:
+            $ref: '../components/responses/internal-server-error.yml'

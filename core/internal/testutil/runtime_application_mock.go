@@ -394,19 +394,33 @@ func (mr *MockWorkflowServiceMockRecorder) GetWorkflow(ctx, name any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorkflow", reflect.TypeOf((*MockWorkflowService)(nil).GetWorkflow), ctx, name)
 }
 
-// StartDiscovery mocks base method.
-func (m *MockWorkflowService) StartDiscovery(ctx context.Context) (string, error) {
+// GetWorkflowSchedule mocks base method.
+func (m *MockWorkflowService) GetWorkflowSchedule(ctx context.Context, name string) (*domain.WorkflowSchedule, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StartDiscovery", ctx)
-	ret0, _ := ret[0].(string)
+	ret := m.ctrl.Call(m, "GetWorkflowSchedule", ctx, name)
+	ret0, _ := ret[0].(*domain.WorkflowSchedule)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// StartDiscovery indicates an expected call of StartDiscovery.
-func (mr *MockWorkflowServiceMockRecorder) StartDiscovery(ctx any) *gomock.Call {
+// GetWorkflowSchedule indicates an expected call of GetWorkflowSchedule.
+func (mr *MockWorkflowServiceMockRecorder) GetWorkflowSchedule(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartDiscovery", reflect.TypeOf((*MockWorkflowService)(nil).StartDiscovery), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorkflowSchedule", reflect.TypeOf((*MockWorkflowService)(nil).GetWorkflowSchedule), ctx, name)
+}
+
+// SetWorkflowSchedule mocks base method.
+func (m *MockWorkflowService) SetWorkflowSchedule(ctx context.Context, name string, schedule domain.WorkflowSchedule) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetWorkflowSchedule", ctx, name, schedule)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetWorkflowSchedule indicates an expected call of SetWorkflowSchedule.
+func (mr *MockWorkflowServiceMockRecorder) SetWorkflowSchedule(ctx, name, schedule any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWorkflowSchedule", reflect.TypeOf((*MockWorkflowService)(nil).SetWorkflowSchedule), ctx, name, schedule)
 }
 
 // StartWorkflow mocks base method.

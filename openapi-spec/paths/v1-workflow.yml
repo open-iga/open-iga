@@ -1,6 +1,8 @@
 get:
     operationId: getWorkflow
-    description: Get a saved workflow
+    description: >-
+        Get a saved workflow. The discovery workflow is built in and has no steps,
+        as they are built from the managed systems at each run.
     parameters:
         - &workflowName
           name: name
@@ -20,9 +22,11 @@ get:
                             name:
                                 type: string
                             type:
-                                $ref: '../schemas/workflow-type.yml'
+                                $ref: '../schemas/workflow-type-response.yml'
                             steps:
                                 $ref: '../schemas/workflow-steps.yml'
+                            schedule:
+                                $ref: '../schemas/workflow-schedule.yml'
                         required: [name, type, steps]
         401:
             $ref: '../components/responses/unauthenticated-error.yml'

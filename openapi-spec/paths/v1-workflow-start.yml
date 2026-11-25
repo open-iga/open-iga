@@ -1,6 +1,8 @@
 post:
     operationId: startWorkflow
-    description: Start a run of a saved workflow. The run goes on in the background; follow it with the run id.
+    description: >-
+        Start a run of a saved workflow, or of the built-in discovery workflow.
+        The run goes on in the background; follow it with the run id.
     parameters:
         - name: name
           in: path
@@ -9,7 +11,7 @@ post:
           schema:
               type: string
     requestBody:
-        required: true
+        required: false
         content:
             'application/json':
                 schema:
@@ -17,8 +19,7 @@ post:
                     properties:
                         identityId:
                             type: string
-                            description: Id of the identity the run is about
-                    required: [identityId]
+                            description: Id of the identity the run is about. Required, except for discovery, which is about no identity.
     responses:
         201:
             description: Run started
@@ -31,6 +32,8 @@ post:
                                 type: string
                                 description: Id of the run
                         required: [id]
+        204:
+            description: Nothing to run, so no run started. Only discovery does this, when there is no system to discover.
         400:
             $ref: '../components/responses/bad-request-error.yml'
         401:
